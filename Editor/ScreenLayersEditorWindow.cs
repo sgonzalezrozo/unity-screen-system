@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
 	public class ScreenLayersEditorWindow : EditorWindow
 	{

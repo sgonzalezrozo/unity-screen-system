@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using Tools.ScreenSystem.Scripts;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem;
+using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor.ScreenManagerEditor
+namespace ScreenSystem.Editor.ScreenManagerEditor
 {
     /// <summary>
     /// Handles rendering of the screen hierarchy and stack display.

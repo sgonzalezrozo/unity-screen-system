@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public static class CollectionPool
     {

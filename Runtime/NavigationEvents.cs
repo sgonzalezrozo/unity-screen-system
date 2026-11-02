@@ -1,6 +1,6 @@
 using System;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public static class NavigationEvents
     {

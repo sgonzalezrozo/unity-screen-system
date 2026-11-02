@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     [RequireComponent(typeof(ScreenSystemBootstrap))]
     public class ScreenManager : MonoBehaviour, IScreenNavigationService

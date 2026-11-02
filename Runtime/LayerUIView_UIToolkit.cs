@@ -1,6 +1,6 @@
 using UnityEngine.UIElements;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class LayerUIView_UIToolkit : ILayerUIView
     {

@@ -7,7 +7,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using Object = UnityEngine.Object;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class LayerInitializer
     {

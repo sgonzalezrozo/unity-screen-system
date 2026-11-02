@@ -9,7 +9,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class LayerContentLoader_UIToolkit : ILayerContentLoader
     {

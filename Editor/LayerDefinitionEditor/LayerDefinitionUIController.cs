@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor.LayerDefinitionEditor
+namespace ScreenSystem.Editor.LayerDefinitionEditor
 {
     /// <summary>
     /// Handles user input and interactions for layer definition editor.

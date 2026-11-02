@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts.ScriptableObjects
+namespace ScreenSystem.ScriptableObjects
 {
     public class ScreenSystemSettings : ScriptableObject
     {

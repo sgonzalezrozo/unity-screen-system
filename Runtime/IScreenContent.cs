@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public interface IScreenContent
     {

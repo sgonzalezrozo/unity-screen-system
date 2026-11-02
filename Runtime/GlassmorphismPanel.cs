@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
 	[RequireComponent(typeof(Image))]
 	[RequireComponent(typeof(CanvasGroup))]

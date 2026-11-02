@@ -1,10 +1,10 @@
-using Tools.ScreenSystem.Scripts;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem;
+using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     public static class BlurBackgroundLayerMenu
     {

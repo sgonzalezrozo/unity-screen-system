@@ -1,8 +1,8 @@
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     [CustomEditor(typeof(ScreenRegistry))]
     public class ScreenRegistryInspector : UnityEditor.Editor

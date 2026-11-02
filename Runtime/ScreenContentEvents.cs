@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class ScreenContentEvents : MonoBehaviour, IScreenContentEvents
     {

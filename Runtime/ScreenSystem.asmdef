@@ -1,5 +1,5 @@
 {
-    "name": "tools-screensystem",
+    "name": "ScreenSystem",
     "rootNamespace": "",
     "references": [
         "Unity.Addressables",

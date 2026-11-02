@@ -1,8 +1,8 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using LayerDefinitionClass = Tools.ScreenSystem.Scripts.LayerDefinition;
+using LayerDefinitionClass = ScreenSystem.LayerDefinition;
 
-namespace Tools.ScreenSystem.Editor.LayerDefinitionEditor
+namespace ScreenSystem.Editor.LayerDefinitionEditor
 {
     /// <summary>
     /// Main editor window for LayerDefinition ScriptableObject.

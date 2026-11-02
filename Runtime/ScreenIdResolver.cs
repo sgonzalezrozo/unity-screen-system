@@ -1,7 +1,7 @@
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class ScreenIdResolver
     {

@@ -5,9 +5,9 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using LayerDefinitionClass = Tools.ScreenSystem.Scripts.LayerDefinition;
+using LayerDefinitionClass = ScreenSystem.LayerDefinition;
 
-namespace Tools.ScreenSystem.Editor.LayerDefinitionEditor
+namespace ScreenSystem.Editor.LayerDefinitionEditor
 {
     /// <summary>
     /// Manages layer preview instantiation and rendering in the editor.

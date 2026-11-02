@@ -3,7 +3,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     public static class RenderTextureLeakInspector
     {

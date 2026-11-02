@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public static class LayerPrefabLoader
     {

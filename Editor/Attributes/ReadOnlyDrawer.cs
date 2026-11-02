@@ -1,8 +1,8 @@
-using Tools.ScreenSystem.Scripts.Attributes;
+using ScreenSystem.Attributes;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor.Attributes
+namespace ScreenSystem.Editor.Attributes
 {
     [CustomPropertyDrawer(typeof(ReadOnlyAttribute))]
     public class ReadOnlyDrawer : PropertyDrawer

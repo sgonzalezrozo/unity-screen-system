@@ -1,8 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 
-namespace Tools.ScreenSystem.Scripts.Services
+namespace ScreenSystem.Services
 {
     public interface IScreenInitializer
     {

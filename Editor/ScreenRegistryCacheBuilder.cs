@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
-using Tools.ScreenSystem.Scripts;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem;
+using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     public static class ScreenRegistryCacheBuilder
     {

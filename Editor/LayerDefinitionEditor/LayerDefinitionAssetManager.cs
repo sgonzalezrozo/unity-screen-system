@@ -3,7 +3,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor.LayerDefinitionEditor
+namespace ScreenSystem.Editor.LayerDefinitionEditor
 {
     /// <summary>
     /// Manages asset and addressable operations for layer definitions.

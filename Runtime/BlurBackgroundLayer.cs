@@ -1,10 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     [RequireComponent(typeof(Image))]
     [RequireComponent(typeof(CanvasGroup))]

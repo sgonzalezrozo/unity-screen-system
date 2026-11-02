@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class ScreenCacheManager
     {
