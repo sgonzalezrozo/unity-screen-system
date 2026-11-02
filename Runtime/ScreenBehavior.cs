@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     [Serializable]
     public class ScreenBehavior

@@ -1,8 +1,8 @@
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class CanvasController
     {

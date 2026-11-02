@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
 	public class BlurBackgroundService
 	{

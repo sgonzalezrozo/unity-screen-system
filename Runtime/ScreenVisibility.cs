@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public static class ScreenVisibility
     {

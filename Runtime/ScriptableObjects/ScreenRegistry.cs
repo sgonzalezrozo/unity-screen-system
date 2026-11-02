@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts.ScriptableObjects
+namespace ScreenSystem.ScriptableObjects
 {
     public class ScreenRegistry : ScriptableObject
     {

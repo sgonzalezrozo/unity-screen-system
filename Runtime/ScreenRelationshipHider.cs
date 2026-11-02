@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.ScriptableObjects;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class ScreenRelationshipHider
     {

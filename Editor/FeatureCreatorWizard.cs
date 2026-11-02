@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.IO;
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     public class FeatureCreatorWizard : EditorWindow
     {

@@ -1,11 +1,11 @@
 {
-    "name": "tools-screensystem.Editor",
+    "name": "ScreenSystem.Editor",
     "rootNamespace": "",
     "references": [
         "Unity.Addressables",
         "Unity.Addressables.Editor",
         "UnityEngine.UI",
-        "tools-screensystem"
+        "ScreenSystem"
     ],
     "includePlatforms": [
         "Editor"

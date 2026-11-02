@@ -103,7 +103,7 @@ The prefab is created automatically before the first scene loads, so you don't n
 To react when a screen opens or closes, add a component like this to its prefab:
 
 ```csharp
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEngine;
 
 public class SettingsScreen : MonoBehaviour, IScreenLifecycle
@@ -129,7 +129,7 @@ Implement only `IScreenShow` or `IScreenHide` if you need just one callback. A c
 ```csharp
 using System;
 using System.Threading.Tasks;
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEngine;
 
 public class GameBoot : MonoBehaviour

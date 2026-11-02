@@ -2,6 +2,13 @@
 
 All notable changes to this package are documented in this file.
 
+## [0.2.0] - Unreleased
+
+### Changed
+
+- **Breaking:** Renamed the namespaces from `Tools.ScreenSystem.Scripts` to `ScreenSystem`.
+- **Breaking:** Renamed the assemblies to `ScreenSystem` and `ScreenSystem.Editor`.
+
 ## [0.1.2] - Unreleased
 
 - Updated to Tools Core `0.2.0`.

@@ -1,7 +1,7 @@
-using Tools.ScreenSystem.Scripts.Attributes;
+using ScreenSystem.Attributes;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class ScreenDefinition : ScriptableObject
     {

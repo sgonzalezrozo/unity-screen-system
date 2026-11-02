@@ -1,8 +1,8 @@
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     [CustomEditor(typeof(ScreenDefinition))]
     public class ScreenDefinitionEditor : UnityEditor.Editor

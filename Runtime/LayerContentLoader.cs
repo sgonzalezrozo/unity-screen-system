@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class LayerContentLoader : ILayerContentLoader
     {

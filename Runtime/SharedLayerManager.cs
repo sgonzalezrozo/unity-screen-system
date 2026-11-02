@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class SharedLayerManager
     {

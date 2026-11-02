@@ -1,10 +1,10 @@
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using LayerDefinitionClass = Tools.ScreenSystem.Scripts.LayerDefinition;
+using LayerDefinitionClass = ScreenSystem.LayerDefinition;
 
-namespace Tools.ScreenSystem.Editor.LayerDefinitionEditor
+namespace ScreenSystem.Editor.LayerDefinitionEditor
 {
     /// <summary>
     /// Handles all UI rendering and reorderable list setup for layer definition editor.

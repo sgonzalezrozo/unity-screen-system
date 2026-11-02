@@ -1,4 +1,4 @@
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public interface ILayerUIView
     {

@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using Tools.ScreenSystem.Editor.ScreenManagerEditor;
-using Tools.ScreenSystem.Scripts;
-using Tools.ScreenSystem.Scripts.ScriptableObjects;
+using ScreenSystem.Editor.ScreenManagerEditor;
+using ScreenSystem;
+using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor
+namespace ScreenSystem.Editor
 {
     [CustomEditor(typeof(ScreenManager))]
     public class ScreenManagerInspector : UnityEditor.Editor

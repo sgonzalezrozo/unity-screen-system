@@ -1,6 +1,6 @@
 {
   "name": "com.sgonzalezrozo.screen-system",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "displayName": "Screen System",
   "description": "Declarative UI navigation for Unity with fullscreen, modal and alert layers.",
   "unity": "2022.3",

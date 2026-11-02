@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     [DefaultExecutionOrder(-1)]
     public class LayerPrefabInstantiatorFromAddressable : MonoBehaviour

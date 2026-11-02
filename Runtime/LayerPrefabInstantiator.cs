@@ -1,7 +1,7 @@
 using ToolsCore;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     [DefaultExecutionOrder(-1)]
     public class LayerPrefabInstantiator : MonoBehaviour

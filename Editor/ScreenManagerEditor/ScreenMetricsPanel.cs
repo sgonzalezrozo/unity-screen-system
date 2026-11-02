@@ -1,8 +1,8 @@
-using Tools.ScreenSystem.Scripts;
+using ScreenSystem;
 using UnityEditor;
 using UnityEngine;
 
-namespace Tools.ScreenSystem.Editor.ScreenManagerEditor
+namespace ScreenSystem.Editor.ScreenManagerEditor
 {
     /// <summary>
     /// Handles rendering of debug tools, legend, and performance metrics.

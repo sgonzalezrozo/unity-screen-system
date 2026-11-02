@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
-namespace Tools.ScreenSystem.Scripts
+namespace ScreenSystem
 {
     public class LayerComponent : MonoBehaviour
     {
