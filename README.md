@@ -34,6 +34,9 @@ Having led meta-game and live-ops client work on large mobile UI, I wanted featu
 
 - `GoTo`, `GoBack`, `SetRoot` and `PopTo` navigation
 - Fullscreen, modal and alert screen types
+- Automatic layer ordering, including layers shared between screens
+- Screens kept loaded and reused until their scene ends
+- Optional screens that persist across scene changes
 - Guarded async navigation, which ignores calls made during a transition
 - uGUI and UI Toolkit screen frameworks
 - Screens loaded from Resources or Addressables
@@ -258,6 +261,18 @@ NavigationEvents.OnNavigationFailed += (screenId, reason) => Debug.LogWarning($"
 
 Screen System works without a container, using standard `Instantiate`. With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), its components are injected automatically. See [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) for using another container.
 
+## How it works
+
+Screen System runs from one persistent `ScreenSystem` object, marked `DontDestroyOnLoad`.
+
+- **Loading:** a screen's layers load the first time it opens, then stay cached.
+- **Showing and hiding:** hidden screens stay loaded, but their `Canvas` or `UIDocument` is disabled. Reopening one reuses the same objects.
+- **Layers:** each screen is made of one or more layers, and each layer has its own `Canvas` or `UIDocument`. Layers can be shared between screens.
+- **Draw order:** the system sets each layer's sort order from its position in the navigation stack and its `LayerDefinition`, so you don't set sort orders by hand.
+- **Scene changes:** screens without **Persist Over Scenes** are destroyed, their cached resources are released, and unused assets are unloaded. Persistent screens are hidden and kept.
+
+Each `ScreenDefinition` in the registry stores the settings that control this, so features don't manage these lifetimes themselves.
+
 ## Core concepts
 
 | Concept | Meaning |
@@ -267,6 +282,7 @@ Screen System works without a container, using standard `Instantiate`. With [Fas
 | `ScreenRegistry` | The lookup of available screens |
 | `ScreenManager` | The entry point for navigation |
 | `LayerComponent` | Handles a layer's runtime behavior |
+| `LayerDefinition` | Defines a screen's layers and their order |
 | Screen type | `fullscreen`, `modal` or `alert` |
 | Framework | `uGUI`, `UIToolkit` or `Both` |
 
