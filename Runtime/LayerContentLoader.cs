@@ -50,7 +50,7 @@ namespace Tools.ScreenSystem.Scripts
                 Debug.LogWarning("[LayerContentLoader] No instantiator provided - Using NullPrefabInstantiator. " +
                               "This is expected if FastIoC DI is not configured for this project.");
 #endif
-                instantiator = new NullPrefabInstantiator();
+                instantiator = ToolInjectionServices.PrefabInstantiator;
             }
 
             this.instantiator = instantiator;

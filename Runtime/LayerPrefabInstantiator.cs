@@ -16,7 +16,7 @@ namespace Tools.ScreenSystem.Scripts
 
         private void Awake()
         {
-            instantiator = injectedInstantiator ?? new NullPrefabInstantiator();
+            instantiator = injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
         }
 
         private void OnEnable()

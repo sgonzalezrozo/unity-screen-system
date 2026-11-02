@@ -18,7 +18,7 @@ namespace Tools.ScreenSystem.Scripts
          public LayerInitializer(Transform screenContainer, IPrefabInstantiator instantiator = null)
          {
              this.screenContainer = screenContainer;
-             this.instantiator = instantiator ?? new NullPrefabInstantiator();
+             this.instantiator = instantiator ?? ToolInjectionServices.PrefabInstantiator;
          }
 
          public async Task<GameObject> GetOrInstantiateLayer(string layerName, CancellationToken ct = default)

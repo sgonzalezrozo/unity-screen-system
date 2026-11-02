@@ -184,7 +184,7 @@ namespace Tools.ScreenSystem.Scripts
                 Debug.LogWarning($"[LayerComponent] '{gameObject.name}' - Using NullPrefabInstantiator (standard Unity Instantiate). " +
                               "FastIoC DI not injected, which is expected if IoC is not configured for this project.");
 #endif
-                injectedInstantiator = new NullPrefabInstantiator();
+                injectedInstantiator = ToolInjectionServices.PrefabInstantiator;
             }
 
             contentLoader = new LayerContentLoader(transform, contentPrefabName, injectedInstantiator);
