@@ -48,14 +48,14 @@ namespace Tools.ScreenSystem.Editor
              EditorUtility.DisplayDialog(
                  "Setup Complete!",
                  $"Screen System {framework} has been set up successfully!\n\n" +
-                 "Files created in:\nAssets/Resources/Screen System/Scriptables/\n\n" +
+                 "Files created in:\nAssets/Resources/Tools/Screen System/Scriptables/\n\n" +
                  "✓ ScreenSystem.prefab created in Prefabs folder\n" +
                  "✓ ScreenRegistry linked to ScreenSystemSettings\n\n" +
                  "Next steps:\n" +
-                 "1. Add ScreenSystem prefab to your first scene\n" +
+                 "1. The ScreenSystem prefab loads automatically\n" +
                  "2. Create layer prefabs with required components:\n" +
                  (framework == "uGUI" ? "   - Canvas + GraphicRaycaster + RectTransform + LayerComponent\n" : "   - UIDocument + PanelSettings + LayerComponent\n") +
-                 "3. Create your first feature: Assets → Create → Screen System → Feature\n" +
+                 "3. Create your first feature: Assets > Screen System > New Screen Feature\n" +
                  "4. Set Framework in ScreenDefinition assets",
                  "OK");
 
@@ -69,17 +69,19 @@ namespace Tools.ScreenSystem.Editor
 
         private static void CreateFolderStructure()
         {
-            if (!Directory.Exists("Assets/Resources"))
-                AssetDatabase.CreateFolder("Assets", "Resources");
+            EnsureFolder("Assets", "Resources");
+            EnsureFolder("Assets/Resources", "Tools");
+            EnsureFolder("Assets/Resources/Tools", "Screen System");
+            EnsureFolder(RESOURCES_PATH, "Scriptables");
+            EnsureFolder(RESOURCES_PATH, "Prefabs");
+        }
 
-            if (!Directory.Exists(RESOURCES_PATH))
-                AssetDatabase.CreateFolder("Assets/Resources", "Screen System");
+        private static void EnsureFolder(string parent, string folderName)
+        {
+            string path = $"{parent}/{folderName}";
 
-            if (!Directory.Exists(SCRIPTABLES_PATH))
-                AssetDatabase.CreateFolder(RESOURCES_PATH, "Scriptables");
-
-            if (!Directory.Exists(PREFABS_PATH))
-                AssetDatabase.CreateFolder(RESOURCES_PATH, "Prefabs");
+            if (!AssetDatabase.IsValidFolder(path))
+                AssetDatabase.CreateFolder(parent, folderName);
         }
 
         private static void CreateOrMoveSettings()
