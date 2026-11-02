@@ -142,10 +142,7 @@ public class GameBoot : MonoBehaviour
                 await Task.Yield();
 
             await ScreenManager.Instance.WaitForInitializationAsync();
-            await ScreenManager.Instance.SetRoot("MainMenu", destroyCancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
+            await ScreenManager.Instance.SetRoot("ShopMain");
         }
         catch (Exception exception)
         {
@@ -155,18 +152,73 @@ public class GameBoot : MonoBehaviour
 }
 ```
 
-`async void` is used here because Unity's `Start()` can't return a `Task` to a caller. Keep the `try`/`catch`, because unhandled exceptions from `async void` are hard to trace.
+`async void` is used because `Start()` can't return a `Task` to a caller, so keep the `try`/`catch`.
 
-## Navigate between screens
+## Usage examples
+
+### Connect buttons to screens
+
+Hook these methods up to UI buttons. `Forget` runs the navigation without waiting for it and logs any exception.
+
+```csharp
+using ScreenSystem;
+using UnityEngine;
+
+public class ShopMainScreen : MonoBehaviour
+{
+    public void OpenDetail() => ScreenManager.Instance.GoTo("ShopDetail").Forget("Open detail");
+    public void OpenModal() => ScreenManager.Instance.GoTo("ShopModal").Forget("Open modal");
+    public void Back() => ScreenManager.Instance.GoBack().Forget("Back");
+}
+```
+
+`ShopModal` opens as a modal because its `ScreenDefinition` type is `modal`.
+
+### Check the result
+
+```csharp
+bool opened = await ScreenManager.Instance.GoTo("ShopDetail");
+
+if (!opened)
+    Debug.LogWarning("ShopDetail didn't open.");
+```
+
+### Change scenes
+
+This needs `using UnityEngine.SceneManagement;`.
+
+```csharp
+ScreenManager.Instance.PrepareForSceneChange();
+SceneManager.LoadScene("Frontend");
+```
+
+### Add editor shortcuts
+
+This needs `using UnityEngine.InputSystem;`.
+
+```csharp
+#if UNITY_EDITOR
+private void Update()
+{
+    if (Keyboard.current?.digit1Key.wasPressedThisFrame ?? false)
+        ScreenManager.Instance.GoTo("ShopMain").Forget("Open ShopMain");
+
+    if (Keyboard.current?.digit2Key.wasPressedThisFrame ?? false)
+        ScreenManager.Instance.GoTo("ShopDetail").Forget("Open ShopDetail");
+}
+#endif
+```
+
+## Navigation reference
 
 All navigation methods return `Task<bool>` and take an optional `CancellationToken`.
 
 ```csharp
 ScreenManager screens = ScreenManager.Instance;
 
-await screens.GoTo("Settings");
+await screens.GoTo("ShopDetail");
 await screens.GoBack();
-await screens.PopTo("MainMenu");
+await screens.PopTo("ShopMain");
 await screens.SetRoot("Lobby");
 ```
 
