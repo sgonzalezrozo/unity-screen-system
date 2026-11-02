@@ -1,6 +1,6 @@
 {
   "name": "com.sgonzalezrozo.screen-system",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "displayName": "Screen System",
   "description": "Declarative UI navigation for Unity with fullscreen, modal and alert layers.",
   "unity": "2022.3",
@@ -21,7 +21,7 @@
     "ui-toolkit"
   ],
   "dependencies": {
-    "com.sgonzalezrozo.core": "0.1.0",
+    "com.sgonzalezrozo.core": "0.2.0",
     "com.unity.ugui": "1.0.0",
     "com.unity.addressables": "1.21.21",
     "com.unity.inputsystem": "1.7.0"

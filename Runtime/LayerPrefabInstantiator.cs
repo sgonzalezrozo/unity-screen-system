@@ -1,4 +1,4 @@
-using Tools.Core;
+using ToolsCore;
 using UnityEngine;
 
 namespace Tools.ScreenSystem.Scripts
