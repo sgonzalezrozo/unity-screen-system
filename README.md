@@ -367,6 +367,8 @@ Four more events follow a screen's transitions:
 
 Screen System works without a container, using standard `Instantiate`. With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), its components are injected automatically. See [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) for using another container.
 
+The package exposes its internals to `Assembly-CSharp`, so Fast IoC `0.4.0` and later assign its `internal` fields (such as `injectedInstantiator`) directly, without reflection.
+
 ## How it works
 
 Screen System runs from one persistent `ScreenSystem` object, marked `DontDestroyOnLoad`.
