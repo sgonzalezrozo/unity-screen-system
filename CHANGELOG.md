@@ -2,7 +2,7 @@
 
 All notable changes to this package are documented in this file.
 
-## [Unreleased]
+## [0.3.0] - 2026-11-03
 
 ### Added
 
@@ -13,6 +13,10 @@ All notable changes to this package are documented in this file.
 
 - **Breaking:** `alert` screens now open as alerts. They used to behave like fullscreen screens.
 - The `OnTransition...` events and `OnStackCleared` are now raised.
+
+### Changed
+
+- Updated to Tools Core `0.3.0`, which removes `IMaskSource`.
 
 ### Documentation
 
