@@ -12,6 +12,7 @@ namespace ScreenSystem.Editor
         private SerializedProperty screenIdProp;
         private SerializedProperty screenTypeProp;
         private SerializedProperty persistOverScenesProp;
+        private SerializedProperty ignoreNavigationRulesProp;
 
         private void OnEnable()
         {
@@ -20,6 +21,7 @@ namespace ScreenSystem.Editor
             screenIdProp = serializedObject.FindProperty("ScreenId");
             screenTypeProp = serializedObject.FindProperty("screenType");
             persistOverScenesProp = serializedObject.FindProperty("PersistOverScenes");
+            ignoreNavigationRulesProp = serializedObject.FindProperty("IgnoreNavigationRules");
         }
 
         public override void OnInspectorGUI()
@@ -105,6 +107,9 @@ namespace ScreenSystem.Editor
 
             if (persistOverScenesProp is not null)
                 EditorGUILayout.PropertyField(persistOverScenesProp);
+
+            if (ignoreNavigationRulesProp is not null)
+                EditorGUILayout.PropertyField(ignoreNavigationRulesProp);
 
             EditorGUILayout.EndVertical();
 

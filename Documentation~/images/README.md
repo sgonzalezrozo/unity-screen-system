@@ -8,7 +8,7 @@ Keep GIFs to 10–15 seconds, about 800 px wide and under 5 MB. Use lowercase na
 
 | File | What to capture | README section |
 |---|---|---|
-| `demo.gif` | Navigation, a modal and a back action | Top of the README |
+| `demo.gif` | Navigation, a modal, a back action and an alert | Top of the README |
 | `feature-wizard.png` | The New Screen Feature wizard | Create your first screen |
 | `screen-definition.png` | A `ScreenDefinition` in the Inspector | Create your first screen |
 | `screen-manager-window.png` | The Screen Manager window | Editor tools |

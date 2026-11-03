@@ -3,10 +3,10 @@
 **Declarative UI navigation for Unity. Feature code asks for a screen, and the system handles the rest.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Unity 2022.3+](https://img.shields.io/badge/Unity-2022.3%2B-black?logo=unity)](#compatibility)
+[![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
 [![Version 0.2.0](https://img.shields.io/badge/version-0.2.0-blue.svg)](CHANGELOG.md)
 
-Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen and modal screens, and supports uGUI and UI Toolkit.
+Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen, modal and alert screens, and supports uGUI and UI Toolkit.
 
 <!-- Demo GIF: Documentation~/images/demo.gif -->
 
@@ -14,7 +14,7 @@ Screen System handles loading, layering and the back stack, so features don't ha
 
 Most projects I worked on had no formal layer controller. Their screens repeated other prefabs instead of reusing them, even with nested and variant prefabs.
 
-My first time using one was on FIFA Rivals, with a custom layer system provided by Mythical. That experience, and remembering how apps like Photoshop handle layers, made me want my own tool: a more robust system that covers all my use cases without time-based loops or other detection routines that hurt the game's performance.
+My first time using one was on a recent project, with a custom layer system. That experience, and remembering how apps like Photoshop handle layers, made me want my own tool: a more robust system that covers all my use cases without time-based loops or other detection routines that hurt the game's performance.
 
 I built it for uGUI. With the canvas set to overlay, it also works with uGUI and UI Toolkit at the same time.
 
@@ -35,7 +35,7 @@ I built it for uGUI. With the canvas set to overlay, it also works with uGUI and
 ## Features
 
 - `GoTo`, `GoBack`, `SetRoot` and `PopTo` navigation
-- Fullscreen and modal screen types
+- Fullscreen, modal and alert screen types
 - Automatic layer ordering, including layers shared between screens
 - Screens kept loaded and reused until their scene ends
 - Optional screens that persist across scene changes
@@ -43,7 +43,7 @@ I built it for uGUI. With the canvas set to overlay, it also works with uGUI and
 - uGUI and UI Toolkit screen frameworks
 - Screens loaded from Resources or Addressables
 - Back handling with Escape through the Input System
-- Navigation events
+- Navigation and transition events
 - Optional background blur and glass effects
 - Feature scaffolding, a registry and a Screen Manager window
 
@@ -51,7 +51,7 @@ I built it for uGUI. With the canvas set to overlay, it also works with uGUI and
 
 | Requirement | Supported |
 |---|---|
-| Unity | 2022.3 or newer. This is the declared minimum. Tested versions aren't published yet. |
+| Unity | Tested on Unity 6 (`6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
 | Scripting backend | Not verified yet |
 | Platforms | Not verified yet |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
@@ -241,9 +241,32 @@ Turn on **Persist Over Scenes** on the `ScreenDefinition`. This suits screens su
 
 When a scene loads in single mode, a persistent screen stays loaded and its canvas is turned back on, but the navigation history is cleared.
 
+### Show an alert
+
+Set the `ScreenDefinition` type to `alert`, then open it with `GoTo`:
+
+```csharp
+await ScreenManager.Instance.GoTo("ConnectionLost");
+
+// From the alert's button:
+await ScreenManager.Instance.DismissAlert();
+```
+
+- An alert opens over everything, including modals, and isn't added to the navigation stack.
+- While it's open, `GoTo`, `GoBack`, `PopTo` and `SetRoot` fail, and the Escape key does nothing. Call `DismissAlert()` to close it.
+- Use `IsAlertActive` to check whether one is open.
+- A single scene load closes the alert.
+
+### Show a screen over a modal or alert
+
+Turn on **Ignore Navigation Rules** on the `ScreenDefinition`. This suits splash screens and critical errors:
+
+- A fullscreen screen opens on top and leaves the modal or alert open underneath. `GoBack()` closes that screen first.
+- A modal screen replaces the open modal.
+
 ### Animate a screen
 
-There's no transition API. To animate a screen's entrance, start the animation from `OnScreenShown()`, as in the [UI Tweens example](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example).
+To animate a screen's entrance, start the animation from `OnScreenShown()`, as in the [UI Tweens example](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example). To run code around a transition, use the [transition events](#events).
 
 Screens hide instantly, so exit animations aren't supported yet.
 
@@ -266,7 +289,7 @@ public class ShopMainScreen : MonoBehaviour, IScreenShow
 }
 ```
 
-Bind `IInventoryService` in an installer, then run **Tools > FastIoC > Regenerate Code**.
+Bind `IInventoryService` in an installer. Fast IoC regenerates after your scripts compile.
 
 ### Add editor shortcuts
 
@@ -306,22 +329,21 @@ await screens.SetRoot("Lobby");
 | `SetRoot(screen)` | Replace the root screen |
 | `CanGoBack` | Check whether there's a screen to return to |
 | `GetCurrentScreen()` | Get the current screen ID |
+| `DismissAlert()` | Close the open alert |
+| `IsAlertActive` | Check whether an alert is open |
 
-Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID is a generated GUID that survives renames. Names are the simpler choice, but they must be unique, because the first match wins.
+Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID survives renames, and the wizard creates it from the feature and screen names, such as `Shop_ShopMain`. Names are the simpler choice, but they must be unique, because the first match wins.
 
 ## Navigation behavior
 
 - **During a transition:** another navigation call is ignored and returns `false`.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
-- **Active modal:** `GoTo` for a new screen fails until the modal closes.
+- **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
+- **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
 - **Back at the root:** `GoBack()` starts the [quit flow](#handle-back-at-the-root).
 - **Escape key:** runs back navigation through the Input System.
 - **Scene changes:** cleanup runs automatically when a scene loads in single mode. Additive loads don't change your screens. Screens with **Persist Over Scenes** stay available.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
-
-### Alerts
-
-The `alert` screen type isn't functional yet. `GoTo` treats an `alert` screen like a fullscreen one and adds it to the navigation stack, and nothing dismisses it automatically. Use a `modal` screen for alerts for now.
 
 ## Events
 
@@ -330,9 +352,16 @@ NavigationEvents.OnNavigationCompleted += screenId => Debug.Log($"Opened {screen
 NavigationEvents.OnNavigationFailed += (screenId, reason) => Debug.LogWarning($"{screenId}: {reason}");
 ```
 
-`NavigationEvents` also has `OnNavigationStarted`, `OnScreenPushed`, `OnScreenPopped`, `OnBackAtRoot` and `OnQuitApplicationRequested`. These events are static, so unsubscribe when your object is destroyed.
+`NavigationEvents` also has `OnNavigationStarted`, `OnScreenPushed`, `OnScreenPopped`, `OnStackCleared`, `OnBackAtRoot` and `OnQuitApplicationRequested`. These events are static, so unsubscribe when your object is destroyed.
 
-The `OnTransition...` events and `OnStackCleared` exist, but nothing raises them yet.
+Four more events follow a screen's transitions:
+
+| Event | Raised when |
+|---|---|
+| `OnTransitionInStarted` | A screen starts showing, before its layers load |
+| `OnTransitionInCompleted` | Its layers and content are loaded and visible |
+| `OnTransitionOutStarted` | A screen starts hiding |
+| `OnTransitionOutCompleted` | Its layers are hidden |
 
 ## Dependency injection
 
@@ -432,9 +461,9 @@ Layers are cached by name, so two screens that list the same name share one inst
 | `TryResolveScreenId FAILED` or `screen not found` | Run **Rebuild Registry Cache** and check the screen name or ID |
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is EMPTY` | Set the screen's asset path on its `ScreenDefinition` |
-| `GoTo` does nothing | Check whether a transition or modal is blocking it |
+| `GoTo` does nothing | Check whether a transition, modal or alert is blocking it |
 | Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root) |
-| An `alert` screen won't close | Use a `modal` screen instead. See [Alerts](#alerts). |
+| An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
 | `ScreenManager.Instance` is `null` | Wait for it as shown in [Open the first screen](#open-the-first-screen) |
 
 ## Limitations
@@ -443,7 +472,7 @@ Layers are cached by name, so two screens that list the same name share one inst
 - Modals can't return a result through `GoTo`.
 - Screens are requested by string, so typos are only caught at runtime.
 - Calls made during a transition are ignored, not queued.
-- The `alert` screen type isn't functional yet.
+- Only one alert can be open at a time.
 - Screens hide instantly, so there are no exit animations.
 - Only one modal can be open at a time.
 

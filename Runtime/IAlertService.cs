@@ -12,6 +12,7 @@ namespace ScreenSystem
 
         Task ShowAlertAsync(string alertId, CancellationToken ct = default);
         Task DismissAlertAsync(CancellationToken ct = default);
+        void Clear();
     }
 }
 

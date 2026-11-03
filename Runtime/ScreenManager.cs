@@ -203,6 +203,17 @@ namespace ScreenSystem
             return await navigationService.SetRootAsync(resolvedId, ct);
         }
 
+        /// <summary>Closes the open alert. Returns false if there's none, or during a transition.</summary>
+        public async Task<bool> DismissAlert(CancellationToken ct = default)
+        {
+            EnsureInitialized();
+            return await navigationService.DismissAlertAsync(ct);
+        }
+
+        /// <summary>True while an alert is open. Navigation is blocked until it's dismissed.</summary>
+        public bool IsAlertActive
+            => navigationService?.IsAlertActive ?? false;
+
         /// <summary>True when there is a screen or modal to go back from.</summary>
         public bool CanGoBack
             => navigationService?.CanGoBack ?? false;
