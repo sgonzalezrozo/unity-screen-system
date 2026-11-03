@@ -16,6 +16,8 @@ namespace ScreenSystem
             if (layers == null)
                 return;
 
+            NavigationEvents.NotifyTransitionOutStarted(screenId);
+
             foreach (LayerComponent layer in layers)
             {
                 if (layer == null)
@@ -70,6 +72,8 @@ namespace ScreenSystem
                     layer.Hide();
                 }
             }
+
+            NavigationEvents.NotifyTransitionOutCompleted(screenId);
         }
 
         public void DisableRaycasters(List<LayerComponent> layers)

@@ -21,7 +21,7 @@ namespace ScreenSystem
         {
             this.screenRegistry = screenRegistry;
             navigationStack = new ScreenNavigationStack();
-            navigator = new ScreenNavigator(screenRegistry, displayService, navigationStack);
+            navigator = new ScreenNavigator(screenRegistry, displayService, navigationStack, new AlertManager());
             modalNavigator = new ScreenModalNavigator(displayService, navigationStack, screenRegistry);
             visibilityController = new ScreenVisibilityController(displayService);
         }
@@ -67,6 +67,17 @@ namespace ScreenSystem
         public string GetRootScreen()
             => navigationStack.GetRootScreen();
 
+        public bool IsAlertActive
+            => navigator.IsAlertActive;
+
+        public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
+        {
+            return await WithNavigationGuardAsync(async () =>
+            {
+                return await navigator.DismissAlertAsync(ct);
+            });
+        }
+
         public async Task HideAllScreensAsync(CancellationToken ct = default)
         {
             await visibilityController.HideAllScreensAsync(ct);
@@ -105,6 +116,8 @@ namespace ScreenSystem
         {
             navigationStack.ClearAllModals();
             navigationStack.ClearNonPersistentMainScreens(screenRegistry);
+            navigator.ClearAlert();
+            NavigationEvents.NotifyStackCleared();
         }
 
         private async Task WithNavigationGuardAsync(Func<Task> operation)

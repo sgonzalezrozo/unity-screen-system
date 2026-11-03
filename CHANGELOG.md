@@ -2,6 +2,26 @@
 
 All notable changes to this package are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `ScreenManager.DismissAlert()` and `ScreenManager.IsAlertActive`.
+- **Ignore Navigation Rules** on `ScreenDefinition`.
+
+### Fixed
+
+- **Breaking:** `alert` screens now open as alerts. They used to behave like fullscreen screens.
+- The `OnTransition...` events and `OnStackCleared` are now raised.
+
+### Documentation
+
+- Corrected the documentation for back at the root.
+- Added recipes for modals, the quit flow, persistent screens, animation and injection.
+- Added prefab requirements, screen lifetime and draw order diagrams, and shared layer behavior.
+- Added contributing, security and issue template files, and a Quick Start sample.
+- Added XML documentation to `ScreenManager`.
+
 ## [0.2.0] - Unreleased
 
 ### Changed

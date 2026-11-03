@@ -16,6 +16,9 @@ namespace ScreenSystem
         private readonly ScreenNavigationStack navigationStack;
         private readonly IAlertService? alertService;
 
+        // A screen with Ignore Navigation Rules that opened over a modal or alert.
+        private string? screenShownOverOverlay;
+
         public ScreenNavigator(ScreenRegistry screenRegistry, IScreenDisplay displayService, ScreenNavigationStack navigationStack, IAlertService? alertService = null)
         {
             this.screenRegistry = screenRegistry;
@@ -32,13 +35,6 @@ namespace ScreenSystem
                 return false;
             }
 
-            if (alertService != null && alertService.IsAlertActive)
-            {
-                Debug.LogWarning($"[ScreenNav] GoToAsync blocked: alert '{alertService.CurrentAlertId}' is active. Dismiss alert first.");
-                NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
-                return false;
-            }
-
             ScreenDefinition screen = screenRegistry.GetScreen(screenId);
 
             if (screen == null)
@@ -48,9 +44,21 @@ namespace ScreenSystem
                 return false;
             }
 
+            bool ignoreRules = screen.IgnoreNavigationRules;
+
+            if (alertService != null && alertService.IsAlertActive && !ignoreRules)
+            {
+                Debug.LogWarning($"[ScreenNav] GoToAsync blocked: alert '{alertService.CurrentAlertId}' is active. Dismiss alert first.");
+                NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
+                return false;
+            }
+
+            if (screen.screenType == ScreenType.alert)
+                return await ShowAlertScreenAsync(screenId, ct);
+
             bool isAlreadyShown = navigationStack.MainHistoryContains(screenId);
 
-            if (navigationStack.HasModal && !isAlreadyShown)
+            if (navigationStack.HasModal && !isAlreadyShown && !ignoreRules)
             {
                 Debug.LogWarning($"[ScreenNav] GoToAsync blocked: modal '{navigationStack.GetCurrentModal()}' is active and target screen is new. Dismiss modal first.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Modal active - cannot navigate to new screen");
@@ -62,12 +70,35 @@ namespace ScreenSystem
                 return await GoToWithModalDismissal(screenId, ct);
             }
 
+            bool opensOverOverlay = ignoreRules && (navigationStack.HasModal || (alertService?.IsAlertActive ?? false));
+
+            if (opensOverOverlay && screen.screenType == ScreenType.modal)
+                await ClearAllModalsAsync(ct);
+
             bool shouldShowScreen = await TryPushToNavigationStackAsync(screenId, screen, ct);
 
             if (!shouldShowScreen)
                 return false;
 
-            await ShowScreenAndNotifyAsync(screenId, ct);
+            if (opensOverOverlay && screen.screenType == ScreenType.fullscreen)
+                screenShownOverOverlay = screenId;
+
+            await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: !opensOverOverlay);
+            return true;
+        }
+
+        private async Task<bool> ShowAlertScreenAsync(string screenId, CancellationToken ct)
+        {
+            if (alertService == null)
+            {
+                Debug.LogError("[ScreenNav] AlertService not available");
+                return false;
+            }
+
+            navigationStack.ShowAlertScreen(screenId);
+            _ = alertService.ShowAlertAsync(screenId);
+
+            await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: false);
             return true;
         }
 
@@ -171,7 +202,7 @@ namespace ScreenSystem
             return true;
         }
 
-        private async Task ShowScreenAndNotifyAsync(string screenId, CancellationToken ct)
+        private async Task ShowScreenAndNotifyAsync(string screenId, CancellationToken ct, bool autoHideParents = true)
         {
             try
             {
@@ -179,7 +210,7 @@ namespace ScreenSystem
 
                 NavigationEvents.NotifyNavigationStarted(screenId);
 
-                await displayService.ShowScreen(screenId, true, ct);
+                await displayService.ShowScreen(screenId, autoHideParents, ct);
                 await HideSplashIfActiveAsync(screenId, ct);
 
                 NavigationEvents.NotifyScreenPushed(screenId);
@@ -201,6 +232,12 @@ namespace ScreenSystem
         {
             try
             {
+                if (IsCurrentScreenOverOverlay())
+                {
+                    await GoBackFromScreenOverOverlayAsync(ct);
+                    return true;
+                }
+
                 if (alertService != null && alertService.IsAlertActive)
                 {
                     Debug.LogWarning($"[ScreenNav] GoBackAsync blocked: alert '{alertService.CurrentAlertId}' is active");
@@ -270,6 +307,7 @@ namespace ScreenSystem
                 string previousRoot = navigationStack.GetRootScreen();
 
                 navigationStack.SetRootScreen(screenId);
+                NavigationEvents.NotifyStackCleared();
 
                 if (!string.IsNullOrEmpty(previousRoot) && displayService.IsScreenInstantiated(previousRoot))
                 {
@@ -294,6 +332,24 @@ namespace ScreenSystem
                 NavigationEvents.NotifyNavigationFailed(screenId, ex.Message);
                 return false;
             }
+        }
+
+        private bool IsCurrentScreenOverOverlay()
+        {
+            bool hasOverlay = navigationStack.HasModal || (alertService?.IsAlertActive ?? false);
+            return hasOverlay
+                   && !string.IsNullOrEmpty(screenShownOverOverlay)
+                   && navigationStack.GetCurrentScreen() == screenShownOverOverlay;
+        }
+
+        // Closes only the screen on top, so the modal or alert underneath stays open.
+        private async Task GoBackFromScreenOverOverlayAsync(CancellationToken ct)
+        {
+            string leavingId = navigationStack.PopMainScreen();
+            screenShownOverOverlay = null;
+
+            await displayService.HideScreen(leavingId, null, ct);
+            NavigationEvents.NotifyScreenPopped(leavingId);
         }
 
         private async Task TryGoBackFromModalAsync(CancellationToken ct)
@@ -474,32 +530,22 @@ namespace ScreenSystem
             return false;
         }
 
-        public async Task ShowAlertAsync(string alertId, CancellationToken ct = default)
+        public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
         {
-            if (alertService == null)
-            {
-                Debug.LogError("[ScreenNav] AlertService not available");
-                return;
-            }
+            string alertId = navigationStack.DismissAlertScreen();
 
             if (string.IsNullOrEmpty(alertId))
-            {
-                Debug.LogError("[ScreenNav] ShowAlert failed: alertId is null or empty");
-                return;
-            }
+                return false;
 
-            await alertService.ShowAlertAsync(alertId, ct);
+            alertService?.Clear();
+            await displayService.HideScreen(alertId, null, ct);
+            return true;
         }
 
-        public async Task DismissAlertAsync(CancellationToken ct = default)
+        public void ClearAlert()
         {
-            if (alertService == null)
-            {
-                Debug.LogError("[ScreenNav] AlertService not available");
-                return;
-            }
-
-            await alertService.DismissAlertAsync(ct);
+            navigationStack.ClearAlert();
+            alertService?.Clear();
         }
 
         public bool IsAlertActive
