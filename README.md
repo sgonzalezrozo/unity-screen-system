@@ -3,18 +3,20 @@
 **Declarative UI navigation for Unity. Feature code asks for a screen, and the system handles the rest.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
+[![Version 0.2.0](https://img.shields.io/badge/version-0.2.0-blue.svg)](CHANGELOG.md)
 
-Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen, modal and alert layers, and supports uGUI and UI Toolkit screens.
+Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen, modal and alert screens, and supports uGUI and UI Toolkit.
 
-> **TODO:** Add a GIF showing navigation, a modal, a back action and an alert.
+<!-- Demo GIF: Documentation~/images/demo.gif -->
 
 ## Why I built it
 
-Navigation code tends to spread. As a project grows, each feature ends up knowing too much about what is open, what loads next and what the back button should do.
+Most projects I worked on had no formal layer controller. Their screens repeated other prefabs instead of reusing them, even with nested and variant prefabs.
 
-Having led meta-game and live-ops client work on large mobile UI, I wanted features to make one simple request and leave loading, layering and history to one system.
+My first time using one was on a recent project, with a custom layer system. That experience, and remembering how apps like Photoshop handle layers, made me want my own tool: a more robust system that covers all my use cases without time-based loops or other detection routines that hurt the game's performance.
 
-> **TODO:** Replace this with your own story: the project or navigation problem that led you to build Screen System.
+I built it for uGUI. With the canvas set to overlay, it also works with uGUI and UI Toolkit at the same time.
 
 ## Is it right for your project?
 
@@ -49,11 +51,11 @@ Having led meta-game and live-ops client work on large mobile UI, I wanted featu
 
 | Requirement | Supported |
 |---|---|
-| Unity | 2022.3 or newer. **TODO:** add tested versions. |
-| Scripting backend | **TODO:** confirm Mono and IL2CPP |
-| Platforms | **TODO:** list tested platforms |
-| UI frameworks | uGUI, UI Toolkit |
-| Enter Play Mode with domain reload disabled | **TODO:** confirm support |
+| Unity | Tested on Unity 6 (`6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
+| Scripting backend | Not verified yet |
+| Platforms | Not verified yet |
+| UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
+| Enter Play Mode with domain reload disabled | Not verified yet. The package has no static reset for this mode, so keep domain reload on until you've tested it. |
 | Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System |
 
 ## Installation
@@ -103,7 +105,20 @@ The prefab is created automatically before the first scene loads, so you don't n
 4. On the `ScreenDefinition`, check its screen type and framework. Its name, ID and asset path are filled in from the prefab.
 5. Run **Tools > Screen System > Rebuild Registry Cache**.
 
-To react when a screen opens or closes, add a component like this to its prefab:
+### What's on a screen prefab
+
+The wizard adds these for you. If you build a prefab by hand, add them yourself:
+
+| Framework | Required on the prefab root |
+|---|---|
+| uGUI | `Canvas`, `GraphicRaycaster`, `CanvasGroup`, a stretched `RectTransform` and `LayerDefinition` |
+| UI Toolkit | `UIDocument` and `LayerDefinition` |
+
+`LayerComponent` is added when the screen loads, if the prefab doesn't have it. For UI Toolkit, also assign your UXML and the `GlobalPanelSettings` asset that Setup creates in `Assets/Resources/Tools/Screen System/Prefabs/`.
+
+### React to a screen opening or closing
+
+Add a component like this to the prefab:
 
 ```csharp
 using ScreenSystem;
@@ -188,13 +203,93 @@ if (!opened)
 
 ### Change scenes
 
-Load scenes as usual. Screen System cleans up automatically when a new scene loads in single mode.
+Load scenes as usual. Screen System cleans up automatically when a new scene loads in single mode, so you don't need to call anything first.
 
 ```csharp
-SceneManager.LoadScene("Frontend");
+SceneManager.LoadScene("MainMenu");
 ```
 
 This needs `using UnityEngine.SceneManagement;`.
+
+### Open a modal
+
+Set the `ScreenDefinition` type to `modal`, then use the same navigation calls:
+
+```csharp
+await ScreenManager.Instance.GoTo("ShopModal");
+await ScreenManager.Instance.GoBack(); // Closes the modal.
+```
+
+- Only one modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes.
+- Calling `GoTo` for a screen already in the stack closes the modal and returns to that screen.
+
+### Handle back at the root
+
+`GoBack()` and the Escape key close an open modal first, then step back through the stack. At the root, Screen System opens a modal called `QuitConfirmation`. If that screen doesn't exist, the app quits straight away, and Play Mode stops in the Editor.
+
+To confirm before quitting, create a modal screen named `QuitConfirmation`. You can change that name with **Quit Confirmation Modal Id** on the `ScreenManager`.
+
+To react to the app quitting:
+
+```csharp
+NavigationEvents.OnQuitApplicationRequested += SaveGame;
+```
+
+### Keep a screen across scenes
+
+Turn on **Persist Over Scenes** on the `ScreenDefinition`. This suits screens such as a loading overlay.
+
+When a scene loads in single mode, a persistent screen stays loaded and its canvas is turned back on, but the navigation history is cleared.
+
+### Show an alert
+
+Set the `ScreenDefinition` type to `alert`, then open it with `GoTo`:
+
+```csharp
+await ScreenManager.Instance.GoTo("ConnectionLost");
+
+// From the alert's button:
+await ScreenManager.Instance.DismissAlert();
+```
+
+- An alert opens over everything, including modals, and isn't added to the navigation stack.
+- While it's open, `GoTo`, `GoBack`, `PopTo` and `SetRoot` fail, and the Escape key does nothing. Call `DismissAlert()` to close it.
+- Use `IsAlertActive` to check whether one is open.
+- A single scene load closes the alert.
+
+### Show a screen over a modal or alert
+
+Turn on **Ignore Navigation Rules** on the `ScreenDefinition`. This suits splash screens and critical errors:
+
+- A fullscreen screen opens on top and leaves the modal or alert open underneath. `GoBack()` closes that screen first.
+- A modal screen replaces the open modal.
+
+### Animate a screen
+
+To animate a screen's entrance, start the animation from `OnScreenShown()`, as in the [UI Tweens example](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example). To run code around a transition, use the [transition events](#events).
+
+Screens hide instantly, so exit animations aren't supported yet.
+
+### Inject services into a screen
+
+With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), add `internal` fields to any MonoBehaviour on the prefab or its children:
+
+```csharp
+using ScreenSystem;
+using UnityEngine;
+
+public class ShopMainScreen : MonoBehaviour, IScreenShow
+{
+    internal IInventoryService inventory;
+
+    public void OnScreenShown()
+    {
+        Debug.Log($"Items: {inventory.ItemCount}");
+    }
+}
+```
+
+Bind `IInventoryService` in an installer. Fast IoC regenerates after your scripts compile.
 
 ### Add editor shortcuts
 
@@ -228,26 +323,27 @@ await screens.SetRoot("Lobby");
 
 | Operation | Purpose |
 |---|---|
-| `GoTo(screenId)` | Open a screen |
+| `GoTo(screen)` | Open a screen |
 | `GoBack()` | Return to the previous screen |
-| `PopTo(screenId)` | Return to a screen already in the stack |
-| `SetRoot(screenId)` | Replace the root screen |
+| `PopTo(screen)` | Return to a screen already in the stack |
+| `SetRoot(screen)` | Replace the root screen |
 | `CanGoBack` | Check whether there's a screen to return to |
 | `GetCurrentScreen()` | Get the current screen ID |
+| `DismissAlert()` | Close the open alert |
+| `IsAlertActive` | Check whether an alert is open |
+
+Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID survives renames, and the wizard creates it from the feature and screen names, such as `Shop_ShopMain`. Names are the simpler choice, but they must be unique, because the first match wins.
 
 ## Navigation behavior
 
 - **During a transition:** another navigation call is ignored and returns `false`.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
-- **Active alert or modal:** `GoTo` is blocked until it's dismissed. Screens with **Ignore Navigation Rules** can show over modals.
-- **Back at the root:** `GoBack()` starts the quit flow, which can call `Application.Quit()`.
+- **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
+- **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
+- **Back at the root:** `GoBack()` starts the [quit flow](#handle-back-at-the-root).
 - **Escape key:** runs back navigation through the Input System.
 - **Scene changes:** cleanup runs automatically when a scene loads in single mode. Additive loads don't change your screens. Screens with **Persist Over Scenes** stay available.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
-
-To open a modal, set its `ScreenDefinition` type to `modal` and call `GoTo` with its ID.
-
-> **TODO:** Add examples for showing an alert and customizing transitions.
 
 ## Events
 
@@ -256,7 +352,16 @@ NavigationEvents.OnNavigationCompleted += screenId => Debug.Log($"Opened {screen
 NavigationEvents.OnNavigationFailed += (screenId, reason) => Debug.LogWarning($"{screenId}: {reason}");
 ```
 
-`NavigationEvents` also has `OnNavigationStarted`, `OnTransitionInStarted`, `OnTransitionInCompleted`, `OnTransitionOutStarted` and `OnTransitionOutCompleted`. These events are static, so unsubscribe when your object is destroyed.
+`NavigationEvents` also has `OnNavigationStarted`, `OnScreenPushed`, `OnScreenPopped`, `OnStackCleared`, `OnBackAtRoot` and `OnQuitApplicationRequested`. These events are static, so unsubscribe when your object is destroyed.
+
+Four more events follow a screen's transitions:
+
+| Event | Raised when |
+|---|---|
+| `OnTransitionInStarted` | A screen starts showing, before its layers load |
+| `OnTransitionInCompleted` | Its layers and content are loaded and visible |
+| `OnTransitionOutStarted` | A screen starts hiding |
+| `OnTransitionOutCompleted` | Its layers are hidden |
 
 ## Dependency injection
 
@@ -270,9 +375,53 @@ Screen System runs from one persistent `ScreenSystem` object, marked `DontDestro
 - **Showing and hiding:** hidden screens stay loaded, but their `Canvas` or `UIDocument` is disabled. Reopening one reuses the same objects.
 - **Layers:** each screen is made of one or more layers, and each layer has its own `Canvas` or `UIDocument`. Layers can be shared between screens.
 - **Draw order:** the system sets each layer's sort order from its position in the navigation stack and its `LayerDefinition`, so you don't set sort orders by hand.
-- **Scene changes:** screens without **Persist Over Scenes** are destroyed, their cached resources are released, and unused assets are unloaded. Persistent screens are hidden and kept.
+- **Scene changes:** screens without **Persist Over Scenes** are destroyed, their cached resources are released, and unused assets are unloaded. Persistent screens are kept.
 
 Each `ScreenDefinition` in the registry stores the settings that control this, so features don't manage these lifetimes themselves.
+
+### A screen's lifetime
+
+```mermaid
+stateDiagram-v2
+    [*] --> Loading: First GoTo or SetRoot
+    Loading --> Visible: Layers created and shown
+    Visible --> Cached: Navigate away
+    Cached --> Visible: Navigate back
+    Visible --> Unloaded: Single scene load
+    Cached --> Unloaded: Single scene load
+    Unloaded --> [*]
+```
+
+Screens with **Persist Over Scenes** skip the `Unloaded` state.
+
+### Layers and draw order
+
+A screen's prefab is its main layer. To add more, list them in its `LayerDefinition`. The `SCREEN` entry marks the main layer: entries above it draw behind the screen, and entries below it draw in front.
+
+```mermaid
+flowchart TB
+    subgraph S2["Second screen: base order 30"]
+        direction TB
+        S2F["In front of the screen: 32"] --> S2M["SCREEN: 30"] --> S2B["Behind the screen: 28"]
+    end
+    subgraph S1["First screen: base order 10"]
+        direction TB
+        S1F["In front of the screen: 12"] --> S1M["SCREEN: 10"] --> S1B["Behind the screen: 8"]
+    end
+    S2 --> S1
+```
+
+Higher numbers draw on top, so the diagram reads from front to back. Each screen's base order is `10 + 20 × its depth`, and each step away from `SCREEN` adds or subtracts `2`.
+
+Extra layers are found by name, in Resources first and then Addressables.
+
+### Shared layers
+
+Layers are cached by name, so two screens that list the same name share one instance. A shared layer:
+
+- Uses the draw order of the topmost screen that's using it
+- Stays visible when you navigate between two screens that use it
+- Keeps its content, rather than loading a copy for each screen
 
 ## Core concepts
 
@@ -313,6 +462,8 @@ Each `ScreenDefinition` in the registry stores the settings that control this, s
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is EMPTY` | Set the screen's asset path on its `ScreenDefinition` |
 | `GoTo` does nothing | Check whether a transition, modal or alert is blocking it |
+| Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root) |
+| An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
 | `ScreenManager.Instance` is `null` | Wait for it as shown in [Open the first screen](#open-the-first-screen) |
 
 ## Limitations
@@ -321,16 +472,21 @@ Each `ScreenDefinition` in the registry stores the settings that control this, s
 - Modals can't return a result through `GoTo`.
 - Screens are requested by string, so typos are only caught at runtime.
 - Calls made during a transition are ignored, not queued.
+- Only one alert can be open at a time.
+- Screens hide instantly, so there are no exit animations.
+- Only one modal can be open at a time.
 
 ## Project status
 
 This is a pre-release package at version `0.2.0`. Its API and behavior may change before `1.0.0`.
 
-> **TODO:** Add a roadmap link and breaking-change policy.
+Until `1.0.0`, minor versions (`0.x.0`) can include breaking changes, and patch versions (`0.x.y`) don't. Breaking changes are marked **Breaking** in the [changelog](CHANGELOG.md).
+
+There's no public roadmap yet. Known gaps are listed under [Limitations](#limitations), and planned work is tracked in [issues](https://github.com/sgonzalezrozo/unity-screen-system/issues).
 
 ## Contributing
 
-Bug reports and pull requests are welcome. Please open an issue before starting a large change.
+Bug reports and pull requests are welcome. Please open an issue before starting a large change. See the [contributing guide](.github/CONTRIBUTING.md) and [security policy](.github/SECURITY.md).
 
 ## Related packages
 

@@ -16,37 +16,36 @@ namespace ScreenSystem
         public string? CurrentAlertId
             => currentAlertId;
 
-        public async Task ShowAlertAsync(string alertId, CancellationToken ct = default)
+        public Task ShowAlertAsync(string alertId, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(alertId))
-                return;
+                return Task.CompletedTask;
 
             currentAlertId = alertId;
-            dismissalSource = new TaskCompletionSource<bool>();
+            dismissalSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            try
-            {
-                using (ct.Register(() => dismissalSource?.TrySetCanceled()))
-                {
-                    if (dismissalSource != null)
-                        await dismissalSource.Task;
-                }
-            }
-            finally
-            {
-                currentAlertId = null!;
-                dismissalSource = null!;
-            }
+            if (ct.CanBeCanceled)
+                ct.Register(Clear);
+
+            return dismissalSource.Task;
         }
 
-        public async Task DismissAlertAsync(CancellationToken ct = default)
+        public Task DismissAlertAsync(CancellationToken ct = default)
         {
-            if (!IsAlertActive || dismissalSource == null)
-                return;
+            Clear();
+            return Task.CompletedTask;
+        }
 
-            dismissalSource.TrySetResult(true);
-            await Task.CompletedTask;
+        // State is cleared here and not after the awaited task, which Unity resumes on a later
+        // frame. Navigation must work straight after an alert is dismissed.
+        public void Clear()
+        {
+            TaskCompletionSource<bool>? source = dismissalSource;
+
+            currentAlertId = null;
+            dismissalSource = null;
+
+            source?.TrySetResult(true);
         }
     }
 }
-

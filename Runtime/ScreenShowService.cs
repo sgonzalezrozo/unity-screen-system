@@ -57,6 +57,8 @@ namespace ScreenSystem
 
                 ct.ThrowIfCancellationRequested();
 
+                NavigationEvents.NotifyTransitionInStarted(screenId);
+
                 string logId = GetReadableScreenId(screen);
 
                 layerRetriever.RegisterActiveScreen(screenId);
@@ -94,6 +96,7 @@ namespace ScreenSystem
                 RecordMetrics(screenId, screen, layers);
                 await blurHandler.ApplyBlurAsync(screenId, screen, ct);
 
+                NavigationEvents.NotifyTransitionInCompleted(screenId);
             }
             catch (OperationCanceledException)
             {

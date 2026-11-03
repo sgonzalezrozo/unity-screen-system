@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace ScreenSystem
 {
+    /// <summary>The entry point for screen navigation.</summary>
     [RequireComponent(typeof(ScreenSystemBootstrap))]
     public class ScreenManager : MonoBehaviour, IScreenNavigationService
     {
@@ -28,12 +29,15 @@ namespace ScreenSystem
         private TaskCompletionSource<bool> initializationCompletionSource = new();
         private CancellationTokenSource initializationCts;
 
+        /// <summary>The active manager. It is null until Start() has run, so wait for it before navigating.</summary>
         public static ScreenManager Instance
             => instance;
 
+        /// <summary>True once the manager is ready to navigate.</summary>
         public bool IsInitialized
             => isInitialized;
 
+        /// <summary>Waits until the manager is ready to navigate.</summary>
         public Task<bool> WaitForInitializationAsync()
             => initializationCompletionSource.Task;
 
@@ -149,6 +153,7 @@ namespace ScreenSystem
                 throw new InvalidOperationException("[ScreenManager] navigationService is null - initialization incomplete");
         }
 
+        /// <summary>Opens a screen by name or ID. Returns false if the call is ignored or blocked.</summary>
         public async Task<bool> GoTo(string screenId, CancellationToken ct = default)
         {
             if (!idResolver.TryResolveScreenId(screenId, nameof(GoTo), out string resolvedId))
@@ -163,6 +168,7 @@ namespace ScreenSystem
             return result;
         }
 
+        /// <summary>Closes the open modal or returns to the previous screen. At the root, starts the quit flow.</summary>
         public async Task<bool> GoBack(CancellationToken ct = default)
         {
             EnsureInitialized();
@@ -174,6 +180,7 @@ namespace ScreenSystem
             return result;
         }
 
+        /// <summary>Returns to a screen that is already in the stack.</summary>
         public async Task<bool> PopTo(string screenId, CancellationToken ct = default)
         {
             if (!idResolver.TryResolveScreenId(screenId, nameof(PopTo), out string resolvedId))
@@ -183,6 +190,7 @@ namespace ScreenSystem
             return await navigationService.PopToAsync(resolvedId, ct);
         }
 
+        /// <summary>Replaces the root screen.</summary>
         public async Task<bool> SetRoot(string screenId, CancellationToken ct = default)
         {
             if (!idResolver.TryResolveScreenId(screenId, nameof(SetRoot), out string resolvedId))
@@ -195,23 +203,40 @@ namespace ScreenSystem
             return await navigationService.SetRootAsync(resolvedId, ct);
         }
 
+        /// <summary>Closes the open alert. Returns false if there's none, or during a transition.</summary>
+        public async Task<bool> DismissAlert(CancellationToken ct = default)
+        {
+            EnsureInitialized();
+            return await navigationService.DismissAlertAsync(ct);
+        }
+
+        /// <summary>True while an alert is open. Navigation is blocked until it's dismissed.</summary>
+        public bool IsAlertActive
+            => navigationService?.IsAlertActive ?? false;
+
+        /// <summary>True when there is a screen or modal to go back from.</summary>
         public bool CanGoBack
             => navigationService?.CanGoBack ?? false;
 
+        /// <summary>Gets the current screen ID.</summary>
         public string GetCurrentScreen()
             => navigationService?.GetCurrentScreen();
 
+        /// <summary>Gets the root screen ID.</summary>
         public string GetRootScreen()
             => navigationService?.GetRootScreen();
 
+        /// <summary>Gets the ID of the topmost visible screen.</summary>
         public string GetTopScreen()
             => displayService?.GetTopScreen();
 
+        /// <summary>Gets the IDs of the active screens.</summary>
         public List<string> GetActiveScreenIds()
         {
             return displayService?.GetActiveScreenIds() ?? new List<string>();
         }
 
+        /// <summary>Gets the layers of a screen.</summary>
         public List<LayerComponent> GetScreenLayers(string screenId)
         {
             if (!idResolver.TryResolveScreenId(screenId, nameof(GetScreenLayers), out string resolvedId))
@@ -220,6 +245,7 @@ namespace ScreenSystem
             return displayService?.GetScreenLayers(resolvedId) ?? new List<LayerComponent>();
         }
 
+        /// <summary>Clears the navigation history. Not needed for normal scene loads, because single scene loads clean up automatically.</summary>
         public void PrepareForSceneChange()
         {
             navigationService?.ClearNavigationHistoryOnSceneChange();

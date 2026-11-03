@@ -26,6 +26,9 @@ namespace ScreenSystem
         [Tooltip("Persist over scene changes")]
         public bool PersistOverScenes;
 
+        [Tooltip("Open over active modals and alerts, for splash screens and critical errors")]
+        public bool IgnoreNavigationRules;
+
 #if UNITY_EDITOR
         private void OnValidate()
         {

@@ -20,6 +20,13 @@
     "ugui",
     "ui-toolkit"
   ],
+  "samples": [
+    {
+      "displayName": "Quick Start",
+      "description": "Scripts that open a first screen and react to it opening and closing.",
+      "path": "Samples~/QuickStart"
+    }
+  ],
   "dependencies": {
     "com.sgonzalezrozo.core": "0.2.0",
     "com.unity.ugui": "1.0.0",
