@@ -85,7 +85,7 @@ https://github.com/sgonzalezrozo/unity-screen-system.git
 To pin a release, add its tag:
 
 ```text
-https://github.com/sgonzalezrozo/unity-screen-system.git#v0.1.0
+https://github.com/sgonzalezrozo/unity-screen-system.git#v0.2.0
 ```
 
 ## Setup
@@ -188,12 +188,13 @@ if (!opened)
 
 ### Change scenes
 
-This needs `using UnityEngine.SceneManagement;`.
+Load scenes as usual. Screen System cleans up automatically when a new scene loads in single mode.
 
 ```csharp
-ScreenManager.Instance.PrepareForSceneChange();
 SceneManager.LoadScene("Frontend");
 ```
+
+This needs `using UnityEngine.SceneManagement;`.
 
 ### Add editor shortcuts
 
@@ -241,7 +242,7 @@ await screens.SetRoot("Lobby");
 - **Active alert or modal:** `GoTo` is blocked until it's dismissed. Screens with **Ignore Navigation Rules** can show over modals.
 - **Back at the root:** `GoBack()` starts the quit flow, which can call `Application.Quit()`.
 - **Escape key:** runs back navigation through the Input System.
-- **Scene changes:** call `PrepareForSceneChange()` first. Screens with **Persist Over Scenes** stay available.
+- **Scene changes:** cleanup runs automatically when a scene loads in single mode. Additive loads don't change your screens. Screens with **Persist Over Scenes** stay available.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
 
 To open a modal, set its `ScreenDefinition` type to `modal` and call `GoTo` with its ID.
@@ -323,7 +324,7 @@ Each `ScreenDefinition` in the registry stores the settings that control this, s
 
 ## Project status
 
-This is a pre-release package at version `0.1.0`. Its API and behavior may change before `1.0.0`.
+This is a pre-release package at version `0.2.0`. Its API and behavior may change before `1.0.0`.
 
 > **TODO:** Add a roadmap link and breaking-change policy.
 
