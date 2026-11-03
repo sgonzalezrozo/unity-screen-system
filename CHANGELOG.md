@@ -2,6 +2,16 @@
 
 All notable changes to this package are documented in this file.
 
+## [Unreleased]
+
+### Documentation
+
+- Corrected the documentation for alerts, transition events, Ignore Navigation Rules and back at the root.
+- Added recipes for modals, the quit flow, persistent screens, animation and injection.
+- Added prefab requirements, screen lifetime and draw order diagrams, and shared layer behavior.
+- Added contributing, security and issue template files, and a Quick Start sample.
+- Added XML documentation to `ScreenManager`.
+
 ## [0.2.0] - Unreleased
 
 ### Changed

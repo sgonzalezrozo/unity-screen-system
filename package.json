@@ -2,7 +2,7 @@
   "name": "com.sgonzalezrozo.screen-system",
   "version": "0.2.0",
   "displayName": "Screen System",
-  "description": "Declarative UI navigation for Unity with fullscreen, modal and alert layers.",
+  "description": "Declarative UI navigation for Unity with fullscreen and modal screens.",
   "unity": "2022.3",
   "license": "MIT",
   "author": {
@@ -19,6 +19,13 @@
     "navigation",
     "ugui",
     "ui-toolkit"
+  ],
+  "samples": [
+    {
+      "displayName": "Quick Start",
+      "description": "Scripts that open a first screen and react to it opening and closing.",
+      "path": "Samples~/QuickStart"
+    }
   ],
   "dependencies": {
     "com.sgonzalezrozo.core": "0.2.0",
