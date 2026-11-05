@@ -21,12 +21,12 @@ namespace ScreenSystem
         private AsyncOperationHandle<GameObject> handle;
         private GameObject instance;
         private bool hasInitialized;
-        private IPrefabInstantiator instantiator;
         private CancellationTokenSource lifecycleCts;
+
+        private IPrefabInstantiator Instantiator => injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
 
         private void Awake()
         {
-            instantiator = injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
             lifecycleCts = new CancellationTokenSource();
         }
 
@@ -79,7 +79,7 @@ namespace ScreenSystem
 
                 try
                 {
-                    instance = instantiator.Instantiate(handle.Result, transform);
+                    instance = Instantiator.Instantiate(handle.Result, transform);
                     OnPrefabInstantiated?.Invoke(instance);
                 }
                 finally { }
