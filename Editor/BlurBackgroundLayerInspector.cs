@@ -27,7 +27,7 @@ namespace ScreenSystem.Editor
             serializedObject.Update();
 
             EditorGUILayout.HelpBox(
-                "🎨 SHARED BLUR BACKGROUND (Real Gaussian Blur)\n\n" +
+                "SHARED BLUR BACKGROUND (Real Gaussian Blur)\n\n" +
                 "This is a SINGLE SHARED instance used for ALL modal screens.\n\n" +
                 "• Place as child of ScreenSystem GameObject\n" +
                 "• Name it 'BlurBackground' (exact name)\n" +
@@ -71,15 +71,15 @@ namespace ScreenSystem.Editor
             EditorGUILayout.Space();
 
             EditorGUILayout.HelpBox(
-                "📋 SETUP INSTRUCTIONS:\n\n" +
+                "SETUP INSTRUCTIONS:\n\n" +
                 "1. This GameObject should be a child of ScreenSystem\n" +
                 "2. Name it exactly 'BlurBackground'\n" +
                 "3. Canvas will auto-configure to Screen Space - Camera\n" +
                 "4. Requires Main Camera tagged as 'MainCamera'\n" +
                 "5. It will be automatically discovered by ScreenManager\n" +
                 "6. All modals will share this blur instance\n\n" +
-                "🌟 Real Gaussian blur using GrabPass!\n" +
-                "✨ Changes here affect ALL modal screens!",
+                "Real Gaussian blur using GrabPass!\n" +
+                "Changes here affect ALL modal screens!",
                 MessageType.None);
 
             serializedObject.ApplyModifiedProperties();

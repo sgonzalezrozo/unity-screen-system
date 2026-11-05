@@ -10,13 +10,13 @@ namespace ScreenSystem.Services
     {
         private const string SETUP_REQUIRED_MESSAGE =
             "╔════════════════════════════════════════════════════════════╗\n" +
-            "║  ⚠️  SCREEN SYSTEM NOT SET UP                              ║\n" +
+            "║  SCREEN SYSTEM NOT SET UP                                  ║\n" +
             "╠════════════════════════════════════════════════════════════╣\n" +
             "║  ScreenManager cannot initialize!                          ║\n" +
             "║                                                            ║\n" +
-            "║  👉 REQUIRED ACTION:                                       ║\n" +
+            "║  REQUIRED ACTION:                                          ║\n" +
             "║     In Unity Editor, click:                                ║\n" +
-            "║     Tools → Screen System → Setup Project             ║\n" +
+            "║     Tools → Screen System → Setup Project                  ║\n" +
             "║                                                            ║\n" +
             "║  This is a ONE-TIME setup (30 seconds)                     ║\n" +
             "╚════════════════════════════════════════════════════════════╝";

@@ -156,7 +156,7 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
 
                 bool hasPreview = previewInstances.ContainsKey(layerName) && previewInstances[layerName] != null;
                 bool hasPrefab = FindLayerPrefab(layerName) != null;
-                string statusIcon = hasPreview ? "●" : (hasPrefab ? "○" : "✕");
+                string statusIcon = hasPreview ? "●" : (hasPrefab ? "○" : "×");
                 Color textColor = hasPreview ? Color.green : (hasPrefab ? Color.yellow : Color.red);
 
                 GUIStyle miniStyle = new GUIStyle

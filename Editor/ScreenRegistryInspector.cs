@@ -13,7 +13,7 @@ namespace ScreenSystem.Editor
 
             EditorGUILayout.Space(10);
 
-            if (GUILayout.Button("🔨 Rebuild Registry from Assets", GUILayout.Height(30)))
+            if (GUILayout.Button("Rebuild Registry from Assets", GUILayout.Height(30)))
             {
                 ScreenRegistry registry = target as ScreenRegistry;
                 if (registry != null)

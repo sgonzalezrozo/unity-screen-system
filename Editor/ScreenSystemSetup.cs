@@ -49,8 +49,8 @@ namespace ScreenSystem.Editor
                  "Setup Complete!",
                  $"Screen System {framework} has been set up successfully!\n\n" +
                  "Files created in:\nAssets/Resources/Tools/Screen System/Scriptables/\n\n" +
-                 "✓ ScreenSystem.prefab created in Prefabs folder\n" +
-                 "✓ ScreenRegistry linked to ScreenSystemSettings\n\n" +
+                 "- ScreenSystem.prefab created in Prefabs folder\n" +
+                 "- ScreenRegistry linked to ScreenSystemSettings\n\n" +
                  "Next steps:\n" +
                  "1. The ScreenSystem prefab loads automatically\n" +
                  "2. Create layer prefabs with required components:\n" +
@@ -59,7 +59,7 @@ namespace ScreenSystem.Editor
                  "4. Set Framework in ScreenDefinition assets",
                  "OK");
 
-             Debug.Log($"[ScreenSystem Setup] ✅ Setup complete for {framework}! Files created in: Assets/Resources/Tools/Screen System/");
+             Debug.Log($"[ScreenSystem Setup] Setup complete for {framework}! Files created in: Assets/Resources/Tools/Screen System/");
 
              // Select settings file
              ScreenSystemSettings settings = AssetDatabase.LoadAssetAtPath<ScreenSystemSettings>($"{SCRIPTABLES_PATH}/{SETTINGS_FILE}");
@@ -184,15 +184,15 @@ namespace ScreenSystem.Editor
             if (!isValid)
             {
                 if (settings == null)
-                    Debug.LogError("[ScreenSystem Setup] ❌ ScreenSystemSettings not found after setup!");
+                    Debug.LogError("[ScreenSystem Setup] ScreenSystemSettings not found after setup!");
                 else if (registry == null)
-                    Debug.LogError("[ScreenSystem Setup] ❌ ScreenRegistry not found after setup!");
+                    Debug.LogError("[ScreenSystem Setup] ScreenRegistry not found after setup!");
                 else if (settings.ScreenRegistry == null)
-                    Debug.LogError("[ScreenSystem Setup] ❌ ScreenRegistry field not linked to ScreenSystemSettings!");
+                    Debug.LogError("[ScreenSystem Setup] ScreenRegistry field not linked to ScreenSystemSettings!");
             }
             else
             {
-                Debug.Log($"[ScreenSystem Setup] ✅ Validation passed:\n" +
+                Debug.Log($"[ScreenSystem Setup] Validation passed:\n" +
                          $"  • ScreenSystemSettings: {settings.name}\n" +
                          $"  • ScreenRegistry linked: {registry.name}\n" +
                          $"  • System ready to use!");
@@ -205,7 +205,7 @@ namespace ScreenSystem.Editor
 
             if (File.Exists(prefabPath))
             {
-                Debug.LogWarning("[ScreenSystem Setup] ℹ ScreenSystem.prefab already exists. Delete it to regenerate with updated settings.");
+                Debug.LogWarning("[ScreenSystem Setup] ScreenSystem.prefab already exists. Delete it to regenerate with updated settings.");
                 return false;
             }
 
@@ -243,8 +243,8 @@ namespace ScreenSystem.Editor
              if (prefabAsset != null)
              {
                  LinkUICameraToSettings(prefabAsset);
-                 Debug.Log("[ScreenSystem Setup] ✅ ScreenSystem.prefab created (no shell templates)");
-                 Debug.Log("[ScreenSystem Setup] ℹ Layer prefabs must include all components: UIDocument + PanelSettings + LayerComponent");
+                 Debug.Log("[ScreenSystem Setup] ScreenSystem.prefab created (no shell templates)");
+                 Debug.Log("[ScreenSystem Setup] Layer prefabs must include all components: UIDocument + PanelSettings + LayerComponent");
              }
 
             Object.DestroyImmediate(root);
@@ -263,7 +263,7 @@ namespace ScreenSystem.Editor
 
              overlayObj.SetActive(false);
 
-             Debug.Log("[ScreenSystem Setup] ✅ DarkOverlay created for UIToolkit (bare Transform, inactive)");
+             Debug.Log("[ScreenSystem Setup] DarkOverlay created for UIToolkit (bare Transform, inactive)");
          }
 
         private static void CreateGlobalPanelSettings()
@@ -273,7 +273,7 @@ namespace ScreenSystem.Editor
             // Check if GlobalPanelSettings already exists
             if (File.Exists(panelSettingsPath))
             {
-                Debug.Log("[ScreenSystem Setup] ℹ GlobalPanelSettings already exists at: " + panelSettingsPath);
+                Debug.Log("[ScreenSystem Setup] GlobalPanelSettings already exists at: " + panelSettingsPath);
                 return;
             }
 
@@ -298,7 +298,7 @@ namespace ScreenSystem.Editor
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
-                Debug.Log($"[ScreenSystem Setup] ✅ GlobalPanelSettings created at: {panelSettingsPath}");
+                Debug.Log($"[ScreenSystem Setup] GlobalPanelSettings created at: {panelSettingsPath}");
                 Debug.Log("[ScreenSystem Setup] Assign this to all UIDocument components in UIToolkit screens");
             }
             catch (System.Exception ex)
@@ -358,7 +358,7 @@ namespace ScreenSystem.Editor
             // CRITICAL: Set GameObject inactive so it doesn't render on startup
             blurLayer.SetActive(false);
 
-            Debug.Log("[ScreenSystem Setup] ✅ BlurBackground created and added to ScreenSystem (inactive, on Blur layer)");
+            Debug.Log("[ScreenSystem Setup] BlurBackground created and added to ScreenSystem (inactive, on Blur layer)");
 
             return blurLayer;
         }
@@ -379,7 +379,7 @@ namespace ScreenSystem.Editor
                     {
                         EditorUtility.SetDirty(settings);
                         AssetDatabase.SaveAssets();
-                        Debug.Log("[ScreenSystem Setup] ✅ UICamera linked to ScreenSystemSettings");
+                        Debug.Log("[ScreenSystem Setup] UICamera linked to ScreenSystemSettings");
                     }
                     else
                         Debug.LogError("[ScreenSystem Setup] UICamera GameObject found but missing Camera component!");
@@ -440,7 +440,7 @@ namespace ScreenSystem.Editor
 
                     if (hasLabel)
                     {
-                        Debug.Log("[ScreenSystem Setup] ✓ Addressables label 'ScreenContent' already exists");
+                        Debug.Log("[ScreenSystem Setup] Addressables label 'ScreenContent' already exists");
                         return;
                     }
                 }
@@ -450,7 +450,7 @@ namespace ScreenSystem.Editor
                 if (addLabelMethod != null)
                 {
                     addLabelMethod.Invoke(addressableSettings, new object[] { "ScreenContent", true });
-                    Debug.Log("[ScreenSystem Setup] ✓ Created Addressables label 'ScreenContent'");
+                    Debug.Log("[ScreenSystem Setup] Created Addressables label 'ScreenContent'");
                 }
                 else
                     Debug.LogWarning("[ScreenSystem Setup] Could not add Addressables label. You may need to add 'ScreenContent' label manually.");

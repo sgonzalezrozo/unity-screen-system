@@ -150,13 +150,13 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
                 if (prefab != null)
                 {
                     GUI.color = Color.green;
-                    EditorGUI.LabelField(statusRect, "✓ Found");
+                    EditorGUI.LabelField(statusRect, "Found");
                     GUI.color = Color.white;
                 }
                 else
                 {
                     GUI.color = new Color(1f, 0.5f, 0f);
-                    EditorGUI.LabelField(statusRect, "⚠ Missing");
+                    EditorGUI.LabelField(statusRect, "Missing");
                     GUI.color = Color.white;
                 }
             }

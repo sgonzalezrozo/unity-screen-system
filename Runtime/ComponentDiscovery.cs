@@ -91,29 +91,29 @@ namespace ScreenSystem
 
         private Transform CreateDefaultScreenContainer()
         {
-            // ✅ Create GameObject with Canvas component
+            // Create GameObject with Canvas component
             GameObject containerObj = new("ScreenContainer");
             containerObj.layer = LayerMask.NameToLayer("UI");
             containerObj.transform.SetParent(rootTransform);
 
-            // ✅ Setup RectTransform (required for Canvas)
+            // Setup RectTransform (required for Canvas)
             RectTransform rectTransform = containerObj.AddComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
             rectTransform.offsetMin = Vector2.zero;
             rectTransform.offsetMax = Vector2.zero;
 
-            // // ✅ Add Canvas component
+            // // Add Canvas component
             // Canvas canvas = containerObj.AddComponent<Canvas>();
             // canvas.renderMode = RenderMode.ScreenSpaceCamera;
             // canvas.worldCamera = DiscoverOrCreateUICamera();
             //
-            // // ✅ Add CanvasScaler for responsive UI
+            // // Add CanvasScaler for responsive UI
             // CanvasScaler canvasScaler = containerObj.AddComponent<CanvasScaler>();
             // canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             // canvasScaler.referenceResolution = new Vector2(CANVAS_SCALER_REFERENCE_RESOLUTION, CANVAS_SCALER_REFERENCE_RESOLUTION);
             //
-            // // ✅ Add GraphicRaycaster for input handling
+            // // Add GraphicRaycaster for input handling
             // containerObj.AddComponent<GraphicRaycaster>();
 
             return containerObj.transform;
