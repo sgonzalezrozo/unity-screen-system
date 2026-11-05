@@ -57,14 +57,14 @@ namespace ScreenSystem.Editor
 			EditorGUILayout.BeginVertical("box");
 
 			EditorGUILayout.HelpBox(
-				"⚠️ SCREEN SYSTEM NOT SET UP\n\n" +
+				"SCREEN SYSTEM NOT SET UP\n\n" +
 				"The Screen System requires initial setup before you can edit layers.\n\n" +
 				"Click the button below to run the setup (takes 30 seconds).",
 				MessageType.Error);
 
 			EditorGUILayout.Space(10);
 
-			if (GUILayout.Button("🔧 Run Setup Now", GUILayout.Height(40)))
+			if (GUILayout.Button("Run Setup Now", GUILayout.Height(40)))
 			{
 				ScreenSystemSetup.SetupProject();
 				manager.LoadScreenData();
@@ -88,7 +88,7 @@ namespace ScreenSystem.Editor
 			EditorGUILayout.BeginVertical("box");
 
 			EditorGUILayout.HelpBox(
-				"❌ SCREEN NOT FOUND\n\n" +
+				"SCREEN NOT FOUND\n\n" +
 				"Screen not found in registry.\n\n" +
 				"Make sure you've imported your feature to the registry:\n" +
 				"1. Open Feature Editor\n" +
@@ -167,10 +167,10 @@ namespace ScreenSystem.Editor
 			EditorGUILayout.LabelField("Status:", GUILayout.Width(80));
 
 			GUI.color = layer.HasShell ? Color.green : Color.red;
-			EditorGUILayout.LabelField(layer.HasShell ? "✓ Shell" : "✗ Shell", GUILayout.Width(60));
+			EditorGUILayout.LabelField(layer.HasShell ? "Shell" : "No shell", GUILayout.Width(70));
 
 			GUI.color = layer.HasContent ? Color.green : Color.red;
-			EditorGUILayout.LabelField(layer.HasContent ? "✓ Content" : "✗ Content", GUILayout.Width(80));
+			EditorGUILayout.LabelField(layer.HasContent ? "Content" : "No content", GUILayout.Width(80));
 
 			GUI.color = Color.white;
 			EditorGUILayout.EndHorizontal();

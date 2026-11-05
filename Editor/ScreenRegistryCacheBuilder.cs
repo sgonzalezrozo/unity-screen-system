@@ -47,9 +47,9 @@ namespace ScreenSystem.Editor
             string validationMessage = "";
 
             if (registry.Validate(out List<string> errors))
-                validationMessage = "✅ Registry is valid and has no errors.";
+                validationMessage = "Registry is valid and has no errors.";
             else
-                validationMessage = "⚠️ Registry has errors:\n- " + string.Join("\n- ", errors);
+                validationMessage = "Registry has errors:\n- " + string.Join("\n- ", errors);
 
             EditorUtility.DisplayDialog(
                 "Registry Rebuilt",

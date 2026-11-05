@@ -52,13 +52,13 @@ namespace ScreenSystem.ScriptableObjects
                     if (_instance == null)
                     {
                         Debug.LogError("╔════════════════════════════════════════════════════════════╗\n" +
-                                       "║  ⚠️  SCREEN SYSTEM NOT SET UP                             ║\n" +
+                                       "║  SCREEN SYSTEM NOT SET UP                                  ║\n" +
                                        "╠════════════════════════════════════════════════════════════╣\n" +
                                        "║  ScreenSystemSettings not found!                           ║\n" +
                                        "║                                                            ║\n" +
-                                       "║  👉 REQUIRED ACTION:                                       ║\n" +
+                                       "║  REQUIRED ACTION:                                          ║\n" +
                                        "║     In Unity, click:                                       ║\n" +
-                                       "║     Tools → Screen System → Setup Project            ║\n" +
+                                       "║     Tools → Screen System → Setup Project                  ║\n" +
                                        "║                                                            ║\n" +
                                        "║  This is a ONE-TIME setup (30 seconds)                     ║\n" +
                                        "╚════════════════════════════════════════════════════════════╝");

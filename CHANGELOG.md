@@ -7,6 +7,7 @@ All notable changes to this package are documented in this file.
 ### Changed
 
 - The runtime assemblies expose their internals to `Assembly-CSharp`, so Fast IoC `0.4.0` assigns injected fields directly, without reflection.
+- Console, Editor and setup messages use plain text instead of emojis. The setup-required message box is realigned.
 
 ## [0.3.0] - 2026-11-03
 
