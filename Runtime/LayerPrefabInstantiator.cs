@@ -12,12 +12,8 @@ namespace ScreenSystem
 
         private GameObject instance;
         private bool hasInitialized;
-        private IPrefabInstantiator instantiator;
 
-        private void Awake()
-        {
-            instantiator = injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
-        }
+        private IPrefabInstantiator Instantiator => injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
 
         private void OnEnable()
         {
@@ -33,7 +29,7 @@ namespace ScreenSystem
 
         private void LoadNow()
         {
-            instance = instantiator.Instantiate(layerPrefab, transform);
+            instance = Instantiator.Instantiate(layerPrefab, transform);
         }
     }
 }
