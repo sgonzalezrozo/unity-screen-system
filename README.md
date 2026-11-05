@@ -18,6 +18,8 @@ My first time using one was on a recent project, with a custom layer system. Tha
 
 I built it for uGUI. With the canvas set to overlay, it also works with uGUI and UI Toolkit at the same time.
 
+I built and refined it on my own time, reusing it across my projects. In November 2026 I extracted it into this standalone package and documented it. Earlier history lives in a private repository.
+
 ## Is it right for your project?
 
 **Use Screen System if you:**
