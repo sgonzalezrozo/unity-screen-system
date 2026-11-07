@@ -6,9 +6,7 @@
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
 [![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
 
-Screen System is a free, open-source UI navigation and screen manager for Unity 6, for uGUI and UI Toolkit. Feature code calls `ScreenManager.Instance.GoTo("Shop")`, and the system loads the screen from Resources or Addressables, keeps a back stack, and handles fullscreen, modal and alert layers, the Escape key and cleanup on scene changes.
-
-Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen, modal and alert screens, and supports uGUI and UI Toolkit.
+Screen System is a free, open-source UI manager for Unity 6 that handles screen navigation, popups and modals, for uGUI and UI Toolkit. Feature code calls `ScreenManager.Instance.GoTo("Shop")`, and the system loads the screen from Resources or Addressables, keeps a back stack, and handles fullscreen, modal and alert layers, the Escape key and cleanup on scene changes. Features don't manage navigation themselves.
 
 <!-- Demo GIF: Documentation~/images/demo.gif -->
 
@@ -471,7 +469,7 @@ There are no MCP tools for Screen System yet. The rules file works with any agen
 
 ## FAQ
 
-### How do I manage UI screens and popups in Unity?
+### How do I manage UI screens, popups and modals in Unity?
 
 Create each screen as a prefab with a `ScreenDefinition`, then navigate by name: `await ScreenManager.Instance.GoTo("ShopDetail")`. Screen System keeps the back stack and the modal and alert layers. See [Create your first screen](#create-your-first-screen).
 
@@ -505,7 +503,23 @@ Yes. It works without a container, and [Fast IoC](https://github.com/sgonzalezro
 
 ### Does it work with AI coding agents?
 
-Yes, through a rules file you copy into your project. See [Use it with AI coding agents](#use-it-with-ai-coding-agents).
+It ships a rules file you copy into your project, so agents use its real API instead of guessing. It hasn't been tested with agents beyond the author's own projects. See [Use it with AI coding agents](#use-it-with-ai-coding-agents).
+
+### Should I use scenes or prefabs for UI screens?
+
+Screen System uses prefabs, so UI stays loaded across navigation and a back stack is cheap. Load a scene when the game world changes, not for each menu. Screens marked **Persist Over Scenes** stay available across scene loads.
+
+### How do I show a confirmation popup or an alert?
+
+Give the screen a modal or alert type on its `ScreenDefinition`, then open it with `GoTo`. Close an alert with `DismissAlert()`. See [Navigation behavior](#navigation-behavior).
+
+### How do I install it?
+
+In Unity, open **Window > Package Manager**, select **+ > Add package from git URL** and enter `https://github.com/sgonzalezrozo/unity-screen-system.git`. Install [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) first, because Unity doesn't install Git dependencies automatically. See [Installation](#installation).
+
+### Is it production-ready? Does anyone use it?
+
+Not yet. Screen System is a pre-release package (`0.x`) by a single author. It isn't used in a shipped game, and it has no other users yet, so expect rough edges and API changes before `1.0.0`. Bug reports are very welcome. See [Project status](#project-status).
 
 ### Is it free for commercial use?
 

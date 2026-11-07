@@ -2,7 +2,7 @@
   "name": "com.sgonzalezrozo.screen-system",
   "version": "0.3.0",
   "displayName": "Screen System",
-  "description": "Declarative UI navigation for Unity with fullscreen, modal and alert layers.",
+  "description": "UI manager for Unity: screen navigation with a back stack, popups, modals and alerts, for uGUI and UI Toolkit. Loads screens from Resources or Addressables.",
   "unity": "2022.3",
   "license": "MIT",
   "author": {

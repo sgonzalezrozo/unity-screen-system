@@ -1,6 +1,6 @@
 # Screen System
 
-> UI navigation and screen manager for Unity 6 (uGUI and UI Toolkit). Navigate by screen name with `ScreenManager.Instance.GoTo`, `GoBack`, `PopTo` and `SetRoot`; screens are prefabs with a `ScreenDefinition`, loaded from Resources or Addressables. Back stack, fullscreen, modal and alert layers, Escape-key back navigation, lifecycle interfaces (`IScreenShow`, `IScreenHide`, `IScreenContent`), navigation events and optional dependency injection. Requires Tools Core, Addressables and the Input System. MIT licensed, pre-release (0.x).
+> UI navigation and screen manager for Unity 6 (uGUI and UI Toolkit). Navigate by screen name with `ScreenManager.Instance.GoTo`, `GoBack`, `PopTo` and `SetRoot`; screens are prefabs with a `ScreenDefinition`, loaded from Resources or Addressables. Back stack, fullscreen, modal and alert layers, Escape-key back navigation, lifecycle interfaces (`IScreenShow`, `IScreenHide`, `IScreenContent`), navigation events and optional dependency injection. Requires Tools Core, Addressables and the Input System. MIT licensed, pre-release (0.x), single author, no other users yet.
 
 ## Docs
 
