@@ -6,6 +6,8 @@
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
 [![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
 
+Screen System is a free, open-source UI navigation and screen manager for Unity 6, for uGUI and UI Toolkit. Feature code calls `ScreenManager.Instance.GoTo("Shop")`, and the system loads the screen from Resources or Addressables, keeps a back stack, and handles fullscreen, modal and alert layers, the Escape key and cleanup on scene changes.
+
 Screen System handles loading, layering and the back stack, so features don't have to manage navigation themselves. It provides fullscreen, modal and alert screens, and supports uGUI and UI Toolkit.
 
 <!-- Demo GIF: Documentation~/images/demo.gif -->
@@ -457,6 +459,57 @@ Layers are cached by name, so two screens that list the same name share one inst
 - Use a single root screen for your app's boot flow.
 - Prefer stack-based transitions over direct scene loads when UI should stay mounted.
 - Rebuild the registry after adding or renaming screens.
+
+## Use it with AI coding agents
+
+Coding agents write C# files, and this package is newer than their training data. Give them its rules so they use the real API:
+
+1. Copy [`Documentation~/agent-rules.md`](Documentation~/agent-rules.md) into your project's agent rules, for example `AGENTS.md`, `CLAUDE.md` or `.cursor/rules/screen-system.md`.
+2. For a whole Unity architecture with a verify loop, add [Unity Architecture Agents](https://github.com/sgonzalezrozo/unity-architecture-agents). It detects this package and adapts its code.
+
+There are no MCP tools for Screen System yet. The rules file works with any agent that reads project files.
+
+## FAQ
+
+### How do I manage UI screens and popups in Unity?
+
+Create each screen as a prefab with a `ScreenDefinition`, then navigate by name: `await ScreenManager.Instance.GoTo("ShopDetail")`. Screen System keeps the back stack and the modal and alert layers. See [Create your first screen](#create-your-first-screen).
+
+### How do I go back to the previous screen?
+
+Call `await ScreenManager.Instance.GoBack()`. The Escape key does the same through the Input System. See [Navigation reference](#navigation-reference).
+
+### Does it work with uGUI and UI Toolkit?
+
+Yes. Each `ScreenDefinition` sets its framework.
+
+### Does it load screens with Addressables?
+
+Yes. A screen's asset path is tried in Resources first, then Addressables.
+
+### Does it work with Unity 6?
+
+Yes. It's tested on Unity `6000.3`. The package declares `2022.3` as its minimum, but older versions aren't tested yet.
+
+### Does it work with IL2CPP and mobile?
+
+Not verified yet. See [Compatibility](#compatibility).
+
+### Can I pass parameters to a screen?
+
+Not through navigation calls yet. See [Limitations](#limitations).
+
+### Does it work with dependency injection?
+
+Yes. It works without a container, and [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) injects its components automatically. See [Dependency injection](#dependency-injection).
+
+### Does it work with AI coding agents?
+
+Yes, through a rules file you copy into your project. See [Use it with AI coding agents](#use-it-with-ai-coding-agents).
+
+### Is it free for commercial use?
+
+Yes. It's MIT licensed.
 
 ## Troubleshooting
 

@@ -1,0 +1,13 @@
+# Screen System
+
+> UI navigation and screen manager for Unity 6 (uGUI and UI Toolkit). Navigate by screen name with `ScreenManager.Instance.GoTo`, `GoBack`, `PopTo` and `SetRoot`; screens are prefabs with a `ScreenDefinition`, loaded from Resources or Addressables. Back stack, fullscreen, modal and alert layers, Escape-key back navigation, lifecycle interfaces (`IScreenShow`, `IScreenHide`, `IScreenContent`), navigation events and optional dependency injection. Requires Tools Core, Addressables and the Input System. MIT licensed, pre-release (0.x).
+
+## Docs
+
+- [README](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/README.md): installation, quick start, API, troubleshooting, FAQ
+- [Rules for AI coding agents](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/agent-rules.md): copy into AGENTS.md, CLAUDE.md or Cursor rules
+- [Changelog](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/CHANGELOG.md)
+
+## Optional
+
+- [Unity Architecture Agents](https://github.com/sgonzalezrozo/unity-architecture-agents): architecture rules and a verify loop for AI coding agents on Unity

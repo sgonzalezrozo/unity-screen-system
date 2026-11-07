@@ -18,7 +18,21 @@
     "screen",
     "navigation",
     "ugui",
-    "ui-toolkit"
+    "ui-toolkit",
+    "unity",
+    "unity3d",
+    "unity6",
+    "unity-package",
+    "upm",
+    "csharp",
+    "gamedev",
+    "ui-navigation",
+    "screen-manager",
+    "ui-manager",
+    "navigation-stack",
+    "modal",
+    "popup",
+    "addressables"
   ],
   "samples": [
     {
