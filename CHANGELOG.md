@@ -24,6 +24,8 @@ All notable changes to this package are documented in this file.
 
 ### Changed
 
+- **Breaking:** `BlurBackgroundLayer` was rebuilt as the snapshot backdrop. The old fake glass overlay, its inspector, the **GameObject > UI > Blur Background Layer** menu and `BlurFadeController` are removed. Run Setup to rebuild the backdrop.
+
 - On a single scene load, every screen is unloaded except those with **Persist Over Scenes**, the splash and the quit confirmation modal.
 - AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes. Closing and reopening a bundle on each scene change leaked about 29 MB of native memory per change on a Pixel 5.
 - A call ignored during a transition now logs which call was running.
@@ -31,6 +33,8 @@ All notable changes to this package are documented in this file.
 - Prefabs in local bundles finish loading in the same frame instead of waiting for later frames. A cold show on a Pixel 5 at 30 fps went from 99 ms (3 frames) to 15 ms. Remote bundles still load asynchronously.
 
 ### Added
+
+- A blurred, darkened snapshot behind modals and alerts. The screen underneath stops rendering while a modal or alert is open, and an alert over a modal only dims the modal. Setup adds the backdrop to the `ScreenSystem` prefab, and running it again repairs an existing one. **Tools > Screen System > Rebuild Modal Backdrop** does the same. Settings: `BlurResolutionScale`, `AlertDimColor`, and the existing blur strength and tint.
 
 - `ScreenManager.IsTransitioning`.
 - `ScreenSystem.*` profiler markers for each synchronous step of showing, hiding, loading and scene cleanup.

@@ -21,7 +21,7 @@ A screen is a prefab plus an ordered list of layers. In the `LayerDefinition` in
 - **Reuse instead of duplicating.** A top bar, a navigation bar or a shop background is one prefab that any screen can list. Change it once, and every screen that uses it changes.
 - **One instance per shared layer.** When two screens list the same layer, they share one instance. In a test project with 8 screens, 20 layer references resolved to 12 instances.
 - **No sort orders to manage.** The system sets each layer's sorting order from its position in the list and its screen's depth in the stack. A shared layer takes the order of the topmost screen that uses it.
-- **Shared layers stay put.** Moving between two screens that share a top bar keeps the bar visible and keeps its state.
+- **Shared layers stay put.** Moving between two screens that share a top bar keeps the bar visible and keeps its state. It doesn't get `OnScreenShown` or `OnScreenHidden` again, so anything it started keeps running.
 
 ### Memory that cleans itself up
 
@@ -35,8 +35,9 @@ All UI lives in one persistent object, so scenes hold no UI and load faster.
 ### Only what's visible is rendered
 
 - **At most three windows render at once:** one fullscreen screen, one modal over it and one alert over the modal. Opening a fullscreen screen hides the one under it.
+- **Modals don't redraw the screen behind them.** When a modal or alert opens, a blurred, darkened snapshot of the screen takes its place and the screen stops rendering until the modal closes. Behind the modal there's one image instead of a whole screen. An alert over a modal only dims the modal.
 - **Hiding keeps state.** A hidden uGUI layer only has its `Canvas` disabled, and a hidden UI Toolkit layer has its root set to `display: none`. Neither rebuilds its hierarchy or visual tree when it's shown again.
-- **No per-frame work.** Nothing polls or runs on a timer, and navigation is event-driven. The benchmark saw no garbage collection while screens sat idle.
+- **No per-frame work.** Nothing polls or runs on a timer, and navigation is event-driven.
 
 ### One API for uGUI and UI Toolkit
 
@@ -48,19 +49,21 @@ Setup in one command, a wizard that scaffolds screen features, a registry, a Scr
 
 ## Performance
 
-Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screens of a test project: 8 screens mixing uGUI and UI Toolkit, two scenes, Addressables. Pixel 5, Android 14, IL2CPP Development build, 30 fps.
+Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screens of a test project: 8 screens mixing uGUI and UI Toolkit, two scenes, Addressables. IL2CPP Development builds at 30 fps.
 
-| Measure | Result |
-|---|---|
-| Show a cached screen | 2.5 ms, no frame waited |
-| Show a screen that isn't loaded | 16 ms median |
-| Go back | 2.3 ms |
-| Scene change until the new scene's first screen is visible | 130 ms, of which 75 ms is Unity's scene activation |
-| Allocations per cached show, uGUI and UI Toolkit | 33 to 41 KB |
-| Garbage collections while idle | 0 in 600 frames |
-| Memory after 12 scene changes | flat (207.2 MB to 207.8 MB) |
-| Addressables handles left behind | 0 |
-| Navigations that broke the three-window rule | 0 of 264 |
+| Measure | Pixel 5 (Android 14) | Galaxy A02s (Android 12) |
+|---|---|---|
+| Show a cached screen | 2.6 ms, no frame waited | 3.9 ms |
+| Show a screen that isn't loaded | 15 ms median | 30 ms median |
+| Go back | 2.4 ms | 3.1 ms |
+| Open a modal, with its blurred snapshot | 36 ms (one frame) | 38 ms (one frame) |
+| Capture and blur the snapshot (main thread) | 0.2 ms | 0.4 ms |
+| Scene change until the new scene's first screen is visible | 133 ms, of which 76 ms is Unity's scene activation | 224 ms, of which 96 ms is Unity's |
+| Allocations per cached show, uGUI and UI Toolkit | 33 to 40 KB | 26 to 30 KB |
+| Memory after 12 scene changes | flat (207.3 MB to 208.1 MB) | flat (190.0 MB to 190.4 MB) |
+| Addressables handles left behind | 0 | 0 |
+| Fullscreen screens rendering under an open modal | 0 | 0 |
+| Navigations that broke the three-window rule | 0 of 264 | 0 of 264 |
 
 Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mode**, or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
 
@@ -76,7 +79,7 @@ Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mo
 
 **Consider something else if you:**
 
-- Have only a few screens and simple scene transitions
+- Have only a few screens and simple scene changes
 - Need to pass data through navigation calls. `GoTo` takes only a screen ID for now.
 
 ## Features
@@ -86,13 +89,13 @@ Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mo
 - Fullscreen, modal and alert screen types
 - Screens kept loaded and reused until their scene ends, and unloaded automatically after it
 - Optional screens that persist across scene changes
-- Guarded async navigation: a call made during a transition is ignored, logged and returns `false`
+- Guarded async navigation: a call made while another is running is ignored, logged and returns `false`
 - uGUI and UI Toolkit screens, alone or together
 - Loading from Resources or Addressables
 - Back handling with Escape through the Input System
-- Navigation and transition events, and lifecycle callbacks on screen components
+- Navigation and show/hide events, and lifecycle callbacks on layer components
 - Profiler markers for each step, so the package shows up in the Unity Profiler
-- Optional background blur and glass effects
+- A blurred, darkened snapshot behind modals and alerts that replaces the screen underneath
 - Setup, feature scaffolding, a registry, a Screen Manager window and a layer editor
 - A benchmark sample and EditMode tests
 
@@ -143,6 +146,8 @@ https://github.com/sgonzalezrozo/unity-screen-system.git#v0.3.0
 
 1. Run **Tools > Screen System > Setup**.
 2. Confirm that its settings, registry and `ScreenSystem` prefab are in `Assets/Resources/Tools/Screen System/`.
+
+Running Setup again repairs a project: it keeps your settings and prefab, and adds or rebuilds the backdrop behind modals.
 
 The prefab is created automatically before the first scene loads, so you don't need to add it to a scene.
 
@@ -223,7 +228,7 @@ public class SettingsScreen : MonoBehaviour, IScreenLifecycle
 }
 ```
 
-Implement only `IScreenShow` or `IScreenHide` if you need just one callback. Start show animations from `OnScreenShown()`, for example with [UI Tweens](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example).
+Implement only `IScreenShow` or `IScreenHide` if you need just one callback. The callbacks run per layer: a layer shared with the previous screen stays visible and doesn't get them again.
 
 ## Open the first screen
 
@@ -400,7 +405,7 @@ Each `screen` argument can be the screen's name or its ID. The name comes from t
 ## Navigation behavior
 
 - **Going to a screen already in the stack:** `GoTo` works like `PopTo`. It removes every screen above that one from the stack, hides them, and shows it again. This is by design: the stack never holds the same screen twice.
-- **During a transition:** another navigation call is ignored, logs which call is running, and returns `false`.
+- **While a navigation call is running:** another one is ignored, logs which call is running, and returns `false`.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
 - **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
 - **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
@@ -420,7 +425,7 @@ NavigationEvents.OnNavigationFailed += (screenId, reason) => Debug.LogWarning($"
 
 `NavigationEvents` also has `OnNavigationStarted`, `OnScreenPushed`, `OnScreenPopped`, `OnStackCleared`, `OnBackAtRoot` and `OnQuitApplicationRequested`. These events are static, so unsubscribe when your object is destroyed.
 
-Four more events follow a screen's transitions:
+Four more events follow a screen being shown and hidden:
 
 | Event | Raised when |
 |---|---|
@@ -436,6 +441,7 @@ Screen System runs from one persistent `ScreenSystem` object, marked `DontDestro
 - **Loading:** a screen's layers load the first time it opens. The ones not in the scene yet load together, and prefabs in local Addressables bundles finish loading in the same frame.
 - **Showing and hiding:** hidden screens stay loaded. A uGUI layer's `Canvas` is disabled, and a UI Toolkit layer's root is set to `display: none`. Reopening a screen reuses the same objects.
 - **Draw order:** each layer's sorting order comes from its screen's depth in the stack and its position in the `LayerDefinition`.
+- **Modals and alerts:** before a modal or alert becomes visible, the screen is captured at the end of the frame, blurred at a quarter of its resolution and darkened. That image is placed just below the modal, and the screen's layers stop rendering without being hidden, so their callbacks don't run. Layers the modal shares, such as a navigation bar, keep rendering. Blur strength, resolution, darkening and the alert dim are set in `ScreenSystemSettings`.
 - **Scene changes:** screens without **Persist Over Scenes**, other than the splash and the quit confirmation, are destroyed and their Addressables handles released. Unused assets are unloaded once the new scene's first screen is drawn.
 - **Addressables:** each address has one handle, held while a screen uses it. AssetBundles stay open for the session once a screen needs them, while their assets load and unload with the screens. Closing and reopening a bundle on every scene change cost about 29 MB of native memory per change on a Pixel 5.
 
@@ -480,7 +486,7 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
 | `Assets/Screen System/New Screen Feature` | Scaffold a new screen feature |
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
-| `GameObject/UI/Blur Background Layer` | Add a blur background layer |
+| `Tools/Screen System/Rebuild Modal Backdrop` | Add or rebuild the blurred backdrop behind modals. Setup also does it. |
 
 In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, such as `ScreenSystem.LoadPrefab` and `ScreenSystem.ActivateLayers`.
 
@@ -489,7 +495,7 @@ In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, s
 - Split repeated parts of your screens into layers and share them.
 - Keep screen names unique and stable.
 - Use a single root screen for your app's boot flow.
-- Prefer stack-based transitions over direct scene loads when UI should stay mounted.
+- Prefer stack-based navigation over direct scene loads when UI should stay mounted.
 - Rebuild the registry after adding or renaming screens.
 
 ## Use it with AI coding agents
@@ -537,7 +543,7 @@ Yes on Android with IL2CPP, tested on a Pixel 5 and a Samsung Galaxy A02s. iOS a
 
 ### How fast is it?
 
-On a Pixel 5, a cached screen shows in 2.5 ms and a screen that isn't loaded in about 16 ms, and memory stays flat across scene changes. See [Performance](#performance), and run the benchmark on your own screens.
+A cached screen shows in 2.6 ms on a Pixel 5 and 3.9 ms on a Galaxy A02s, and memory stays flat across scene changes on both. See [Performance](#performance), and run the benchmark on your own screens.
 
 ### Can I pass parameters to a screen?
 
@@ -601,7 +607,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 - Navigation calls can't pass parameters to a screen, and modals can't return a result through `GoTo`.
 - Screens are requested by string, so typos are only caught at runtime.
-- Calls made during a transition are ignored, not queued.
+- Navigation calls made while another is running are ignored, not queued.
 
 ## Project status
 
