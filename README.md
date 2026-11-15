@@ -328,6 +328,20 @@ await ScreenManager.Instance.GoBack(); // Closes the modal.
 - One modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes.
 - Calling `GoTo` for a screen already in the stack closes the modal and returns to that screen.
 
+### Switch tabs from a bottom bar
+
+Make the bottom bar a layer that each tab screen lists, so it's shared and stays on screen. Its buttons clear the history above the root, so back from any tab returns home instead of walking through the tabs:
+
+```csharp
+public async void OnStoreTab()
+{
+    // From Inventory with A, B, C open, this leaves Home, Store.
+    await ScreenManager.Instance.GoTo("Store", NavigationHistory.ClearToRoot);
+}
+```
+
+Plain `GoTo("Store")` keeps the history instead: back from Store returns to C.
+
 ### Handle back at the root
 
 `GoBack()` and the Escape key close an open modal first, then step back through the stack. At the root, Screen System opens a modal called `QuitConfirmation`. If that screen doesn't exist, the app quits straight away, and Play Mode stops in the Editor.
@@ -398,6 +412,7 @@ All navigation methods return `Task<bool>` and take an optional `CancellationTok
 ScreenManager screens = ScreenManager.Instance;
 
 await screens.GoTo("ShopDetail");
+await screens.GoTo("Store", NavigationHistory.ClearToRoot);
 await screens.GoBack();
 await screens.PopTo("ShopMain");
 await screens.SetRoot("Lobby");
@@ -406,6 +421,7 @@ await screens.SetRoot("Lobby");
 | Member | Purpose |
 |---|---|
 | `GoTo(screen)` | Open a screen. For a screen already in the stack, return to it like `PopTo`. |
+| `GoTo(screen, NavigationHistory.ClearToRoot)` | Remove every screen above the root, then open a fullscreen screen over it. For tab bars. |
 | `GoBack()` | Return to the previous screen |
 | `PopTo(screen)` | Return to a screen already in the stack |
 | `SetRoot(screen)` | Replace the root screen |
@@ -420,6 +436,7 @@ Each `screen` argument can be the screen's name or its ID. The name comes from t
 ## Navigation behavior
 
 - **Going to a screen already in the stack:** `GoTo` works like `PopTo`. It removes every screen above that one from the stack, hides them, and shows it again. This is by design: the stack never holds the same screen twice.
+- **Clearing to the root:** `GoTo(screen, NavigationHistory.ClearToRoot)` closes the open modal, hides every screen above the root and opens the screen over the root, without drawing the root on the way. Back then returns to the root. It works only for fullscreen screens, and fails while an alert is open.
 - **While a navigation call is running:** another one is ignored, logs which call is running, and returns `false`.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
 - **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.

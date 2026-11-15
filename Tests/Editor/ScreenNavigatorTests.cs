@@ -20,6 +20,7 @@ namespace ScreenSystem.Tests
                 .Add("Root")
                 .Add("Shop")
                 .Add("Detail")
+                .Add("Store")
                 .Add("Modal", ScreenType.modal)
                 .Add("OtherModal", ScreenType.modal)
                 .Add("Alert", ScreenType.alert)
@@ -249,6 +250,99 @@ namespace ScreenSystem.Tests
             }
 
             Assert.IsFalse(stack.HasModal);
+        }
+
+        // A tab bar: from Detail, with Root and Shop below it, switching to Store leaves Root, Store.
+        [Test]
+        public async Task GoToClearToRoot_RemovesEveryScreenAboveTheRootWithoutShowingIt()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+            await navigator.GoToAsync("Detail");
+            display.Calls.Clear();
+
+            Assert.IsTrue(await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot));
+
+            Assert.AreEqual(2, stack.MainHistoryCount);
+            Assert.AreEqual("Store", stack.GetCurrentScreen());
+            Assert.AreEqual("Root", stack.GetRootScreen());
+            CollectionAssert.Contains(display.Calls, "hide:Detail");
+            CollectionAssert.Contains(display.Calls, "hide:Shop");
+            CollectionAssert.Contains(display.Calls, "show:Store");
+            CollectionAssert.DoesNotContain(display.Calls, "show:Root", "The root isn't drawn on the way.");
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_BackReturnsToTheRoot()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+            await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot);
+
+            Assert.IsTrue(await navigator.GoBackAsync());
+            Assert.AreEqual("Root", stack.GetCurrentScreen());
+            Assert.AreEqual(1, stack.MainHistoryCount);
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_ClosesAnOpenModal()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+            await navigator.GoToAsync("Modal");
+            display.Instantiated.Add("Modal");
+
+            Assert.IsTrue(await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot));
+
+            Assert.IsFalse(stack.HasModal);
+            CollectionAssert.Contains(display.Calls, "hide:Modal");
+            Assert.AreEqual(2, stack.MainHistoryCount);
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_TargetAlreadyInTheStackEndsRightAboveTheRoot()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Store");
+            await navigator.GoToAsync("Shop");
+            display.Calls.Clear();
+
+            Assert.IsTrue(await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot));
+
+            CollectionAssert.AreEqual(new[] { "Store", "Root" }, stack.GetMainHistorySnapshot());
+            CollectionAssert.Contains(display.Calls, "hide:Shop");
+            CollectionAssert.DoesNotContain(display.Calls, "hide:Store");
+            CollectionAssert.Contains(display.Calls, "show:Store");
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_ToTheRootPopsBackToIt()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+
+            Assert.IsTrue(await navigator.GoToAsync("Root", NavigationHistory.ClearToRoot));
+            Assert.AreEqual(1, stack.MainHistoryCount);
+            Assert.AreEqual("Root", stack.GetCurrentScreen());
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_RejectsModalsAndKeepsTheStack()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+
+            LogAssert.Expect(UnityEngine.LogType.Error, new System.Text.RegularExpressions.Regex("only fullscreen screens can clear the stack"));
+            Assert.IsFalse(await navigator.GoToAsync("Modal", NavigationHistory.ClearToRoot));
+            Assert.AreEqual(2, stack.MainHistoryCount);
+            Assert.IsFalse(stack.HasModal);
+        }
+
+        [Test]
+        public async Task GoToClearToRoot_OnAnEmptyStackOpensTheScreen()
+        {
+            Assert.IsTrue(await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot));
+            Assert.AreEqual("Store", stack.GetCurrentScreen());
         }
     }
 }

@@ -4,6 +4,10 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `GoTo(screen, NavigationHistory.ClearToRoot)` removes every screen above the root before opening a fullscreen screen, for tab bars. The root isn't shown on the way, and back returns to it.
+
 ### Fixed
 
 - Addressables handles leaked: layers loaded through Addressables were never released, so their assets stayed in memory for the whole session. Each address now has one handle, released on a single scene load unless a kept screen uses it. Cancelled and failed loads release their handle.

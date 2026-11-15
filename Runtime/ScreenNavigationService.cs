@@ -35,11 +35,15 @@ namespace ScreenSystem
         public string GetCurrentScreen()
             => navigationStack.GetCurrentScreen();
 
-        public async Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
+        public Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
+            => GoToAsync(screenId, NavigationHistory.Push, ct);
+
+        public async Task<bool> GoToAsync(string screenId, NavigationHistory history, CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync($"GoTo({screenId})", async () =>
+            string operation = history == NavigationHistory.Push ? $"GoTo({screenId})" : $"GoTo({screenId}, {history})";
+            return await WithNavigationGuardAsync(operation, async () =>
             {
-                return await navigator.GoToAsync(screenId, ct);
+                return await navigator.GoToAsync(screenId, history, ct);
             });
         }
 

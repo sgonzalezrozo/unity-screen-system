@@ -23,6 +23,7 @@ All methods return `Task<bool>` (`false` when blocked or unknown) and take an op
 ScreenManager screens = ScreenManager.Instance;
 
 await screens.GoTo("ShopDetail");
+await screens.GoTo("Store", NavigationHistory.ClearToRoot); // tab bar: Root, Store
 await screens.GoBack();
 await screens.PopTo("ShopMain");
 await screens.SetRoot("Lobby");
@@ -32,6 +33,7 @@ Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`, `IsT
 
 - `ScreenManager.Instance` is set in `Start()`. At boot, wait until it's not `null`, then `await ScreenManager.Instance.WaitForInitializationAsync()` before the first `SetRoot`.
 - Wrap `async void` Unity methods in `try`/`catch` and log the exception.
+- A tab bar is a layer shared by the tab screens. Its buttons call `GoTo(tab, NavigationHistory.ClearToRoot)`, so back returns to the root instead of walking through tabs. It works for fullscreen screens only.
 - Navigation can't pass parameters to a screen. Put shared data in a Model the screen reads.
 
 ## React to a screen

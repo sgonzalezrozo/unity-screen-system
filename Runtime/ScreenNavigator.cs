@@ -27,7 +27,10 @@ namespace ScreenSystem
             this.alertService = alertService;
         }
 
-        public async Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
+        public Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
+            => GoToAsync(screenId, NavigationHistory.Push, ct);
+
+        public async Task<bool> GoToAsync(string screenId, NavigationHistory history, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(screenId))
             {
@@ -52,6 +55,9 @@ namespace ScreenSystem
                 NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
                 return false;
             }
+
+            if (history == NavigationHistory.ClearToRoot)
+                return await GoToClearingToRootAsync(screenId, screen, ct);
 
             if (screen.screenType == ScreenType.alert)
                 return await ShowAlertScreenAsync(screenId, ct);
@@ -102,6 +108,70 @@ namespace ScreenSystem
                     navigationStack.ClearModal();
                 if (screenShownOverOverlay == screenId)
                     screenShownOverOverlay = null;
+                throw;
+            }
+
+            return true;
+        }
+
+        // Pops every screen above the root and opens the target over it, without showing the root on the way.
+        private async Task<bool> GoToClearingToRootAsync(string screenId, ScreenDefinition screen, CancellationToken ct)
+        {
+            if (screen.screenType != ScreenType.fullscreen)
+            {
+                Debug.LogError($"[ScreenNav] GoTo({screenId}, ClearToRoot) failed: only fullscreen screens can clear the stack. Use GoTo without it for modals and alerts.");
+                NavigationEvents.NotifyNavigationFailed(screenId, "ClearToRoot needs a fullscreen screen");
+                return false;
+            }
+
+            if (alertService != null && alertService.IsAlertActive)
+            {
+                Debug.LogWarning($"[ScreenNav] GoTo({screenId}, ClearToRoot) blocked: alert '{alertService.CurrentAlertId}' is active.");
+                NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
+                return false;
+            }
+
+            string root = navigationStack.GetRootScreen();
+            if (navigationStack.MainHistoryCount == 0 || string.IsNullOrEmpty(root))
+                return await GoToAsync(screenId, NavigationHistory.Push, ct);
+
+            if (root == screenId)
+                return await PopToAsync(screenId, ct);
+
+            bool alreadyVisibleOnTop = navigationStack.PeekMainScreen() == screenId && !navigationStack.HasModal && IsScreenCurrentlyVisible(screenId);
+
+            NavigationEvents.NotifyNavigationStarted(screenId);
+            await ClearAllModalsAsync(ct);
+
+            // The target's shared layers stay visible while the screens above the root hide.
+            while (navigationStack.MainHistoryCount > 1)
+            {
+                string removedId = navigationStack.PopMainScreen();
+                if (removedId == screenId)
+                    continue;
+
+                if (displayService.IsScreenInstantiated(removedId))
+                    await displayService.HideScreen(removedId, screenId, ct);
+            }
+
+            navigationStack.PushMainScreen(screenId);
+            NavigationEvents.NotifyStackCleared();
+
+            if (alreadyVisibleOnTop)
+            {
+                NavigationEvents.NotifyNavigationCompleted(screenId);
+                return true;
+            }
+
+            try
+            {
+                await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: true);
+            }
+            catch (OperationCanceledException)
+            {
+                // The screens above the root are already gone; drop the target so the stack ends at the root.
+                if (navigationStack.PeekMainScreen() == screenId)
+                    navigationStack.PopMainScreen();
                 throw;
             }
 

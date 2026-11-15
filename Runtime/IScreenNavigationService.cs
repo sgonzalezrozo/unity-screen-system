@@ -6,6 +6,7 @@ namespace ScreenSystem
 	public interface IScreenNavigationService
 	{
 		Task<bool> GoTo(string screenId, CancellationToken ct = default);
+		Task<bool> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default);
 		Task<bool> GoBack(CancellationToken ct = default);
 		Task<bool> SetRoot(string screenId, CancellationToken ct = default);
 		bool CanGoBack { get; }

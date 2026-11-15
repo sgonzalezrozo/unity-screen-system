@@ -174,7 +174,14 @@ namespace ScreenSystem
         }
 
         /// <summary>Opens a screen by name or ID. Returns false if the call is ignored or blocked.</summary>
-        public async Task<bool> GoTo(string screenId, CancellationToken ct = default)
+        public Task<bool> GoTo(string screenId, CancellationToken ct = default)
+            => GoTo(screenId, NavigationHistory.Push, ct);
+
+        /// <summary>
+        /// Opens a screen by name or ID. With <see cref="NavigationHistory.ClearToRoot"/>, every screen above the
+        /// root is removed first, as a tab bar does. Returns false if the call is ignored or blocked.
+        /// </summary>
+        public async Task<bool> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default)
         {
             if (!IsReady(nameof(GoTo)))
                 return false;
@@ -185,7 +192,7 @@ namespace ScreenSystem
                 return false;
             }
 
-            bool result = await navigationService.GoToAsync(resolvedId, ct);
+            bool result = await navigationService.GoToAsync(resolvedId, history, ct);
             return result;
         }
 
