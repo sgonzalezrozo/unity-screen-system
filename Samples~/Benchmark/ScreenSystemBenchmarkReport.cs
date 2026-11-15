@@ -38,6 +38,7 @@ namespace ScreenSystem.Benchmark
         public BenchmarkSession session;
         public List<string> fullscreenScreens = new();
         public List<string> modalScreens = new();
+        public List<string> alertScreens = new();
         public List<string> persistentScreens = new();
         public List<string> scenes = new();
         public List<BenchmarkMetric> metrics = new();

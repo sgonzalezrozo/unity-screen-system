@@ -28,6 +28,9 @@ The [Benchmark sample](../../Samples~/Benchmark/README.md) measures these metric
 | `render.window-rule-violations` | Navigations that left more than one fullscreen, modal or alert rendering, or a covered layer rendering | 0 |
 | `render.fullscreens-under-modal` | Fullscreen screens still rendering while a modal is open. With the backdrop, the modal's blurred snapshot replaces the screen. | 0 |
 | `blur.last-snapshot-ms`, `*.step.Snapshot.ms` | Main thread cost of capturing and blurring the snapshot when a modal opens | Lower |
+| `alert.snapshot-over-fullscreen` | 1 when an alert over a fullscreen screen gets the blurred snapshot | 1 |
+| `alert.dim-over-modal`, `alert.modal-rendering-under-alert`, `alert.dim-between-modal-and-alert` | An alert over a modal: the dim shows, the modal keeps rendering, and the dim sits above every modal layer and below every alert layer | 1 |
+| `alert.dim-hidden-after-dismiss` | 1 when dismissing the alert removes the dim | 1 |
 | `render.layers-rendering` | Layers rendering after a navigation. Median and max. | Lower |
 | `layers.instances-all-loaded` | Layer instances with every screen loaded. Lower than the sum of each screen's layers when layers are shared. | Lower |
 | `*.gc-collections`, `*.gc-ms` | Garbage collections and time spent in GC during a kind of call, an idle window or a scene change | 0 for cached screens and idle |

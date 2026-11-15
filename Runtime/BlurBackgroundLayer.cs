@@ -34,6 +34,14 @@ namespace ScreenSystem
         public bool IsDimVisible
             => dimCanvas != null && dimCanvas.enabled;
 
+        /// <summary>Sorting order of the dim, which sits between a modal and the alert over it.</summary>
+        public int DimSortingOrder
+            => dimCanvas != null ? dimCanvas.sortingOrder : 0;
+
+        /// <summary>Sorting order of the snapshot, which sits just below the overlay.</summary>
+        public int SnapshotSortingOrder
+            => snapshotCanvas != null ? snapshotCanvas.sortingOrder : 0;
+
         /// <summary>Last snapshot cost on the main thread, in milliseconds. Read by the benchmark.</summary>
         public double LastSnapshotMs { get; private set; }
 

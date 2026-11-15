@@ -536,6 +536,9 @@ namespace ScreenSystem.Benchmark
 
                 status = "Warm pass";
                 await WarmPassAsync();
+
+                status = "Alerts";
+                await AlertPassAsync();
                 Save();
 
                 await MeasureIdleAsync("idle.all-cached");
@@ -591,6 +594,8 @@ namespace ScreenSystem.Benchmark
                     result.persistentScreens.Add(screen.ScreenName);
                 else if (screen.screenType == ScreenType.modal)
                     result.modalScreens.Add(screen.ScreenName);
+                else if (screen.screenType == ScreenType.alert)
+                    result.alertScreens.Add(screen.ScreenName);
                 else if (screen.screenType == ScreenType.fullscreen && !screen.IgnoreNavigationRules)
                     result.fullscreenScreens.Add(screen.ScreenName);
             }
@@ -791,6 +796,67 @@ namespace ScreenSystem.Benchmark
 #if UNITY_EDITOR
             SetEditorProfiling(false);
 #endif
+        }
+
+        private const int ALERT_REPETITIONS = 5;
+
+        // An alert over a fullscreen screen gets the blurred snapshot. An alert over a modal leaves the modal visible
+        // and dims it: the dim must sit above every layer of the modal and below every layer of the alert.
+        private async Task AlertPassAsync()
+        {
+            if (result.alertScreens.Count == 0)
+            {
+                result.notes.Add("No alert screen in the registry, so alerts weren't measured.");
+                return;
+            }
+
+            ScreenManager manager = ScreenManager.Instance;
+            BlurBackgroundLayer backdrop = FindAnyObjectByType<BlurBackgroundLayer>();
+            string alert = result.alertScreens[0];
+            string modal = result.modalScreens.Count > 0 ? result.modalScreens[0] : null;
+            string root = manager.GetRootScreen();
+
+            for (int rep = 0; rep < ALERT_REPETITIONS; rep++)
+            {
+                if (manager.GetCurrentScreen() != root)
+                    await manager.PopTo(root);
+
+                NavSample open = await MeasureAsync(() => manager.GoTo(alert));
+                AddSample("alert-open", open);
+                if (open.Ok && backdrop != null)
+                    AddSample("alert.snapshot-over-fullscreen", new NavSample { Ms = backdrop.IsSnapshotVisible ? 1 : 0, Ok = true });
+                AddSample("alert-dismiss", await MeasureAsync(() => manager.DismissAlert()));
+
+                if (modal == null)
+                    continue;
+
+                if (!(await manager.GoTo(modal)))
+                    continue;
+
+                NavSample overModal = await MeasureAsync(() => manager.GoTo(alert));
+                AddSample("alert-over-modal-open", overModal);
+                if (overModal.Ok && backdrop != null)
+                {
+                    List<LayerComponent> modalLayers = manager.GetScreenLayers(modal);
+                    List<LayerComponent> alertLayers = manager.GetScreenLayers(alert);
+                    bool modalRendering = modalLayers.Count > 0 && IsRendering(modalLayers[0]);
+                    int modalTop = int.MinValue, alertBottom = int.MaxValue;
+                    foreach (LayerComponent layer in modalLayers)
+                        if (layer != null) modalTop = Math.Max(modalTop, layer.CurrentZOrder);
+                    foreach (LayerComponent layer in alertLayers)
+                        if (layer != null) alertBottom = Math.Min(alertBottom, layer.CurrentZOrder);
+                    int dim = backdrop.DimSortingOrder;
+
+                    AddSample("alert.dim-over-modal", new NavSample { Ms = backdrop.IsDimVisible ? 1 : 0, Ok = true });
+                    AddSample("alert.modal-rendering-under-alert", new NavSample { Ms = modalRendering ? 1 : 0, Ok = true });
+                    AddSample("alert.dim-between-modal-and-alert", new NavSample { Ms = backdrop.IsDimVisible && dim > modalTop && dim < alertBottom ? 1 : 0, Ok = true });
+                }
+
+                AddSample("alert-over-modal-dismiss", await MeasureAsync(() => manager.DismissAlert()));
+                if (backdrop != null)
+                    AddSample("alert.dim-hidden-after-dismiss", new NavSample { Ms = backdrop.IsDimVisible ? 0 : 1, Ok = true });
+                await manager.GoBack();
+            }
         }
 
         private async Task SceneCyclesAsync()
@@ -1191,12 +1257,12 @@ namespace ScreenSystem.Benchmark
             {
                 string phase = pair.Key;
                 List<NavSample> list = pair.Value;
-                bool isValueOnly = phase.StartsWith("persistent.") || phase.StartsWith("scene-change.");
+                bool isValueOnly = phase.StartsWith("persistent.") || phase.StartsWith("scene-change.") || phase.StartsWith("alert.");
 
                 if (isValueOnly)
                 {
                     bool isMs = phase == "scene-change.load" || phase.EndsWith("-ms");
-                    string unit = isMs ? "ms" : phase.StartsWith("persistent.") ? "ratio" : phase.EndsWith("frames") || phase.EndsWith("-to-root") ? "frames" : "count";
+                    string unit = isMs ? "ms" : phase.StartsWith("persistent.") || phase.StartsWith("alert.") ? "ratio" : phase.EndsWith("frames") || phase.EndsWith("-to-root") ? "frames" : "count";
                     AddMetric(phase, Percentile(list, s => s.Ms, 0.5), unit, "median", list.Count);
                     if (isMs)
                         AddMetric(phase + ".p95", Percentile(list, s => s.Ms, 0.95), unit, "p95", list.Count);
