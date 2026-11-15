@@ -71,6 +71,8 @@ namespace ScreenSystem.Benchmark
         private int maxModals;
         private int maxAlerts;
         private int maxCoveredLayersRendering;
+        private int maxFullscreensUnderModal;
+        private int checksWithModal;
         private string firstViolation;
 
         private ScreenSystemBenchmarkReport report;
@@ -953,6 +955,13 @@ namespace ScreenSystem.Benchmark
             }
 
             windowRuleChecks++;
+            if (modals > 0)
+            {
+                // With the backdrop, a modal's snapshot replaces the fullscreen screen, so none should render under it.
+                checksWithModal++;
+                maxFullscreensUnderModal = Mathf.Max(maxFullscreensUnderModal, fullscreens);
+            }
+
             maxFullscreens = Mathf.Max(maxFullscreens, fullscreens);
             maxModals = Mathf.Max(maxModals, modals);
             maxAlerts = Mathf.Max(maxAlerts, alerts);
@@ -974,6 +983,11 @@ namespace ScreenSystem.Benchmark
             AddMetric("render.max-modals", maxModals, "count", "max", windowRuleChecks);
             AddMetric("render.max-alerts", maxAlerts, "count", "max", windowRuleChecks);
             AddMetric("render.max-covered-layers", maxCoveredLayersRendering, "count", "max", windowRuleChecks);
+            AddMetric("render.fullscreens-under-modal", maxFullscreensUnderModal, "count", "max", checksWithModal);
+            BlurBackgroundLayer backdrop = FindAnyObjectByType<BlurBackgroundLayer>();
+            AddMetric("blur.backdrop-present", backdrop != null ? 1 : 0, "bool", "last", 1);
+            if (backdrop != null)
+                AddMetric("blur.last-snapshot-ms", backdrop.LastSnapshotMs, "ms", "last", 1);
             AddMetric("render.layers-rendering", Percentile(renderedLayerSamples, s => s.Ms, 0.5), "count", "median", renderedLayerSamples.Count);
             AddMetric("render.layers-rendering.max", Percentile(renderedLayerSamples, s => s.Ms, 1.0), "count", "max", renderedLayerSamples.Count);
             if (firstViolation != null)

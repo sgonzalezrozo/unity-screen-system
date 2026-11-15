@@ -19,12 +19,13 @@ namespace ScreenSystem
         public const string LifecycleCallbacksName = "ScreenSystem.LifecycleCallbacks";
         public const string MetricsName = "ScreenSystem.Metrics";
         public const string SceneCleanupName = "ScreenSystem.SceneCleanup";
+        public const string SnapshotName = "ScreenSystem.Snapshot";
 
         /// <summary>Every marker name, for tools that record them all.</summary>
         public static readonly string[] All =
         {
             LoadPrefabName, InstantiateLayerName, InjectLayerName, ReassignLayersName, PrepareLayersName,
-            ActivateLayersName, HideLayersName, LifecycleCallbacksName, MetricsName, SceneCleanupName
+            ActivateLayersName, HideLayersName, LifecycleCallbacksName, MetricsName, SceneCleanupName, SnapshotName
         };
 
         internal static readonly ProfilerMarker LoadPrefab = new(ProfilerCategory.Loading, LoadPrefabName);
@@ -37,5 +38,6 @@ namespace ScreenSystem
         internal static readonly ProfilerMarker LifecycleCallbacks = new(ProfilerCategory.Scripts, LifecycleCallbacksName);
         internal static readonly ProfilerMarker Metrics = new(ProfilerCategory.Scripts, MetricsName);
         internal static readonly ProfilerMarker SceneCleanup = new(ProfilerCategory.Scripts, SceneCleanupName);
+        internal static readonly ProfilerMarker Snapshot = new(ProfilerCategory.Scripts, SnapshotName);
     }
 }

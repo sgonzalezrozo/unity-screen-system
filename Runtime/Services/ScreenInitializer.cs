@@ -97,6 +97,7 @@ namespace ScreenSystem.Services
         public ScreenDisplayService GetDisplayService()
             => displayService;
 
+        // The backdrop behind modals and alerts, created by Setup. It stays active and toggles its Canvases.
         private BlurBackgroundLayer DiscoverBlurBackground()
         {
             Transform blurTransform = screenSystemRoot.Find("BlurBackground");
@@ -104,19 +105,12 @@ namespace ScreenSystem.Services
                 return null;
 
             BlurBackgroundLayer blurLayer = blurTransform.GetComponent<BlurBackgroundLayer>();
-            if (blurLayer != null)
-            {
-                if (!blurTransform.gameObject.activeSelf)
-                    return blurLayer;
+            if (blurLayer == null)
+                Debug.LogWarning("[ScreenInitializer] BlurBackground has no BlurBackgroundLayer. Run Tools > Screen System > Setup to rebuild it.");
+            else if (!blurTransform.gameObject.activeSelf)
+                blurTransform.gameObject.SetActive(true);
 
-                Debug.LogWarning("[ScreenInitializer] BlurBackground was active on startup! Setting inactive now. Update prefab to start inactive.");
-                blurTransform.gameObject.SetActive(false);
-
-                return blurLayer;
-            }
-
-            Debug.LogWarning("[ScreenInitializer] BlurBackground found but missing BlurBackgroundLayer component. Blur effect will be disabled.");
-            return null;
+            return blurLayer;
         }
     }
 }

@@ -103,6 +103,10 @@ namespace ScreenSystem
             }
         }
 
+        /// <summary>Every cached screen's layers, enumerable without copying or allocating.</summary>
+        public Dictionary<string, List<LayerComponent>>.ValueCollection CachedLayerLists
+            => instantiatedScreenLayers.ValuesView;
+
         public Dictionary<string, List<LayerComponent>> GetAllCachedScreens()
         {
             Dictionary<string, List<LayerComponent>> result = new(instantiatedScreenLayers.Count);

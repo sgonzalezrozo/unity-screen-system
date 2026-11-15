@@ -292,8 +292,41 @@ namespace ScreenSystem
             lifecycle.Unassign(screenId);
         }
 
+        /// <summary>True while a backdrop snapshot replaces this layer. It isn't drawn, but it's still shown.</summary>
+        public bool IsRenderSuspended
+            => renderSuspended;
+
+        private bool renderSuspended;
+
+        // Stops drawing a visible layer without hiding it: no lifecycle callbacks, no assignment change. Used when a
+        // blurred snapshot of the screen covers it behind a modal.
+        internal void SuspendRendering()
+        {
+            if (renderSuspended || !IsVisible)
+                return;
+
+            renderSuspended = true;
+            if (framework == UIFramework.uGUI)
+                canvasController?.Hide();
+            else
+                uiDocumentController?.Hide();
+        }
+
+        internal void ResumeRendering()
+        {
+            if (!renderSuspended)
+                return;
+
+            renderSuspended = false;
+            if (framework == UIFramework.uGUI)
+                canvasController?.Show();
+            else
+                uiDocumentController?.Show();
+        }
+
         public void Show()
         {
+            renderSuspended = false;
             if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
 
@@ -323,6 +356,7 @@ namespace ScreenSystem
 
         public void Hide()
         {
+            renderSuspended = false;
             NotifyScreenLifecycleComponents(isShown: false);
 
             lifecycle.Hide();

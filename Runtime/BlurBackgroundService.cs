@@ -1,165 +1,209 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace ScreenSystem
 {
-	public class BlurBackgroundService
-	{
-		private const string LOG_PREFIX = "[Blur]";
+    /// <summary>
+    /// Puts the backdrop behind modals and alerts, so at most three windows render:
+    /// - A modal, or an alert with no modal under it: a blurred snapshot of the screen replaces it, and the screen's
+    ///   layers stop rendering until the overlay closes. Layers the overlay shares (a navigation bar) keep rendering.
+    /// - An alert over a modal: a flat dim between them. The modal stays visible.
+    /// Without a backdrop in the ScreenSystem prefab, overlays open over the screen as before.
+    /// </summary>
+    public class BlurBackgroundService
+    {
+        private sealed class Overlay
+        {
+            public bool IsDim;
+            public bool HasSnapshot;
+            public readonly List<LayerComponent> Suspended = new();
+        }
 
-		private readonly BlurBackgroundLayer sharedBlurBackground;
-		private readonly ScreenCacheManager cacheManager;
-		private bool isBlurActive;
-		private int activeModalCount;
-		private readonly Dictionary<string, LayerComponent> modalLayerCache = new();
+        private readonly BlurBackgroundLayer backdrop;
+        private readonly ScreenCacheManager cacheManager;
+        private readonly Dictionary<string, Overlay> overlays = new();
+        private readonly HashSet<LayerComponent> overlayLayerSet = new();
 
-		public BlurBackgroundService(BlurBackgroundLayer sharedBlurBackground, ScreenCacheManager cacheManager = null)
-		{
-			this.sharedBlurBackground = sharedBlurBackground;
-			this.cacheManager = cacheManager;
-			isBlurActive = false;
-			activeModalCount = 0;
-		}
+        public BlurBackgroundService(BlurBackgroundLayer backdrop, ScreenCacheManager cacheManager = null)
+        {
+            this.backdrop = backdrop;
+            this.cacheManager = cacheManager;
+        }
 
-		public bool IsBlurActive
-			=> isBlurActive;
+        public bool HasBackdrop
+            => backdrop != null;
 
-		public int ActiveModalCount
-			=> activeModalCount;
+        /// <summary>Number of open overlays (modals and alerts) with a backdrop.</summary>
+        public int OverlayCount
+            => overlays.Count;
 
-		public async Task ShowBlurForModalAsync(string screenId, CancellationToken ct = default)
-		{
-			if (sharedBlurBackground == null)
-				return;
+        /// <summary>Layers currently suspended behind a snapshot. Read by tests and the benchmark.</summary>
+        public int SuspendedLayerCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (Overlay overlay in overlays.Values)
+                    count += overlay.Suspended.Count;
+                return count;
+            }
+        }
 
-			activeModalCount++;
+        private bool HasSnapshotOverlay
+        {
+            get
+            {
+                foreach (Overlay overlay in overlays.Values)
+                {
+                    if (overlay.HasSnapshot)
+                        return true;
+                }
 
-			if (isBlurActive)
-				return;
+                return false;
+            }
+        }
 
-			isBlurActive = true;
+        private bool HasModalOverlay(string excludeScreenId)
+        {
+            foreach (KeyValuePair<string, Overlay> pair in overlays)
+            {
+                if (pair.Key != excludeScreenId && !pair.Value.IsDim)
+                    return true;
+            }
 
-			Canvas blurCanvas = sharedBlurBackground.GetComponent<Canvas>();
-			if (blurCanvas != null)
-			{
-				LayerComponent modalLayer = GetOrFindModalLayer(screenId);
-				if (modalLayer != null)
-				{
-					Canvas modalCanvas = modalLayer.GetComponent<Canvas>();
-					if (modalCanvas != null)
-					{
-						int modalSortOrder = modalCanvas.sortingOrder;
-						int blurSortOrder = modalSortOrder - 1;
-						blurCanvas.sortingOrder = blurSortOrder;
-					}
-				}
+            return false;
+        }
 
-				blurCanvas.overrideSorting = true;
-				blurCanvas.sortingLayerName = "Default";
-			}
+        /// <summary>
+        /// Called before an overlay's layers become visible. Captures the screen when the overlay will get a snapshot,
+        /// so the capture holds only what's underneath.
+        /// </summary>
+        public async Task PrepareAsync(string screenId, ScreenType type, CancellationToken ct)
+        {
+            if (backdrop == null || overlays.ContainsKey(screenId))
+                return;
 
-			try
-			{
-				await sharedBlurBackground.ShowAsync(ct);
-			}
-			catch (System.OperationCanceledException)
-			{
-				isBlurActive = false;
-				activeModalCount--;
-			}
-			catch (System.Exception ex)
-			{
-				Debug.LogWarning($"{LOG_PREFIX} ShowAsync failed: {ex.Message}");
-				isBlurActive = false;
-				activeModalCount--;
-			}
-		}
+            if (type == ScreenType.alert && HasModalOverlay(screenId))
+                return;
 
-		private LayerComponent GetOrFindModalLayer(string screenId)
-		{
-			// A cached layer is destroyed when its screen unloads. Drop it instead of returning it.
-			if (modalLayerCache.TryGetValue(screenId, out LayerComponent cachedLayer))
-			{
-				if (cachedLayer != null)
-					return cachedLayer;
+            await backdrop.CaptureAsync(ct);
+        }
 
-				modalLayerCache.Remove(screenId);
-			}
+        /// <summary>Called once the overlay's layers are visible. Places the backdrop just below them.</summary>
+        public void Apply(string screenId, ScreenType type, List<LayerComponent> overlayLayers)
+        {
+            if (backdrop == null || overlays.ContainsKey(screenId))
+                return;
 
-			// Use cache manager if available (preferred, O(1) lookup)
-			if (cacheManager != null)
-			{
-				List<LayerComponent> layers = cacheManager.GetScreenLayers(screenId);
-				if (layers != null && layers.Count > 0)
-				{
-					LayerComponent layer = layers[0];
-					modalLayerCache[screenId] = layer;
-					return layer;
-				}
-				return null;
-			}
+            int sortingOrder = LowestZOrder(overlayLayers) - 1;
+            Overlay overlay = new();
+            overlays[screenId] = overlay;
 
-			// Fallback to FindObjectsByType if no cache manager (O(n) operation)
-			LayerComponent[] allLayers = Object.FindObjectsByType<LayerComponent>(FindObjectsSortMode.None);
-			foreach (LayerComponent layer in allLayers)
-			{
-				if (layer.CurrentScreenId == screenId)
-				{
-					modalLayerCache[screenId] = layer;
-					return layer;
-				}
-			}
-			return null;
-		}
+            if (type == ScreenType.alert && HasModalOverlay(screenId))
+            {
+                overlay.IsDim = true;
+                backdrop.ShowDim(sortingOrder);
+                return;
+            }
 
-		public async Task HideBlurForModalAsync(string screenId, CancellationToken ct = default)
-		{
-			if (sharedBlurBackground == null)
-				return;
+            backdrop.ShowSnapshot(sortingOrder);
+            if (!backdrop.IsSnapshotVisible)
+                return;
 
-			activeModalCount--;
-			if (activeModalCount < 0)
-				activeModalCount = 0;
+            overlay.HasSnapshot = true;
+            SuspendLayersUnder(overlayLayers, overlay);
+        }
 
-			if (activeModalCount > 0)
-				return;
+        /// <summary>Called when an overlay hides. Brings back what its snapshot replaced.</summary>
+        public void Remove(string screenId)
+        {
+            if (backdrop == null || !overlays.TryGetValue(screenId, out Overlay overlay))
+                return;
 
-			if (!isBlurActive)
-				return;
+            overlays.Remove(screenId);
 
-			try
-			{
-				await sharedBlurBackground.HideAsync(ct);
-				isBlurActive = false;
-				modalLayerCache.Remove(screenId);
-			}
-			catch (System.OperationCanceledException)
-			{
-			}
-			catch (System.Exception ex)
-			{
-				Debug.LogWarning($"{LOG_PREFIX} HideAsync failed: {ex.Message}");
-			}
-		}
+            if (overlay.IsDim)
+            {
+                backdrop.HideDim();
+                return;
+            }
 
-		public void HideAllBlurs()
-		{
-			if (sharedBlurBackground == null || !isBlurActive)
-				return;
+            foreach (LayerComponent layer in overlay.Suspended)
+            {
+                if (layer != null)
+                    layer.ResumeRendering();
+            }
 
-			activeModalCount = 0;
-			isBlurActive = false;
-			modalLayerCache.Clear();
-			sharedBlurBackground.HideAsync().Forget("HideAllBlurs");
-		}
+            if (!HasSnapshotOverlay)
+                backdrop.HideSnapshot();
+        }
 
-		public void Cleanup()
-		{
-			activeModalCount = 0;
-			isBlurActive = false;
-			modalLayerCache.Clear();
-		}
-	}
+        /// <summary>Called on scene changes. Resumes every suspended layer that still exists and hides the backdrop.</summary>
+        public void Cleanup()
+        {
+            foreach (Overlay overlay in overlays.Values)
+            {
+                foreach (LayerComponent layer in overlay.Suspended)
+                {
+                    if (layer != null)
+                        layer.ResumeRendering();
+                }
+            }
+
+            overlays.Clear();
+            if (backdrop != null)
+            {
+                backdrop.HideSnapshot();
+                backdrop.HideDim();
+            }
+        }
+
+        private void SuspendLayersUnder(List<LayerComponent> overlayLayers, Overlay overlay)
+        {
+            if (cacheManager == null)
+                return;
+
+            // Reused set and a non-copying view of the cache, so opening a modal allocates as little as possible.
+            overlayLayerSet.Clear();
+            if (overlayLayers != null)
+            {
+                foreach (LayerComponent layer in overlayLayers)
+                    overlayLayerSet.Add(layer);
+            }
+
+            foreach (List<LayerComponent> layers in cacheManager.CachedLayerLists)
+            {
+                if (layers == null)
+                    continue;
+
+                for (int i = 0; i < layers.Count; i++)
+                {
+                    LayerComponent layer = layers[i];
+                    if (layer == null || overlayLayerSet.Contains(layer) || !layer.IsVisible || overlay.Suspended.Contains(layer))
+                        continue;
+
+                    layer.SuspendRendering();
+                    overlay.Suspended.Add(layer);
+                }
+            }
+
+            overlayLayerSet.Clear();
+        }
+
+        private static int LowestZOrder(List<LayerComponent> layers)
+        {
+            int lowest = int.MaxValue;
+            if (layers != null)
+            {
+                foreach (LayerComponent layer in layers)
+                {
+                    if (layer != null && layer.CurrentZOrder < lowest)
+                        lowest = layer.CurrentZOrder;
+                }
+            }
+
+            return lowest == int.MaxValue ? 0 : lowest;
+        }
+    }
 }

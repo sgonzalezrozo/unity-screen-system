@@ -60,6 +60,10 @@ namespace ScreenSystem
             get { return _innerDict; }
         }
 
+        /// <summary>The values, enumerable without allocating.</summary>
+        public Dictionary<TKey, TValue>.ValueCollection ValuesView
+            => _innerDict.Values;
+
         public Dictionary<TKey, TValue> ToDictionary()
         {
             return new Dictionary<TKey, TValue>(_innerDict);

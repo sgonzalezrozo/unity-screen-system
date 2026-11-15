@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Threading;
 using System.Threading.Tasks;
 using ScreenSystem.ScriptableObjects;
@@ -6,271 +7,194 @@ using UnityEngine.UI;
 
 namespace ScreenSystem
 {
-    [RequireComponent(typeof(Image))]
-    [RequireComponent(typeof(CanvasGroup))]
-	public class BlurBackgroundLayer : MonoBehaviour
-	{
-		private const float DEFAULT_FADE_DURATION = 0.2f;
-		private const float DEFAULT_BLUR_STRENGTH = 3.0f;
+    /// <summary>
+    /// The backdrop behind modals and alerts. It has two parts, each on its own Canvas so each can sit at its own
+    /// sorting order:
+    /// - Snapshot: a blurred copy of the screen taken just before a modal opens. It replaces the fullscreen screen,
+    ///   which then stops rendering, so a modal draws over one quad instead of a whole screen.
+    /// - Dim: a flat color between a modal and an alert opened over it. The modal stays visible, so it isn't blurred.
+    /// Both parts stay active and only toggle their Canvas, like screen layers. Created by Tools > Screen System > Setup.
+    /// </summary>
+    public class BlurBackgroundLayer : MonoBehaviour
+    {
+        private const int BLUR_PASSES = 2;
 
-		[Header("Blur Settings")] [Tooltip("Strength of the blur effect (0-10, higher = more blur)")] [SerializeField] [Range(0f, 10f)]
-		private float blurStrength = DEFAULT_BLUR_STRENGTH;
+        [SerializeField] private Shader blurShader;
+        [SerializeField] private Canvas snapshotCanvas;
+        [SerializeField] private RawImage snapshotImage;
+        [SerializeField] private Canvas dimCanvas;
+        [SerializeField] private Image dimImage;
 
-		[Tooltip("Tint color overlay (default: semi-transparent black)")] [SerializeField]
-		private Color tintColor = new Color(0f, 0f, 0f, 0.4f);
+        private Material blurMaterial;
+        private RenderTexture blurred;
 
-		[Tooltip("Fade in/out duration in seconds")] [SerializeField]
-		private float fadeDuration = DEFAULT_FADE_DURATION;
+        public bool IsSnapshotVisible
+            => snapshotCanvas != null && snapshotCanvas.enabled;
 
-		[Header("Mobile Glassmorphism")]
-		[Tooltip("Use fake glassmorphism (no blur) for mobile performance")]
-		[SerializeField]
-		private bool useFakeGlassmorphism = true;
+        public bool IsDimVisible
+            => dimCanvas != null && dimCanvas.enabled;
 
-		[Tooltip("Darken the background for better glass effect visibility")]
-		[SerializeField]
-		[Range(0f, 1f)]
-		private float backgroundDarkness = 0.3f;
+        /// <summary>Last snapshot cost on the main thread, in milliseconds. Read by the benchmark.</summary>
+        public double LastSnapshotMs { get; private set; }
 
-        [Header("References")] [Tooltip("Image component for blur material (auto-found if not set)")] [SerializeField]
-        private Image blurImage;
-
-        [Tooltip("CanvasGroup for fade animations (auto-found if not set)")] [SerializeField]
-        private CanvasGroup canvasGroup;
-
-        private BlurFadeController fadeController;
-        private Canvas canvas;
-        private Canvas parentCanvas;
-        private bool isInitialized;
-
-        public float BlurStrength
+        /// <summary>Sets the references. Called by Setup when it builds the backdrop.</summary>
+        public void Configure(Shader shader, Canvas snapshot, RawImage snapshotRawImage, Canvas dim, Image dimColorImage)
         {
-            get => blurStrength;
-            set
-            {
-                blurStrength = Mathf.Clamp(value, 0f, 10f);
-                if (blurImage != null)
-                    blurImage.color = new Color(blurImage.color.r, blurImage.color.g, blurImage.color.b, tintColor.a);
-            }
+            blurShader = shader;
+            snapshotCanvas = snapshot;
+            snapshotImage = snapshotRawImage;
+            dimCanvas = dim;
+            dimImage = dimColorImage;
         }
 
-		public Color TintColor
-		{
-			get => tintColor;
-			set
-			{
-				tintColor = value;
-				if (blurImage != null)
-					blurImage.color = tintColor;
-			}
-		}
-
-		public bool UseFakeGlassmorphism
-		{
-			get => useFakeGlassmorphism;
-			set => useFakeGlassmorphism = value;
-		}
-
-		public float BackgroundDarkness
-		{
-			get => backgroundDarkness;
-			set
-			{
-				backgroundDarkness = Mathf.Clamp01(value);
-				UpdateTintColorForGlassEffect();
-			}
-		}
-
-        private void EnsureInitialized()
+        private void Awake()
         {
-            if (isInitialized)
+            if (snapshotCanvas != null)
+                snapshotCanvas.enabled = false;
+            if (dimCanvas != null)
+                dimCanvas.enabled = false;
+        }
+
+        /// <summary>
+        /// Captures what's on screen at the end of this frame and blurs it at low resolution. Call it before the modal
+        /// becomes visible, so the capture holds only the screen underneath.
+        /// </summary>
+        public Task CaptureAsync(CancellationToken ct = default)
+        {
+            // Batch mode doesn't render, and WaitForEndOfFrame never comes there. Without a snapshot, the screen
+            // underneath keeps rendering instead.
+            if (blurShader == null || snapshotImage == null || Application.isBatchMode)
+                return Task.CompletedTask;
+
+            TaskCompletionSource<bool> done = new();
+            StartCoroutine(CaptureAtEndOfFrame(done, ct));
+            return done.Task;
+        }
+
+        private IEnumerator CaptureAtEndOfFrame(TaskCompletionSource<bool> done, CancellationToken ct)
+        {
+            yield return new WaitForEndOfFrame();
+
+            if (ct.IsCancellationRequested)
+            {
+                done.TrySetCanceled(ct);
+                yield break;
+            }
+
+            System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+            using (ScreenSystemMarkers.Snapshot.Auto())
+                Capture();
+            LastSnapshotMs = watch.Elapsed.TotalMilliseconds;
+            done.TrySetResult(true);
+        }
+
+        private void Capture()
+        {
+            ScreenSystemSettings settings = ScreenSystemSettings.Instance;
+            float scale = settings != null ? settings.BlurResolutionScale : 0.25f;
+            float strength = settings != null ? settings.GetEffectiveBlurStrength() : 3f;
+
+            int width = Mathf.Max(16, Mathf.RoundToInt(Screen.width * scale));
+            int height = Mathf.Max(16, Mathf.RoundToInt(Screen.height * scale));
+            EnsureTarget(width, height);
+            if (blurMaterial == null)
+                blurMaterial = new Material(blurShader) { hideFlags = HideFlags.HideAndDontSave };
+
+            RenderTexture full = RenderTexture.GetTemporary(Screen.width, Screen.height, 0);
+            RenderTexture temp = RenderTexture.GetTemporary(width, height, 0);
+            try
+            {
+                ScreenCapture.CaptureScreenshotIntoRenderTexture(full);
+
+                // The capture is upside down on graphics APIs whose texture origin is at the top.
+                if (SystemInfo.graphicsUVStartsAtTop)
+                    Graphics.Blit(full, blurred, new Vector2(1f, -1f), new Vector2(0f, 1f));
+                else
+                    Graphics.Blit(full, blurred);
+
+                blurMaterial.SetFloat("_Spread", Mathf.Max(0.5f, strength));
+                for (int pass = 0; pass < BLUR_PASSES; pass++)
+                {
+                    blurMaterial.SetVector("_Direction", new Vector4(1f, 0f, 0f, 0f));
+                    Graphics.Blit(blurred, temp, blurMaterial);
+                    blurMaterial.SetVector("_Direction", new Vector4(0f, 1f, 0f, 0f));
+                    Graphics.Blit(temp, blurred, blurMaterial);
+                }
+            }
+            finally
+            {
+                RenderTexture.ReleaseTemporary(full);
+                RenderTexture.ReleaseTemporary(temp);
+            }
+
+            snapshotImage.texture = blurred;
+            snapshotImage.color = settings != null ? Color.Lerp(Color.white, settings.BlurTintColor, settings.BlurTintColor.a) : Color.white;
+        }
+
+        private void EnsureTarget(int width, int height)
+        {
+            if (blurred != null && blurred.width == width && blurred.height == height)
+                return;
+
+            ReleaseTarget();
+            blurred = new RenderTexture(width, height, 0, RenderTextureFormat.Default) { name = "ScreenSystem Snapshot", filterMode = FilterMode.Bilinear };
+            blurred.Create();
+        }
+
+        public void ShowSnapshot(int sortingOrder)
+        {
+            if (snapshotCanvas == null || blurred == null)
+                return;
+
+            snapshotCanvas.overrideSorting = true;
+            snapshotCanvas.sortingOrder = sortingOrder;
+            snapshotCanvas.enabled = true;
+        }
+
+        public void HideSnapshot()
+        {
+            if (snapshotCanvas != null)
+                snapshotCanvas.enabled = false;
+        }
+
+        public void ShowDim(int sortingOrder)
+        {
+            if (dimCanvas == null)
                 return;
 
             ScreenSystemSettings settings = ScreenSystemSettings.Instance;
-            if (settings != null)
-            {
-                blurStrength = settings.GetEffectiveBlurStrength();
-                tintColor = settings.BlurTintColor;
-                fadeDuration = settings.BlurFadeDuration;
-            }
+            if (dimImage != null && settings != null)
+                dimImage.color = settings.AlertDimColor;
 
-            Transform blurImageTransform = transform.Find("BlurImage");
-            if (blurImageTransform != null)
-                blurImage = blurImageTransform.GetComponent<Image>();
-            else
-            {
-                blurImage = GetComponentInChildren<Image>(true);
-                Debug.LogWarning("[BlurBackgroundLayer] BlurImage child not found by name, using fallback search");
-            }
-
-            if (canvasGroup == null)
-                canvasGroup = GetComponent<CanvasGroup>();
-
-            if (canvas == null)
-                canvas = GetComponent<Canvas>();
-
-            parentCanvas = GetComponentInParent<Canvas>();
-
-            SetupCanvasForBlur();
-            SetupURPBlur();
-
-            fadeController = new BlurFadeController(canvasGroup, fadeDuration);
-            fadeController.SetAlphaImmediate(0f);
-
-            isInitialized = true;
+            dimCanvas.overrideSorting = true;
+            dimCanvas.sortingOrder = sortingOrder;
+            dimCanvas.enabled = true;
         }
 
-
-        private void SetupCanvasForBlur()
+        public void HideDim()
         {
-            if (canvas == null)
-            {
-                Debug.LogError("[BlurBackgroundLayer] No Canvas component found!");
+            if (dimCanvas != null)
+                dimCanvas.enabled = false;
+        }
+
+        private void ReleaseTarget()
+        {
+            if (blurred == null)
                 return;
-            }
 
-            canvas.overrideSorting = true;
-            canvas.sortingLayerName = "Default";
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        }
+            if (snapshotImage != null && snapshotImage.texture == blurred)
+                snapshotImage.texture = null;
 
-		private void SetupURPBlur()
-		{
-			if (blurImage == null)
-				return;
-
-			UpdateTintColorForGlassEffect();
-			blurImage.raycastTarget = false;
-		}
-
-		private void UpdateTintColorForGlassEffect()
-		{
-			if (blurImage == null)
-				return;
-
-			if (useFakeGlassmorphism)
-			{
-				Color glassBackgroundTint = new(
-					tintColor.r * (1f - backgroundDarkness),
-					tintColor.g * (1f - backgroundDarkness),
-					tintColor.b * (1f - backgroundDarkness),
-					tintColor.a
-				);
-				blurImage.color = glassBackgroundTint;
-			}
-			else
-			{
-				blurImage.color = tintColor;
-			}
-		}
-
-        private void EnableURPBlur()
-        {
-            if (blurImage != null)
-                blurImage.enabled = true;
-            Debug.Log("[BlurBackgroundLayer] Blur overlay enabled");
-        }
-
-        private void DisableURPBlur()
-        {
-            if (blurImage != null)
-                blurImage.enabled = false;
-            Debug.Log("[BlurBackgroundLayer] Blur overlay disabled");
-        }
-
-        public async Task ShowAsync(CancellationToken ct = default)
-        {
-            EnsureInitialized();
-
-            gameObject.SetActive(true);
-            EnsureProperHierarchyPosition();
-
-            canvas.enabled = true;
-            EnableURPBlur();
-
-            await fadeController.FadeAsync(0f, 1f, ct);
-        }
-
-        private void EnsureProperHierarchyPosition()
-        {
-            if (parentCanvas != null && parentCanvas.transform != transform.parent)
-                transform.SetParent(parentCanvas.transform, false);
-
-            transform.SetAsFirstSibling();
-        }
-
-        public async Task HideAsync(CancellationToken ct = default)
-        {
-            if (canvasGroup == null || fadeDuration <= 0f)
-            {
-                DisableURPBlur();
-                gameObject.SetActive(false);
-                return;
-            }
-
-            try
-            {
-                await fadeController.FadeAsync(1f, 0f, ct);
-                DisableURPBlur();
-                gameObject.SetActive(false);
-            }
-            catch (System.OperationCanceledException)
-            {
-                DisableURPBlur();
-                gameObject.SetActive(false);
-            }
+            blurred.Release();
+            Destroy(blurred);
+            blurred = null;
         }
 
         private void OnDestroy()
         {
-            fadeController?.Cleanup();
+            ReleaseTarget();
+            if (blurMaterial != null)
+                Destroy(blurMaterial);
         }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            if (!Application.isPlaying)
-                return;
-
-            if (blurImage != null)
-                blurImage.color = tintColor;
-        }
-
-        private void Reset()
-        {
-            blurImage = GetComponent<Image>();
-            canvasGroup = GetComponent<CanvasGroup>();
-
-            if (blurImage == null)
-                blurImage = gameObject.AddComponent<Image>();
-
-            if (canvasGroup == null)
-                canvasGroup = gameObject.AddComponent<CanvasGroup>();
-
-            RectTransform rectTransform = GetComponent<RectTransform>();
-            if (rectTransform != null)
-            {
-                rectTransform.anchorMin = Vector2.zero;
-                rectTransform.anchorMax = Vector2.one;
-                rectTransform.offsetMin = Vector2.zero;
-                rectTransform.offsetMax = Vector2.zero;
-            }
-
-            tintColor = new Color(0f, 0f, 0f, 0.3f);
-            fadeDuration = DEFAULT_FADE_DURATION;
-
-            if (blurImage != null)
-            {
-                blurImage.raycastTarget = true;
-                blurImage.color = tintColor;
-            }
-
-            if (canvasGroup != null)
-                canvasGroup.alpha = 0f;
-
-            gameObject.name = "BlurBackground";
-        }
-#endif
     }
 }
-

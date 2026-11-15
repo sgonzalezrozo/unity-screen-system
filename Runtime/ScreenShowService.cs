@@ -66,6 +66,9 @@ namespace ScreenSystem
 
                 layerRetriever.RegisterActiveScreen(screenId);
 
+                // A modal or alert captures the screen underneath before any of its own layers become visible.
+                await blurHandler.PrepareAsync(screenId, screen, ct);
+
                 List<LayerComponent> layers = await layerRetriever.GetOrCreateLayersAsync(screenId, screen, logId, ct);
 
                 if (layers == null || layers.Count == 0)
@@ -99,7 +102,7 @@ namespace ScreenSystem
 
                 using (ScreenSystemMarkers.Metrics.Auto())
                     RecordMetrics(screenId, screen, layers);
-                await blurHandler.ApplyBlurAsync(screenId, screen, ct);
+                blurHandler.Apply(screenId, screen, layers);
 
                 NavigationEvents.NotifyTransitionInCompleted(screenId);
             }

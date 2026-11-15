@@ -20,12 +20,19 @@ namespace ScreenSystem.ScriptableObjects
         [Range(0f, 10f)]
         public float BlurStrength = 3.0f;
 
-        [Tooltip("Tint color overlay for blur background (semi-transparent black recommended)")]
+        [Tooltip("Darkens and tints the blurred snapshot behind modals. Alpha is the strength: 0 keeps only the blur, 1 is solid color.")]
         public Color BlurTintColor = new Color(0f, 0f, 0f, 0.5f);
 
         [Tooltip("Fade duration for blur show/hide animation in seconds")]
         [Range(0f, 1f)]
         public float BlurFadeDuration = 0.2f;
+
+        [Tooltip("Resolution of the blurred snapshot shown behind modals, as a fraction of the screen. Lower is cheaper and blurrier.")]
+        [Range(0.1f, 1f)]
+        public float BlurResolutionScale = 0.25f;
+
+        [Tooltip("Color laid between a modal and an alert opened over it. The modal stays visible, so it's only darkened, not blurred.")]
+        public Color AlertDimColor = new Color(0f, 0f, 0f, 0.5f);
 
         [Header("Mobile Settings")]
         [Tooltip("Use reduced blur quality on mobile devices for better performance")]

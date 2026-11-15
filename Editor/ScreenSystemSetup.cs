@@ -22,7 +22,10 @@ namespace ScreenSystem.Editor
         {
             Debug.Log("[ScreenSystem Setup] Starting ScreenSystem setup...");
             SetupCommonFiles();
-            CreateScreenSystemPrefab_UIToolkit();
+
+            // An existing prefab is kept, but gets the modal backdrop if it's missing or outdated.
+            if (!CreateScreenSystemPrefab_UIToolkit())
+                ScreenSystemBackdropBuilder.EnsureInPrefab();
             CreateAddressablesLabel();
             AssetDatabase.Refresh();
             ShowCompletionDialog("UIToolkit");
@@ -234,6 +237,9 @@ namespace ScreenSystem.Editor
              // Create DarkOverlay for UIToolkit (instead of blur)
             CreateDarkOverlayForUIToolkit(root);
 
+            // The blurred snapshot and the dim behind modals and alerts.
+            ScreenSystemBackdropBuilder.Build(root.transform);
+
             // Create Global PanelSettings for UIToolkit
             CreateGlobalPanelSettings();
 
@@ -305,62 +311,6 @@ namespace ScreenSystem.Editor
             {
                 Debug.LogError($"[ScreenSystem Setup] Failed to create GlobalPanelSettings: {ex.Message}");
             }
-        }
-
-        private static GameObject CreateBlurBackgroundForSetup(GameObject parent, Camera uiCamera)
-        {
-            GameObject blurLayer = new GameObject("BlurBackground");
-            blurLayer.transform.SetParent(parent.transform);
-
-            // Set BlurBackground to "Blur" layer (will be created if not exists)
-            int blurLayerIndex = LayerMask.NameToLayer("Blur");
-            if (blurLayerIndex == -1)
-            {
-                Debug.LogWarning("[ScreenSystem Setup] Blur layer not found. Please create a 'Blur' layer in Project Settings → Tags and Layers");
-                blurLayerIndex = LayerMask.NameToLayer("Default");
-            }
-            blurLayer.layer = blurLayerIndex;
-
-            Canvas canvas = blurLayer.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = uiCamera;  // Use UICamera for blur rendering
-            canvas.planeDistance = 100f;
-            canvas.enabled = false; // Disabled on startup
-
-            blurLayer.AddComponent<GraphicRaycaster>();
-
-            RectTransform rectTransform = blurLayer.GetComponent<RectTransform>();
-            rectTransform.anchorMin = Vector2.zero;
-            rectTransform.anchorMax = Vector2.one;
-            rectTransform.offsetMin = Vector2.zero;
-            rectTransform.offsetMax = Vector2.zero;
-
-            // Create BlurImage child
-            GameObject imageObject = new GameObject("BlurImage");
-            imageObject.transform.SetParent(blurLayer.transform, false);
-            imageObject.layer = blurLayerIndex; // Same layer as parent
-
-            RectTransform imageRect = imageObject.AddComponent<RectTransform>();
-            imageRect.anchorMin = Vector2.zero;
-            imageRect.anchorMax = Vector2.one;
-            imageRect.offsetMin = Vector2.zero;
-            imageRect.offsetMax = Vector2.zero;
-
-            Image blurImage = imageObject.AddComponent<Image>();
-            blurImage.color = new Color(0f, 0f, 0f, 0.4f); // Lighter overlay for better visibility
-            blurImage.raycastTarget = true;
-
-            CanvasGroup canvasGroup = blurLayer.AddComponent<CanvasGroup>();
-            canvasGroup.alpha = 0f;
-
-            blurLayer.AddComponent<BlurBackgroundLayer>();
-
-            // CRITICAL: Set GameObject inactive so it doesn't render on startup
-            blurLayer.SetActive(false);
-
-            Debug.Log("[ScreenSystem Setup] BlurBackground created and added to ScreenSystem (inactive, on Blur layer)");
-
-            return blurLayer;
         }
 
         private static void LinkUICameraToSettings(GameObject prefabAsset)

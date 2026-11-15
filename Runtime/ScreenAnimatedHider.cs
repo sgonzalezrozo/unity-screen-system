@@ -41,8 +41,9 @@ namespace ScreenSystem
                 ScreenDefinition screen = screenRegistry.GetScreen(screenId);
                 if (screen != null)
                 {
-                    if (screen.screenType == ScreenType.modal && blurService != null)
-                        await blurService.HideBlurForModalAsync(screenId, ct);
+                    // The screen the overlay's snapshot replaced renders again.
+                    if ((screen.screenType == ScreenType.modal || screen.screenType == ScreenType.alert) && blurService != null)
+                        blurService.Remove(screenId);
 
                     cacheManager.UnregisterActiveScreen(screenId);
                 }

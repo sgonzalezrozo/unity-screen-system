@@ -275,7 +275,6 @@ namespace ScreenSystem
         public void ClearAllCachedResources()
         {
             // A modal open during the scene change took the blur with it. Turn the blur off and forget its layers.
-            blurService.HideAllBlurs();
             blurService.Cleanup();
 
             HashSet<GameObject> keepLayers = new();
