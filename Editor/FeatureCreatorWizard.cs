@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using ScreenSystem;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,11 +7,23 @@ using UnityEngine.UIElements;
 
 namespace ScreenSystem.Editor
 {
+    /// <summary>
+    /// Creates screens that work on the first GoTo. For each screen, in the feature folder:
+    /// <code>
+    /// Feature/
+    /// ├── ScreenName/ScreenName.prefab    (+ ScreenName.uxml for UI Toolkit)
+    /// └── Services/ScreenName.asset       ScreenDefinition, ID "Feature_ScreenName"
+    /// </code>
+    /// The prefab is marked Addressable (address = its name) and the definition is added to the registry.
+    /// </summary>
     public class FeatureCreatorWizard : EditorWindow
     {
+        public const string ServicesFolder = "Services";
+
         private class ScreenItem
         {
             public string Name;
+            public ScreenType Type = ScreenType.fullscreen;
             public bool PersistOverScenes;
         }
 
@@ -22,27 +33,22 @@ namespace ScreenSystem.Editor
             AddScreenToFeature
         }
 
-        private string featureCategory = "NewFeature";
+        private string featureName = "NewFeature";
         private List<ScreenItem> screens = new() { new ScreenItem { Name = "MainScreen" } };
         private Vector2 scrollPos;
         private string targetFolderPath = "Assets";
         private UIFramework selectedFramework = UIFramework.uGUI;
-        private static FeatureCreatorWizard window;
         private WizardMode mode = WizardMode.CreateNewFeature;
 
         [MenuItem("Assets/Screen System/New Screen Feature", false, 20)]
         public static void NewScreenFeature()
-        {
-            InitializeWindow(WizardMode.CreateNewFeature);
-        }
+            => Open(WizardMode.CreateNewFeature);
 
         [MenuItem("Assets/Screen System/Add Screen to Feature", false, 21)]
         public static void AddScreenToFeature()
-        {
-            InitializeWindow(WizardMode.AddScreenToFeature);
-        }
+            => Open(WizardMode.AddScreenToFeature);
 
-        private static void InitializeWindow(WizardMode wizardMode)
+        private static void Open(WizardMode wizardMode)
         {
             string path = "Assets";
             if (Selection.activeObject != null)
@@ -52,117 +58,68 @@ namespace ScreenSystem.Editor
                     path = Path.GetDirectoryName(path);
             }
 
-            window = GetWindow<FeatureCreatorWizard>("Feature Creator Wizard");
-            window.minSize = new Vector2(400, 300);
-            window.targetFolderPath = path?.Replace('\\', '/');
+            FeatureCreatorWizard window = GetWindow<FeatureCreatorWizard>("New Screens");
+            window.minSize = new Vector2(460, 300);
             window.mode = wizardMode;
-
-            if (wizardMode == WizardMode.AddScreenToFeature)
-            {
-                if (string.IsNullOrEmpty(window.targetFolderPath) || !AssetDatabase.IsValidFolder(window.targetFolderPath))
-                {
-                    EditorUtility.DisplayDialog("Error", "Please select a valid folder.", "OK");
-                    window.Close();
-                    return;
-                }
-
-                string folderName = Path.GetFileName(window.targetFolderPath);
-                window.featureCategory = folderName == "Screens"
-                    ? Path.GetFileName(Path.GetDirectoryName(window.targetFolderPath))
-                    : folderName;
-                window.screens = new() { new ScreenItem { Name = $"{window.featureCategory}NewScreen" } };
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(window.targetFolderPath))
-                {
-                    string folderName = Path.GetFileName(window.targetFolderPath);
-                    if (!string.IsNullOrEmpty(folderName) && folderName != "Assets")
-                    {
-                        window.featureCategory = folderName;
-                        if (window.screens.Count > 0)
-                            window.screens[0].Name = $"{folderName}Main";
-                    }
-                }
-            }
-
+            window.SetTarget(path?.Replace('\\', '/'));
             window.Show();
         }
 
+        private void SetTarget(string path)
+        {
+            targetFolderPath = string.IsNullOrEmpty(path) ? "Assets" : path;
+
+            if (mode == WizardMode.AddScreenToFeature)
+            {
+                targetFolderPath = FindFeatureFolder(targetFolderPath);
+                featureName = Path.GetFileName(targetFolderPath);
+                screens = new() { new ScreenItem { Name = $"{featureName}NewScreen" } };
+                return;
+            }
+
+            string folderName = Path.GetFileName(targetFolderPath);
+            if (!string.IsNullOrEmpty(folderName) && folderName != "Assets")
+            {
+                featureName = folderName;
+                targetFolderPath = Path.GetDirectoryName(targetFolderPath)?.Replace('\\', '/');
+                if (screens.Count > 0)
+                    screens[0].Name = $"{folderName}Main";
+            }
+        }
 
         private void OnGUI()
         {
             EditorGUILayout.Space(10);
-
-            string windowTitle = mode == WizardMode.CreateNewFeature
-                ? "Create Multiple Screens for a Feature"
-                : "Add Screens to Existing Feature";
-
-            EditorGUILayout.LabelField(windowTitle, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(mode == WizardMode.CreateNewFeature ? "New feature with screens" : "Add screens to a feature", EditorStyles.boldLabel);
 
             EditorGUILayout.Space(5);
             EditorGUILayout.BeginVertical("box");
 
             if (mode == WizardMode.CreateNewFeature)
-                featureCategory = EditorGUILayout.TextField("Feature Category", featureCategory);
+                featureName = EditorGUILayout.TextField("Feature", featureName);
             else
-                EditorGUILayout.LabelField("Feature:", featureCategory);
+                EditorGUILayout.LabelField("Feature", featureName);
 
             selectedFramework = (UIFramework)EditorGUILayout.EnumPopup("UI Framework", selectedFramework);
 
-            EditorGUILayout.Space(5);
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Target Folder:", targetFolderPath);
-            if (GUILayout.Button("Select Folder", GUILayout.Width(100)))
-            {
-                string folderType = mode == WizardMode.CreateNewFeature ? "parent folder" : "folder";
-                string path = EditorUtility.OpenFolderPanel($"Select {folderType}", "Assets", "");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    if (path.StartsWith(Application.dataPath))
-                    {
-                        targetFolderPath = "Assets" + path.Substring(Application.dataPath.Length);
-
-                        if (mode == WizardMode.AddScreenToFeature)
-                        {
-                            string folderName = Path.GetFileName(targetFolderPath);
-                            featureCategory = folderName == "Screens"
-                                ? Path.GetFileName(Path.GetDirectoryName(targetFolderPath))
-                                : folderName;
-                            if (screens.Count > 0)
-                                screens[0].Name = $"{featureCategory}NewScreen";
-                        }
-                        else
-                        {
-                            string folderName = Path.GetFileName(targetFolderPath);
-                            if (!string.IsNullOrEmpty(folderName) && folderName != "Assets")
-                            {
-                                featureCategory = folderName;
-                                if (screens.Count > 0)
-                                    screens[0].Name = $"{folderName}Main";
-                            }
-                        }
-                    }
-                    else
-                    {
-                        EditorUtility.DisplayDialog("Error", "Please select a folder inside the Assets directory.", "OK");
-                    }
-                }
-            }
-
+            EditorGUILayout.LabelField(mode == WizardMode.CreateNewFeature ? "Parent Folder" : "Feature Folder", targetFolderPath);
+            if (GUILayout.Button("Select", GUILayout.Width(70)))
+                SelectFolder();
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Screens to Create", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Screens", EditorStyles.boldLabel);
 
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos, "box", GUILayout.ExpandHeight(true));
             for (int i = 0; i < screens.Count; i++)
             {
                 EditorGUILayout.BeginHorizontal();
-                screens[i].Name = EditorGUILayout.TextField($"Screen {i + 1}", screens[i].Name);
-                screens[i].PersistOverScenes = EditorGUILayout.ToggleLeft("Persist", screens[i].PersistOverScenes, GUILayout.Width(65));
+                screens[i].Name = EditorGUILayout.TextField(screens[i].Name);
+                screens[i].Type = (ScreenType)EditorGUILayout.EnumPopup(screens[i].Type, GUILayout.Width(85));
+                screens[i].PersistOverScenes = EditorGUILayout.ToggleLeft("Persist", screens[i].PersistOverScenes, GUILayout.Width(60));
 
                 if (GUILayout.Button("X", GUILayout.Width(25)))
                 {
@@ -174,161 +131,194 @@ namespace ScreenSystem.Editor
             }
 
             if (GUILayout.Button("+ Add Screen"))
-                screens.Add(new ScreenItem { Name = $"NewScreen{screens.Count + 1}" });
+                screens.Add(new ScreenItem { Name = $"{featureName}Screen{screens.Count + 1}" });
 
             EditorGUILayout.EndScrollView();
 
-            EditorGUILayout.Space(10);
+            string featureDir = FeatureDirectory();
+            EditorGUILayout.HelpBox(
+                $"Creates {featureDir}/<Screen>/<Screen>.prefab and {featureDir}/{ServicesFolder}/<Screen>.asset, " +
+                "marks the prefab Addressable and adds the screen to the registry. Open it with GoTo(\"<Screen>\").",
+                MessageType.None);
 
-            GUI.enabled = screens.Count > 0 && !string.IsNullOrEmpty(featureCategory);
-
-            string buttonText = mode == WizardMode.CreateNewFeature
-                ? "Create Feature Screens & Prefabs"
-                : "Add Screens to Feature";
-
-            if (GUILayout.Button(buttonText, GUILayout.Height(40)))
-                CreateFeature();
-
+            GUI.enabled = screens.Count > 0 && !string.IsNullOrWhiteSpace(featureName);
+            if (GUILayout.Button("Create", GUILayout.Height(36)))
+                CreateAll();
             GUI.enabled = true;
         }
 
-        private void CreateFeature()
+        private void SelectFolder()
         {
-            string screensDir;
-            string prefabsDir;
+            string path = EditorUtility.OpenFolderPanel("Select folder", targetFolderPath, "");
+            if (string.IsNullOrEmpty(path))
+                return;
 
+            if (!path.StartsWith(Application.dataPath))
+            {
+                EditorUtility.DisplayDialog("Screen System", "Pick a folder inside Assets.", "OK");
+                return;
+            }
+
+            string assetPath = "Assets" + path.Substring(Application.dataPath.Length);
             if (mode == WizardMode.AddScreenToFeature)
-            {
-                if (string.IsNullOrEmpty(targetFolderPath) || !AssetDatabase.IsValidFolder(targetFolderPath))
-                {
-                    EditorUtility.DisplayDialog("Error", "Target folder is invalid.", "OK");
-                    return;
-                }
-
-                string folderName = Path.GetFileName(targetFolderPath);
-
-                if (folderName == "Screens")
-                {
-                    screensDir = targetFolderPath;
-                    string parentDir = Path.GetDirectoryName(targetFolderPath);
-                    prefabsDir = parentDir + "/Prefabs";
-                }
-                else
-                {
-                    screensDir = targetFolderPath;
-                    prefabsDir = targetFolderPath + "/Prefabs";
-                }
-            }
+                SetTarget(assetPath);
             else
+                targetFolderPath = assetPath;
+        }
+
+        private string FeatureDirectory()
+            => mode == WizardMode.AddScreenToFeature ? targetFolderPath : $"{targetFolderPath}/{featureName.Replace(" ", "")}";
+
+        private void CreateAll()
+        {
+            if (!AssetDatabase.IsValidFolder(targetFolderPath))
             {
-                if (string.IsNullOrEmpty(targetFolderPath) || !AssetDatabase.IsValidFolder(targetFolderPath))
-                {
-                    EditorUtility.DisplayDialog("Error", "Target folder is invalid.", "OK");
-                    return;
-                }
-
-                string featureDir = targetFolderPath + "/" + featureCategory;
-                if (!AssetDatabase.IsValidFolder(featureDir))
-                    AssetDatabase.CreateFolder(targetFolderPath, featureCategory);
-
-                screensDir = featureDir + "/Screens";
-                prefabsDir = featureDir + "/Prefabs";
+                EditorUtility.DisplayDialog("Screen System", $"'{targetFolderPath}' isn't a folder.", "OK");
+                return;
             }
 
-            if (!AssetDatabase.IsValidFolder(prefabsDir))
-                AssetDatabase.CreateFolder(Path.GetDirectoryName(prefabsDir), "Prefabs");
+            string featureDir = FeatureDirectory();
+            string feature = Path.GetFileName(featureDir);
+            List<string> created = new();
+            List<string> skipped = new();
 
-            if (!AssetDatabase.IsValidFolder(screensDir))
-                AssetDatabase.CreateFolder(Path.GetDirectoryName(screensDir), "Screens");
-
-            int createdCount = 0;
-
-            foreach (ScreenItem screen in screens)
+            foreach (ScreenItem item in screens)
             {
-                string screenName = screen.Name;
-
-                if (string.IsNullOrWhiteSpace(screenName))
+                string screenName = item.Name?.Replace(" ", "");
+                if (string.IsNullOrEmpty(screenName))
                     continue;
 
-                string id = $"{featureCategory.Replace(" ", "")}_{screenName.Replace(" ", "")}";
-
-                string assetPath = $"{screensDir}/{screenName}.asset";
-                if (AssetDatabase.LoadAssetAtPath<ScreenDefinition>(assetPath) == null)
-                {
-                    ScreenDefinition def = CreateInstance<ScreenDefinition>();
-                    def.ScreenName = screenName;
-                    def.ScreenId = id;
-                    def.screenType = ScreenType.fullscreen;
-                    def.Framework = selectedFramework;
-
-                    if (screen.PersistOverScenes)
-                        def.PersistOverScenes = true;
-
-                    AssetDatabase.CreateAsset(def, assetPath);
-                    createdCount++;
-                }
-
-                string prefabPath = $"{prefabsDir}/{screenName}.prefab";
-
-                if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null)
-                    continue;
-
-                GameObject screenObj = new(screenName)
-                {
-                    layer = LayerMask.NameToLayer("UI")
-                };
-
-                if (selectedFramework == UIFramework.uGUI)
-                    CreateuGUIPrefab(screenObj);
-                else if (selectedFramework == UIFramework.UIToolkit)
-                    CreateUIToolkitPrefab(screenObj);
-
-                screenObj.AddComponent<LayerDefinition>();
-
-                PrefabUtility.SaveAsPrefabAsset(screenObj, prefabPath);
-                DestroyImmediate(screenObj);
+                ScreenDefinition definition = CreateScreen(featureDir, feature, screenName, item.Type, selectedFramework, item.PersistOverScenes);
+                if (definition != null)
+                    created.Add(screenName);
+                else
+                    skipped.Add(screenName);
             }
 
+            string message = created.Count > 0 ? $"Created: {string.Join(", ", created)}." : "Nothing created.";
+            if (skipped.Count > 0)
+                message += $"\nSkipped, already exist: {string.Join(", ", skipped)}.";
+
+            EditorUtility.DisplayDialog("Screen System", message, "OK");
+            if (created.Count > 0)
+                Close();
+        }
+
+        /// <summary>
+        /// Creates one screen: its prefab, its ScreenDefinition and its registry entry. Returns null if a screen
+        /// with that name already exists in the feature.
+        /// </summary>
+        public static ScreenDefinition CreateScreen(string featureDir, string feature, string screenName, ScreenType type, UIFramework framework, bool persistOverScenes = false)
+        {
+            string screenDir = $"{featureDir}/{screenName}";
+            string servicesDir = $"{featureDir}/{ServicesFolder}";
+            string prefabPath = $"{screenDir}/{screenName}.prefab";
+            string definitionPath = $"{servicesDir}/{screenName}.asset";
+
+            if (AssetDatabase.LoadAssetAtPath<ScreenDefinition>(definitionPath) != null)
+                return null;
+
+            EnsureFolder(featureDir);
+            EnsureFolder(screenDir);
+            EnsureFolder(servicesDir);
+
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefab == null)
+                prefab = CreatePrefab(screenDir, screenName, framework);
+
+            ScreenDefinition definition = CreateInstance<ScreenDefinition>();
+            definition.ScreenName = screenName;
+            definition.ScreenId = ScreenDefinition.MakeScreenId(feature, screenName);
+            definition.screenType = type;
+            definition.Framework = framework;
+            definition.PersistOverScenes = persistOverScenes;
+            definition.AssetPath = ScreenSystemAssets.EnsureLoadable(prefab);
+            AssetDatabase.CreateAsset(definition, definitionPath);
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
 
-            string message = mode == WizardMode.AddScreenToFeature
-                ? $"Added {createdCount} screens and prefabs to feature '{featureCategory}'."
-                : $"Created {createdCount} screens and prefabs for feature '{featureCategory}'.";
-
-            EditorUtility.DisplayDialog("Success", message, "OK");
-
-            window.Close();
+            ScreenRegistrySync.Sync(logChanges: false);
+            return definition;
         }
 
-        private void CreateuGUIPrefab(GameObject screenObj)
+        private static GameObject CreatePrefab(string screenDir, string screenName, UIFramework framework)
         {
-            Canvas screenCanvas = screenObj.AddComponent<Canvas>();
-            screenCanvas.overrideSorting = false;
+            GameObject root = new(screenName) { layer = LayerMask.NameToLayer("UI") };
 
-            screenObj.AddComponent<GraphicRaycaster>();
+            if (framework == UIFramework.UIToolkit)
+                SetUpUIDocument(root, screenDir, screenName);
+            else
+                SetUpCanvas(root);
 
-            CanvasGroup canvasGroup = screenObj.AddComponent<CanvasGroup>();
-            canvasGroup.alpha = 1f;
-            canvasGroup.interactable = true;
-            canvasGroup.blocksRaycasts = true;
+            root.AddComponent<LayerDefinition>();
 
-            RectTransform screenRect = screenObj.GetComponent<RectTransform>();
-            screenRect.anchorMin = Vector2.zero;
-            screenRect.anchorMax = Vector2.one;
-            screenRect.offsetMin = Vector2.zero;
-            screenRect.offsetMax = Vector2.zero;
-            screenRect.anchoredPosition = Vector2.zero;
-            screenRect.localScale = Vector3.one;
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, $"{screenDir}/{screenName}.prefab");
+            DestroyImmediate(root);
+            return prefab;
         }
 
-        private void CreateUIToolkitPrefab(GameObject screenObj)
+        private static void SetUpCanvas(GameObject root)
         {
-            screenObj.AddComponent<UIDocument>();
+            Canvas canvas = root.AddComponent<Canvas>();
+            canvas.overrideSorting = false;
+            root.AddComponent<GraphicRaycaster>();
+            root.AddComponent<CanvasGroup>();
 
-            Debug.LogWarning("[FeatureCreatorWizard] UIDocument created. Please manually assign:\n" +
-                             "1. Source Asset (UXML): Your UXML file\n" +
-                             "2. Panel Settings: Assets/Settings/UI/GlobalPanelSettings.asset");
+            RectTransform rect = root.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
+        }
+
+        private static void SetUpUIDocument(GameObject root, string screenDir, string screenName)
+        {
+            UIDocument document = root.AddComponent<UIDocument>();
+            document.panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(ScreenSystemAssets.PanelSettingsPath);
+            if (document.panelSettings == null)
+                Debug.LogWarning($"[ScreenSystem] No PanelSettings at {ScreenSystemAssets.PanelSettingsPath}. Run Tools > Screen System > Setup, then assign it to {screenName}.");
+
+            string uxmlPath = $"{screenDir}/{screenName}.uxml";
+            if (!File.Exists(uxmlPath))
+            {
+                File.WriteAllText(uxmlPath,
+                    "<ui:UXML xmlns:ui=\"UnityEngine.UIElements\" xmlns:uie=\"UnityEditor.UIElements\">\n" +
+                    $"    <ui:VisualElement name=\"{screenName}\" style=\"flex-grow: 1;\" />\n" +
+                    "</ui:UXML>\n");
+                AssetDatabase.ImportAsset(uxmlPath);
+            }
+
+            document.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
+        }
+
+        /// <summary>
+        /// The feature folder for a selected path: the selection itself, or its parent when the selection is a
+        /// feature's Services folder, a screen folder next to Services, or a legacy Screens folder.
+        /// </summary>
+        public static string FindFeatureFolder(string path)
+        {
+            string name = Path.GetFileName(path);
+            string parent = Path.GetDirectoryName(path)?.Replace('\\', '/');
+
+            if (name == ServicesFolder || name == "Screens" || name == "Prefabs")
+                return parent;
+
+            if (!AssetDatabase.IsValidFolder($"{path}/{ServicesFolder}") && parent != null && AssetDatabase.IsValidFolder($"{parent}/{ServicesFolder}"))
+                return parent;
+
+            return path;
+        }
+
+        private static void EnsureFolder(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path))
+                return;
+
+            string parent = Path.GetDirectoryName(path)?.Replace('\\', '/');
+            if (!string.IsNullOrEmpty(parent))
+                EnsureFolder(parent);
+
+            AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
     }
 }

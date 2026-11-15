@@ -95,7 +95,10 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
             if (!assetManager.ValidatePrefabCanBeAdded(prefab))
                 return;
 
-            string layerName = assetManager.GetLayerNameForPrefab(prefab);
+            // A prefab that isn't Addressable or in Resources is marked Addressable, so the layer loads at runtime.
+            string layerName = ScreenSystemAssets.EnsureLoadable(prefab);
+            if (string.IsNullOrEmpty(layerName))
+                return;
 
             // Check for duplicates
             HashSet<string> existingLayers = new();

@@ -21,9 +21,14 @@ All notable changes to this package are documented in this file.
 - On a scene change with a modal open, the blur could stay on and its cache kept the destroyed layer.
 - Hiding a UI Toolkit layer disabled its `UIDocument`, which rebuilt its visual tree on every show (about 330 KB per show on a Pixel 5). Its root is now hidden with `display: none`.
 - Unused assets were unloaded during the scene change, which made the new scene's first screen wait for that work. They're unloaded once that screen is drawn.
+- Screens made with the wizard couldn't open: the prefab wasn't loadable, the asset path was empty and the screen wasn't in the registry. A prefab dragged onto a `ScreenDefinition` or a `LayerDefinition` that wasn't Addressable failed at runtime or was ignored.
 
 ### Changed
 
+- The screen wizard creates `Feature/Screen/Screen.prefab` and `Feature/Services/Screen.asset` instead of `Screens/` and `Prefabs/` folders, sets each screen's type, marks the prefab Addressable, fills in its asset path and registers it. For UI Toolkit it creates the UXML and assigns it and the `GlobalPanelSettings`.
+- The registry updates itself when a `ScreenDefinition` is created, deleted, moved or renamed, and warns about duplicate names and IDs. **Rebuild Registry Cache** is now a repair tool.
+- Prefabs dragged onto a `ScreenDefinition` or `LayerDefinition` are marked Addressable, with their name as the address, unless they're in `Resources`.
+- New `ScreenDefinition` assets get a `Feature_Screen` ID instead of a GUID. Existing IDs don't change.
 - **Breaking:** `BlurBackgroundLayer` was rebuilt as the snapshot backdrop. The old fake glass overlay, its inspector, the **GameObject > UI > Blur Background Layer** menu and `BlurFadeController` are removed. Run Setup to rebuild the backdrop.
 
 - On a single scene load, every screen is unloaded except those with **Persist Over Scenes**, the splash and the quit confirmation modal.

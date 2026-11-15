@@ -13,6 +13,8 @@ namespace ScreenSystem.Editor
         private SerializedProperty screenTypeProp;
         private SerializedProperty persistOverScenesProp;
         private SerializedProperty ignoreNavigationRulesProp;
+        private string loadSourceFor;
+        private string loadSource;
 
         private void OnEnable()
         {
@@ -38,7 +40,7 @@ namespace ScreenSystem.Editor
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 13
             };
-            GUI.Box(dropRect, "Drag & Drop Screen Prefab Here (Resources or Addressable)", style);
+            GUI.Box(dropRect, "Drag & Drop Screen Prefab Here (made Addressable if needed)", style);
 
             Event evt = Event.current;
             switch (evt.type)
@@ -58,11 +60,10 @@ namespace ScreenSystem.Editor
                             if (draggedObject is not GameObject go || !PrefabUtility.IsPartOfPrefabAsset(go))
                                 continue;
 
-                            string assetPath = AssetDatabase.GetAssetPath(go);
-                            if (string.IsNullOrEmpty(assetPath))
+                            // Marks the prefab Addressable when it isn't in Resources, so the screen loads on its first GoTo.
+                            string finalPath = ScreenSystemAssets.EnsureLoadable(go);
+                            if (string.IsNullOrEmpty(finalPath))
                                 continue;
-
-                            string finalPath = DetectAssetPath(assetPath);
 
                             assetPathProp.stringValue = finalPath;
                             serializedObject.ApplyModifiedProperties();
@@ -80,7 +81,13 @@ namespace ScreenSystem.Editor
                 EditorGUILayout.HelpBox("Missing Asset Path! Please assign a prefab.", MessageType.Error);
             else
             {
-                string pathType = screenDef.AssetPath.Contains("/Resources/") ? "Resources" : "Addressables";
+                if (loadSourceFor != screenDef.AssetPath)
+                {
+                    loadSourceFor = screenDef.AssetPath;
+                    loadSource = Resources.Load<GameObject>(screenDef.AssetPath) != null ? "Resources" : "Addressables";
+                }
+
+                string pathType = loadSource;
                 EditorGUILayout.HelpBox($"Loading from: {pathType}\nPath: {screenDef.AssetPath}", MessageType.Info);
             }
 
@@ -114,22 +121,6 @@ namespace ScreenSystem.Editor
             EditorGUILayout.EndVertical();
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private string DetectAssetPath(string assetPath)
-        {
-            int resourcesIndex = assetPath.IndexOf("/Resources/");
-            if (resourcesIndex >= 0)
-            {
-                string resourcesPath = assetPath.Substring(resourcesIndex + "/Resources/".Length);
-                resourcesPath = System.IO.Path.ChangeExtension(resourcesPath, null);
-                Debug.Log($"[ScreenDefinitionEditor] Detected Resources path: {resourcesPath}");
-                return resourcesPath;
-            }
-
-            string prefabName = System.IO.Path.GetFileNameWithoutExtension(assetPath);
-            Debug.Log($"[ScreenDefinitionEditor] Using Addressables name: {prefabName}");
-            return prefabName;
         }
     }
 }

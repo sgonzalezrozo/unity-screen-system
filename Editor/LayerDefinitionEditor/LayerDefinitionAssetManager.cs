@@ -47,15 +47,8 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
         /// </summary>
         public bool ValidatePrefabCanBeAdded(GameObject prefab)
         {
-            if (prefab == null)
-                return false;
-
-            string addressableName = GetAddressableNameForPrefab(prefab);
-            if (!string.IsNullOrEmpty(addressableName))
-                return true;
-
-            string assetPath = AssetDatabase.GetAssetPath(prefab);
-            return assetPath.Contains("/Resources/");
+            // Any prefab asset can be a layer: AddLayerFromPrefab makes it loadable.
+            return prefab != null && PrefabUtility.IsPartOfPrefabAsset(prefab);
         }
 
         /// <summary>

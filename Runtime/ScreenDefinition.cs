@@ -18,7 +18,7 @@ namespace ScreenSystem
         public string ScreenName;
 
         [ReadOnly]
-        [Tooltip("Unique screen ID (auto-generated GUID)")]
+        [Tooltip("Unique screen ID. New screens get Feature_ScreenName from their folder")]
         public string ScreenId;
 
         [Tooltip("Screen display type: fullscreen, modal, or alert")]
@@ -55,7 +55,8 @@ namespace ScreenSystem
 
             if (string.IsNullOrEmpty(ScreenId))
             {
-                ScreenId = System.Guid.NewGuid().ToString();
+                string id = DefaultScreenId(UnityEditor.AssetDatabase.GetAssetPath(this), ScreenName);
+                ScreenId = string.IsNullOrEmpty(id) ? System.Guid.NewGuid().ToString() : id;
                 changed = true;
             }
 
@@ -63,6 +64,28 @@ namespace ScreenSystem
                 UnityEditor.EditorUtility.SetDirty(this);
         }
 #endif
+
+        /// <summary>The ID the screen wizard gives a screen: "Feature_ScreenName", without spaces.</summary>
+        public static string MakeScreenId(string feature, string screenName)
+            => $"{feature?.Replace(" ", "")}_{screenName?.Replace(" ", "")}";
+
+        /// <summary>
+        /// "Feature_ScreenName" for a definition at <paramref name="definitionPath"/>. The feature is the folder that
+        /// holds the Services (or legacy Screens) folder the definition sits in; otherwise its own folder.
+        /// Returns null when the path or name is empty.
+        /// </summary>
+        public static string DefaultScreenId(string definitionPath, string screenName)
+        {
+            if (string.IsNullOrEmpty(definitionPath) || string.IsNullOrEmpty(screenName))
+                return null;
+
+            string folder = System.IO.Path.GetDirectoryName(definitionPath)?.Replace('\\', '/');
+            string folderName = System.IO.Path.GetFileName(folder);
+            if (folderName == "Services" || folderName == "Screens")
+                folderName = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(folder));
+
+            return string.IsNullOrEmpty(folderName) ? null : MakeScreenId(folderName, screenName);
+        }
 
         public void OnBeforeSerialize()
         {

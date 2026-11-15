@@ -3,6 +3,9 @@
     "rootNamespace": "ScreenSystem.Tests",
     "references": [
         "ScreenSystem",
+        "Unity.Addressables.Editor",
+        "Unity.Addressables",
+        "ScreenSystem.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

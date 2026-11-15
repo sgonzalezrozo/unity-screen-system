@@ -6,7 +6,7 @@ Copy this file into your project's agent rules (for example `AGENTS.md`, `CLAUDE
 
 - This project navigates UI with **Screen System** (`com.sgonzalezrozo.screen-system`). Don't load scenes, toggle panels with `SetActive`, or instantiate screen prefabs yourself to show a screen.
 - The entry point is `ScreenManager.Instance` (namespace `ScreenSystem`). `ScreenSystem` is the namespace, not a class.
-- Each screen is a prefab with a `ScreenDefinition` asset. Screens are created with **Assets > Screen System > New Screen Feature**. After adding or renaming a screen, the developer runs **Tools > Screen System > Rebuild Registry Cache**.
+- Each screen is a prefab with a `ScreenDefinition` asset. Screens are created with **Assets > Screen System > New Screen Feature**, which puts the prefab in `Feature/Screen/` and the `ScreenDefinition` in `Feature/Services/`, marks the prefab Addressable and registers it. The registry updates itself when definitions change.
 - Never write `.prefab` or `.asset` files as text. Describe the prefab and the Inspector steps instead, or use Unity editor tools if you have them.
 
 ## Layers

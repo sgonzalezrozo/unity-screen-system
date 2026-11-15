@@ -45,7 +45,7 @@ Each screen, and each layer, picks its framework. Both work in the same project 
 
 ### Tools included
 
-Setup in one command, a wizard that scaffolds screen features, a registry, a Screen Manager window with the live stack and metrics, a layer editor, EditMode tests and a benchmark that runs on your own screens.
+Setup in one command, a wizard that creates screens ready to open, a registry that updates itself, a Screen Manager window with the live stack and metrics, a layer editor, EditMode tests and a benchmark that runs on your own screens.
 
 ## Performance
 
@@ -153,12 +153,26 @@ The prefab is created automatically before the first scene loads, so you don't n
 
 ## Create your first screen
 
-1. In the Project window, select a folder for the feature.
-2. Select **Assets > Screen System > New Screen Feature**.
-3. Finish the wizard. It creates `Screens` and `Prefabs` folders with a `ScreenDefinition` and a prefab.
-4. Make the prefab loadable: mark it Addressable, or move it into a `Resources` folder.
-5. Drag the prefab onto the drop area of its `ScreenDefinition`. That fills in its asset path. Check its screen type and framework.
-6. Run **Tools > Screen System > Rebuild Registry Cache**.
+Two steps, about a minute:
+
+1. In the Project window, right-click the folder that holds your features and select **Screen System > New Screen Feature**. Name the feature and its screens, and pick each screen's type: `fullscreen`, `modal` or `alert`.
+2. Click **Create**, then call `ScreenManager.Instance.GoTo("ShopMain")` with your screen's name.
+
+For a feature `Shop` with a screen `ShopMain`, the wizard creates:
+
+```
+Shop/
+├── ShopMain/
+│   └── ShopMain.prefab      Canvas or UIDocument, LayerDefinition. Put the screen's C# here too.
+└── Services/
+    └── ShopMain.asset       ScreenDefinition, ID "Shop_ShopMain"
+```
+
+It also marks the prefab Addressable, with its name as the address, and adds the screen to the registry. For UI Toolkit it creates an empty `ShopMain.uxml` and assigns it and the `GlobalPanelSettings` to the `UIDocument`.
+
+To add a screen to an existing feature, right-click the feature folder, one of its screen folders or its `Services` folder and select **Screen System > Add Screen to Feature**.
+
+The registry keeps itself up to date: creating, deleting, moving or renaming a `ScreenDefinition` updates it, and the console warns when two screens share a name or ID. **Tools > Screen System > Rebuild Registry Cache** is only needed to repair a registry.
 
 ### What's on a screen prefab
 
@@ -169,15 +183,16 @@ The wizard adds these for you. If you build a prefab by hand, add them yourself:
 | uGUI | `Canvas`, `GraphicRaycaster`, `CanvasGroup`, a stretched `RectTransform` and `LayerDefinition` |
 | UI Toolkit | `UIDocument` and `LayerDefinition` |
 
-`LayerComponent` is added when the screen loads, if the prefab doesn't have it. For UI Toolkit, also assign your UXML and the `GlobalPanelSettings` asset that Setup creates in `Assets/Resources/Tools/Screen System/Prefabs/`.
+`LayerComponent` is added when the screen loads, if the prefab doesn't have it. For a UI Toolkit prefab built by hand, also assign your UXML and the `GlobalPanelSettings` asset that Setup creates in `Assets/Resources/Tools/Screen System/Prefabs/`.
+
+To use a prefab you built by hand, drag it onto the drop area of a `ScreenDefinition`. A prefab that isn't in `Resources` is marked Addressable.
 
 ## Compose a screen from layers
 
 1. Make each reusable part a prefab with its own `Canvas` (uGUI) or `UIDocument` (UI Toolkit): a background, a top bar, a navigation bar.
-2. Put each layer prefab in a `Resources` folder or mark it Addressable. Layers are found by that name or address.
-3. Select the screen prefab and open its `LayerDefinition` in the Inspector.
-4. Drag layer prefabs into the list. Keep the ones that should draw behind the screen above the `SCREEN` entry, and the ones that should draw in front below it.
-5. Reorder the list to change the draw order.
+2. Select the screen prefab and open its `LayerDefinition` in the Inspector.
+3. Drag layer prefabs into the list. A prefab that isn't in `Resources` or Addressable is marked Addressable, with its name as the address. Keep the ones that should draw behind the screen above the `SCREEN` entry, and the ones that should draw in front below it.
+4. Reorder the list to change the draw order.
 
 Any screen that lists the same layer shares its instance.
 
@@ -472,7 +487,7 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | `ScreenRegistry` | The lookup of available screens |
 | `ScreenManager` | The entry point for navigation |
 | `LayerComponent` | Handles a layer's runtime behavior |
-| Screen feature | A folder of screens created by the wizard |
+| Screen feature | A folder with one folder per screen and a `Services` folder for its `ScreenDefinition` assets |
 | Screen type | `fullscreen`, `modal` or `alert` |
 | Framework | `uGUI`, `UIToolkit` or `Both` |
 
@@ -481,10 +496,10 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | Command | Purpose |
 |---|---|
 | `Tools/Screen System/Setup` | Create the required project assets |
-| `Tools/Screen System/Rebuild Registry Cache` | Rebuild the registry from `ScreenDefinition` assets |
+| `Tools/Screen System/Rebuild Registry Cache` | Repair the registry. It already updates when `ScreenDefinition` assets change. |
 | `Tools/Screen System/Screen Manager Window` | Inspect the live stack, screens and metrics |
 | `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
-| `Assets/Screen System/New Screen Feature` | Scaffold a new screen feature |
+| `Assets/Screen System/New Screen Feature` | Create a feature with its screens, ready for `GoTo` |
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
 | `Tools/Screen System/Rebuild Modal Backdrop` | Add or rebuild the blurred backdrop behind modals. Setup also does it. |
 
@@ -496,7 +511,6 @@ In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, s
 - Keep screen names unique and stable.
 - Use a single root screen for your app's boot flow.
 - Prefer stack-based navigation over direct scene loads when UI should stay mounted.
-- Rebuild the registry after adding or renaming screens.
 
 ## Use it with AI coding agents
 
@@ -594,7 +608,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 | Problem | Try this |
 |---|---|
-| `TryResolveScreenId FAILED` or `screen not found` | Run **Rebuild Registry Cache** and check the screen name or ID |
+| `TryResolveScreenId FAILED` or `screen not found` | Check the screen name or ID, and the console for duplicate-name warnings. Run **Rebuild Registry Cache** to repair the registry. |
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
 | `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
