@@ -76,11 +76,66 @@ Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mo
 - Use uGUI, UI Toolkit or both
 - Load content with Addressables and care about memory across scenes
 - Want editor scaffolding, diagnostics and measurable performance
+- Have a project in progress with hand-made UI: you can [migrate one menu at a time](#adopt-it-in-a-project-that-already-has-ui)
 
 **Consider something else if you:**
 
 - Have only a few screens and simple scene changes
 - Need to pass data through navigation calls. `GoTo` takes only a screen ID for now.
+
+## Adopt it in a project that already has UI
+
+You don't have to migrate everything at once. Screen System stays out of the way until you open a screen, so your hand-made menus and its screens can live side by side while you move them over one at a time.
+
+**What installing it changes:** one `ScreenSystem` object is created in DontDestroyOnLoad. It opens nothing until you call `GoTo` or `SetRoot`, ignores the back key while none of its screens is open, uses your scene's `EventSystem`, and only unloads its own screens on scene changes. Your scene UI is untouched.
+
+### Migrate one menu
+
+1. Run **Tools > Screen System > Setup**, then turn off **Quit On Back At Root** in `ScreenSystemSettings`. While your main menu is still hand-made, back at the first Screen System screen should return to it, not quit.
+2. Create the screen with **Assets > Screen System > New Screen Feature** and move the panel's content into its prefab. Move its `OnEnable`/`OnDisable` code to `IScreenShow`/`IScreenHide`.
+3. Replace the code that showed and hid the panel:
+
+```csharp
+// Before
+shopPanel.SetActive(true);
+shopPanel.SetActive(false);
+
+// After
+await ScreenManager.Instance.GoTo("Shop");
+await ScreenManager.Instance.GoBack();
+```
+
+4. Hand back to your UI when the player backs out of the first Screen System screen:
+
+```csharp
+private void OnEnable() => NavigationEvents.OnBackAtRoot += ReturnToMenu;
+private void OnDisable() => NavigationEvents.OnBackAtRoot -= ReturnToMenu;
+
+private async void ReturnToMenu()
+{
+    try
+    {
+        await ScreenManager.Instance.CloseAll(); // hides every screen and empties the stack
+        mainMenuPanel.SetActive(true);           // your hand-made menu
+    }
+    catch (Exception ex)
+    {
+        Debug.LogException(ex);
+    }
+}
+```
+
+Closed screens stay loaded until the next scene change, so opening them again is fast.
+
+### While both kinds of UI are on screen
+
+- **Draw order:** Screen System's canvases are Screen Space Overlay with sorting orders from 10 up. Keep your overlay canvases below 10 to draw behind its screens, or well above to draw over them, such as a HUD or a loading curtain.
+- **Back key:** while a Screen System screen is open, it handles Escape and Android back. Your own back handler should skip when `ScreenManager.Instance.GetCurrentScreen()` isn't `null`.
+- **Visibility:** don't `SetActive` a screen's objects yourself. Open and close it through `ScreenManager`.
+
+### When the last menu is migrated
+
+Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** back on, add a [`QuitConfirmation` modal](#handle-back-at-the-root), and remove the `OnBackAtRoot` handler.
 
 ## Features
 
@@ -344,7 +399,7 @@ Plain `GoTo("Store")` keeps the history instead: back from Store returns to C.
 
 ### Handle back at the root
 
-`GoBack()` and the Escape key close an open modal first, then step back through the stack. At the root, Screen System opens a modal called `QuitConfirmation`. If that screen doesn't exist, the app quits straight away, and Play Mode stops in the Editor.
+`GoBack()` and the Escape key close an open modal first, then step back through the stack. At the root, Screen System opens a modal called `QuitConfirmation`. If that screen doesn't exist, the app quits straight away, and Play Mode stops in the Editor. With **Quit On Back At Root** off in `ScreenSystemSettings`, back at the root only raises `NavigationEvents.OnBackAtRoot`. With no screen open, back does nothing.
 
 To confirm before quitting, create a modal screen named `QuitConfirmation`. You can change that name with **Quit Confirmation Modal Id** on the `ScreenManager`.
 
@@ -426,6 +481,7 @@ await screens.SetRoot("Lobby");
 | `PopTo(screen)` | Return to a screen already in the stack |
 | `SetRoot(screen)` | Replace the root screen |
 | `DismissAlert()` | Close the open alert |
+| `CloseAll()` | Hide every screen, modal and alert and empty the stack, to return to UI outside Screen System |
 | `CanGoBack` | Check whether there's a screen to return to |
 | `IsAlertActive` | Check whether an alert is open |
 | `IsTransitioning` | Check whether a navigation call is running |
@@ -629,7 +685,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
 | `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
-| Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root) |
+| Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root), or turn off **Quit On Back At Root** while migrating |
 | An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
 | `ScreenManager.Instance` is `null` | Wait for it as shown in [Open the first screen](#open-the-first-screen) |
 | A layer doesn't appear | Check that its prefab is in `Resources` or Addressable under the name listed in the `LayerDefinition` |

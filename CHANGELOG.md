@@ -6,10 +6,14 @@ All notable changes to this package are documented in this file.
 
 ### Added
 
+- `CloseAll()` hides every screen, modal and alert and empties the stack, to return to UI that Screen System doesn't manage.
+- **Quit On Back At Root** in `ScreenSystemSettings`. Off, back at the root only raises `NavigationEvents.OnBackAtRoot`, for projects migrating one menu at a time.
+- README guide to adopting Screen System in a project that already has hand-made UI.
 - `GoTo(screen, NavigationHistory.ClearToRoot)` removes every screen above the root before opening a fullscreen screen, for tab bars. The root isn't shown on the way, and back returns to it.
 
 ### Fixed
 
+- The back key with no Screen System screen open quit the app, so a project with its own UI closed on Escape or Android back. It now does nothing.
 - Addressables handles leaked: layers loaded through Addressables were never released, so their assets stayed in memory for the whole session. Each address now has one handle, released on a single scene load unless a kept screen uses it. Cancelled and failed loads release their handle.
 - Content loaders released their handle while the instance was alive, or never released it.
 - **Persist Over Scenes** screens lost their layers on a scene change, and a persistent screen that was hidden came back visible.

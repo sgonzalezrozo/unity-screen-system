@@ -53,6 +53,16 @@ namespace ScreenSystem
             return mainHistory.Count > 0 ? mainHistory.Peek() : null;
         }
 
+        /// <summary>Empties the stack: no screens, modal, alert or root.</summary>
+        public void Clear()
+        {
+            mainHistory.Clear();
+            mainHistorySet.Clear();
+            currentModal = null;
+            currentAlert = null;
+            rootScreenId = null;
+        }
+
         public void SetRootScreen(string screenId)
         {
             mainHistory.Clear();

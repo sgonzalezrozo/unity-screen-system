@@ -77,6 +77,14 @@ namespace ScreenSystem
         public bool IsAlertActive
             => navigator.IsAlertActive;
 
+        public async Task<bool> CloseAllAsync(CancellationToken ct = default)
+        {
+            return await WithNavigationGuardAsync("CloseAll", async () =>
+            {
+                return await navigator.CloseAllAsync(ct);
+            });
+        }
+
         public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
         {
             return await WithNavigationGuardAsync("DismissAlert", async () =>

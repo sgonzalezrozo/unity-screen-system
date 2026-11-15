@@ -344,5 +344,46 @@ namespace ScreenSystem.Tests
             Assert.IsTrue(await navigator.GoToAsync("Store", NavigationHistory.ClearToRoot));
             Assert.AreEqual("Store", stack.GetCurrentScreen());
         }
+
+        // Migrating from hand-made UI: CloseAll hands the screen back to it.
+        [Test]
+        public async Task CloseAll_HidesEveryScreenAndEmptiesTheStack()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Shop");
+            await navigator.GoToAsync("Modal");
+            display.Calls.Clear();
+
+            Assert.IsTrue(await navigator.CloseAllAsync());
+
+            Assert.AreEqual(0, stack.MainHistoryCount);
+            Assert.IsFalse(stack.HasModal);
+            Assert.IsNull(stack.GetRootScreen());
+            CollectionAssert.IsSupersetOf(display.Calls, new[] { "hide:Modal", "hide:Shop", "hide:Root" });
+        }
+
+        [Test]
+        public async Task CloseAll_ClosesAnOpenAlert()
+        {
+            await StartAtRoot();
+            await navigator.GoToAsync("Alert");
+
+            Assert.IsTrue(await navigator.CloseAllAsync());
+
+            Assert.IsFalse(navigator.IsAlertActive);
+            Assert.IsFalse(stack.HasAlert);
+            CollectionAssert.Contains(display.Calls, "hide:Alert");
+        }
+
+        [Test]
+        public async Task CloseAll_ThenGoToOpensTheScreenAgain()
+        {
+            await StartAtRoot();
+            await navigator.CloseAllAsync();
+
+            Assert.IsTrue(await navigator.GoToAsync("Shop"));
+            Assert.AreEqual("Shop", stack.GetCurrentScreen());
+            Assert.AreEqual(1, stack.MainHistoryCount);
+        }
     }
 }

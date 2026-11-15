@@ -569,6 +569,33 @@ namespace ScreenSystem
             }
         }
 
+        /// <summary>Hides every screen, modal and alert and empties the stack, to hand the UI back to code outside Screen System.</summary>
+        public async Task<bool> CloseAllAsync(CancellationToken ct = default)
+        {
+            string alertId = navigationStack.GetCurrentAlert();
+            string modalId = navigationStack.GetCurrentModal();
+            List<string> history = navigationStack.GetMainHistorySnapshot();
+
+            navigationStack.Clear();
+            alertService?.Clear();
+            screenShownOverOverlay = null;
+
+            if (!string.IsNullOrEmpty(alertId) && displayService.IsScreenInstantiated(alertId))
+                await displayService.HideScreen(alertId, null, ct);
+
+            if (!string.IsNullOrEmpty(modalId) && displayService.IsScreenInstantiated(modalId))
+                await displayService.HideScreen(modalId, null, ct);
+
+            foreach (string screenId in history)
+            {
+                if (displayService.IsScreenInstantiated(screenId))
+                    await displayService.HideScreen(screenId, null, ct);
+            }
+
+            NavigationEvents.NotifyStackCleared();
+            return true;
+        }
+
         public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
         {
             string alertId = navigationStack.DismissAlertScreen();

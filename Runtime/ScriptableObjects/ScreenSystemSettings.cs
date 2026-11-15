@@ -34,6 +34,10 @@ namespace ScreenSystem.ScriptableObjects
         [Tooltip("Color laid between a modal and an alert opened over it. The modal stays visible, so it's only darkened, not blurred.")]
         public Color AlertDimColor = new Color(0f, 0f, 0f, 0.5f);
 
+        [Header("Back Navigation")]
+        [Tooltip("Back (Escape or Android back) at the root screen opens the QuitConfirmation modal or quits. Turn it off while migrating from your own UI: back at the root then only raises NavigationEvents.OnBackAtRoot, and your code decides.")]
+        public bool QuitOnBackAtRoot = true;
+
         [Header("Mobile Settings")]
         [Tooltip("Use reduced blur quality on mobile devices for better performance")]
         public bool ReduceBlurQualityOnMobile = true;

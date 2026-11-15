@@ -196,7 +196,10 @@ namespace ScreenSystem
             return result;
         }
 
-        /// <summary>Closes the open modal or returns to the previous screen. At the root, starts the quit flow.</summary>
+        /// <summary>
+        /// Closes the open modal or returns to the previous screen. At the root, starts the quit flow unless
+        /// Quit On Back At Root is off. With no screen open, does nothing, so your own UI keeps the back key.
+        /// </summary>
         public async Task<bool> GoBack(CancellationToken ct = default)
         {
             if (!IsReady(nameof(GoBack)))
@@ -209,9 +212,13 @@ namespace ScreenSystem
                 return false;
             }
 
+            // Nothing open: the back key belongs to UI outside Screen System, as in a project still migrating.
+            if (string.IsNullOrEmpty(navigationService.GetCurrentScreen()) && !navigationService.CanGoBack)
+                return false;
+
             bool result = await navigationService.GoBackAsync(ct);
 
-            if (!result && !navigationService.CanGoBack)
+            if (!result && !navigationService.CanGoBack && QuitsOnBackAtRoot)
                 await serviceInitializer?.QuitManager?.HandleQuitRequestAsync(ct);
 
             return result;
@@ -242,6 +249,28 @@ namespace ScreenSystem
             }
 
             return await navigationService.SetRootAsync(resolvedId, ct);
+        }
+
+        /// <summary>
+        /// Hides every screen, modal and alert and empties the stack. Use it to return to UI that isn't managed by
+        /// Screen System, for example from NavigationEvents.OnBackAtRoot while migrating. Screens stay loaded until
+        /// the next scene change, so opening them again is fast.
+        /// </summary>
+        public async Task<bool> CloseAll(CancellationToken ct = default)
+        {
+            if (!IsReady(nameof(CloseAll)))
+                return false;
+
+            return await navigationService.CloseAllAsync(ct);
+        }
+
+        private static bool QuitsOnBackAtRoot
+        {
+            get
+            {
+                ScreenSystemSettings settings = ScreenSystemSettings.Instance;
+                return settings == null || settings.QuitOnBackAtRoot;
+            }
         }
 
         /// <summary>Closes the open alert. Returns false if there's none, or during a transition.</summary>
