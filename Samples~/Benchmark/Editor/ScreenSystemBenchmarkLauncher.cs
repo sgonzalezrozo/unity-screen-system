@@ -15,8 +15,7 @@ namespace ScreenSystem.Benchmark.Editor
 
         static ScreenSystemBenchmarkLauncher()
         {
-            if (SessionState.GetBool(CommandLineKey, false))
-                EditorApplication.playModeStateChanged += ExitWhenBackInEditMode;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
         [MenuItem("Tools/Screen System/Benchmark/Run In Play Mode")]
@@ -32,7 +31,6 @@ namespace ScreenSystem.Benchmark.Editor
         public static void RunFromCommandLine()
         {
             SessionState.SetBool(CommandLineKey, true);
-            EditorApplication.playModeStateChanged += ExitWhenBackInEditMode;
             Launch();
         }
 
@@ -48,12 +46,26 @@ namespace ScreenSystem.Benchmark.Editor
             EditorSceneManager.OpenScene(firstScene.path);
             SessionState.SetBool(ScreenSystemBenchmarkRunner.AutoRunKey, true);
             SessionState.SetString(ScreenSystemBenchmarkRunner.CommitKey, ReadPackageCommit());
+            SessionState.SetBool(ScreenSystemBenchmarkRunner.ProfileAllocKey, true);
+            UnityEditorInternal.ProfilerDriver.ClearAllFrames();
+            UnityEditorInternal.ProfilerDriver.deepProfiling = false;
             EditorApplication.EnterPlaymode();
         }
 
-        private static void ExitWhenBackInEditMode(PlayModeStateChange change)
+        // Writes the allocation report from the recorded frames, then quits when the run came from the command line.
+        private static void OnPlayModeChanged(PlayModeStateChange change)
         {
             if (change != PlayModeStateChange.EnteredEditMode)
+                return;
+
+            if (SessionState.GetBool(ScreenSystemBenchmarkRunner.AnalyzePendingKey, false))
+            {
+                SessionState.EraseBool(ScreenSystemBenchmarkRunner.AnalyzePendingKey);
+                SessionState.EraseBool(ScreenSystemBenchmarkRunner.ProfileAllocKey);
+                ScreenSystemBenchmarkAllocationReport.Write(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Logs", "ScreenSystemBenchmarks"));
+            }
+
+            if (!SessionState.GetBool(CommandLineKey, false))
                 return;
 
             SessionState.EraseBool(CommandLineKey);

@@ -29,6 +29,13 @@ namespace ScreenSystem.Benchmark
         public static int HeldBundleCount()
             => heldBundleCount != null ? (int)heldBundleCount.GetValue(null) : 0;
 
+        /// <summary>ScreenSystem.* profiler marker names, or none on versions without them.</summary>
+        public static string[] MarkerNames()
+        {
+            System.Type markers = System.Type.GetType("ScreenSystem.ScreenSystemMarkers, ScreenSystem");
+            return markers?.GetField("All", PublicStatic)?.GetValue(null) as string[] ?? System.Array.Empty<string>();
+        }
+
         public static bool HasHandleTracking
             => heldHandleCount != null && heldAddresses != null;
 

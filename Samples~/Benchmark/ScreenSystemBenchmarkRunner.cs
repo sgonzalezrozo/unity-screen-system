@@ -25,6 +25,9 @@ namespace ScreenSystem.Benchmark
     {
         public const string AutoRunKey = "ScreenSystem.Benchmark.AutoRun";
         public const string CommitKey = "ScreenSystem.Benchmark.Commit";
+        public const string ProfileAllocKey = "ScreenSystem.Benchmark.ProfileAlloc";
+        public const string AnalyzePendingKey = "ScreenSystem.Benchmark.AnalyzePending";
+        private const int ProfiledWarmRepetitions = 2;
 
         [SerializeField] private string commitHash = "";
         [SerializeField] private int coldRuns = 3;
@@ -37,6 +40,25 @@ namespace ScreenSystem.Benchmark
         private const int FRAME_RING = 8192;
         private readonly float[] frameDurations = new float[FRAME_RING];
         private readonly long[] frameAllocations = new long[FRAME_RING];
+
+        // Time spent in GC markers (GC.Collect and the incremental GC slices) per frame.
+        private readonly List<ProfilerRecorder> gcRecorders = new();
+        private readonly double[] frameGcMs = new double[FRAME_RING];
+        private int runStartCollections;
+        private int forcedCollections;
+        private double runGcMs;
+        private double maxGcFrameMs;
+
+        // ScreenSystem.* profiler markers, read every frame, so each navigation reports time per step.
+        private string[] markerNames = Array.Empty<string>();
+        private ProfilerRecorder[] markerRecorders = Array.Empty<ProfilerRecorder>();
+        private long[,] markerFrameNs = new long[FRAME_RING, 0];
+        private readonly Dictionary<string, Dictionary<string, List<double>>> stepSamples = new();
+
+        // Scene change timeline.
+        private long sceneLoadedTicks;
+        private int sceneLoadedFrame;
+        private readonly List<(string id, long ticks, int frame, bool completed)> transitions = new();
         private readonly List<FrameWaiter> frameWaiters = new();
         private readonly Dictionary<string, List<NavSample>> samples = new();
         private readonly BenchmarkResult result = new();
@@ -76,6 +98,9 @@ namespace ScreenSystem.Benchmark
             public long AllocBytes;
             public double MaxFrameMs;
             public bool Ok;
+            public double[] StepMs;
+            public int GcCollections;
+            public double GcMs;
         }
 
         private sealed class FrameWaiter
@@ -116,6 +141,12 @@ namespace ScreenSystem.Benchmark
             // It's available in the Editor and Development builds only.
             gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             StartMemoryCounters();
+            StartMarkerRecorders();
+            StartGcRecorders();
+            runStartCollections = GC.CollectionCount(0);
+            SceneManager.sceneLoaded += OnSceneLoadedForTimeline;
+            NavigationEvents.OnTransitionInStarted += OnTransitionStarted;
+            NavigationEvents.OnTransitionInCompleted += OnTransitionCompleted;
 
             if (string.IsNullOrWhiteSpace(commitHash))
             {
@@ -142,6 +173,13 @@ namespace ScreenSystem.Benchmark
             gcAllocRecorder.Dispose();
             foreach ((string _, ProfilerRecorder recorder) in memoryCounters)
                 recorder.Dispose();
+            foreach (ProfilerRecorder recorder in markerRecorders)
+                recorder.Dispose();
+            foreach (ProfilerRecorder recorder in gcRecorders)
+                recorder.Dispose();
+            SceneManager.sceneLoaded -= OnSceneLoadedForTimeline;
+            NavigationEvents.OnTransitionInStarted -= OnTransitionStarted;
+            NavigationEvents.OnTransitionInCompleted -= OnTransitionCompleted;
             IsRunning = false;
         }
 
@@ -155,6 +193,15 @@ namespace ScreenSystem.Benchmark
         {
             frameDurations[Time.frameCount % FRAME_RING] = Time.unscaledDeltaTime * 1000f;
             frameAllocations[Time.frameCount % FRAME_RING] = gcAllocRecorder.Valid ? gcAllocRecorder.LastValue : -1;
+            for (int i = 0; i < markerRecorders.Length; i++)
+                markerFrameNs[Time.frameCount % FRAME_RING, i] = markerRecorders[i].Valid ? markerRecorders[i].LastValue : 0;
+
+            double gcMs = 0;
+            foreach (ProfilerRecorder recorder in gcRecorders)
+                gcMs += recorder.Valid ? recorder.LastValue / 1e6 : 0;
+            frameGcMs[Time.frameCount % FRAME_RING] = gcMs;
+            runGcMs += gcMs;
+            maxGcFrameMs = Math.Max(maxGcFrameMs, gcMs);
 
             for (int i = frameWaiters.Count - 1; i >= 0; i--)
             {
@@ -353,6 +400,92 @@ namespace ScreenSystem.Benchmark
         private void OnQuitRequested()
             => quitRequests++;
 
+#if UNITY_EDITOR
+        private bool editorProfiling;
+
+        private void SetEditorProfiling(bool on)
+        {
+            if (on == editorProfiling)
+                return;
+
+            editorProfiling = on;
+            UnityEngine.Profiling.Profiler.enabled = on;
+            UnityEditorInternal.ProfilerDriver.enabled = on;
+            if (!on)
+                SessionState.SetBool(AnalyzePendingKey, true);
+        }
+#endif
+
+        // GC.Collect plus the incremental GC markers. Only markers already registered by the player are found.
+        private void StartGcRecorders()
+        {
+            List<ProfilerRecorderHandle> handles = new();
+            ProfilerRecorderHandle.GetAvailable(handles);
+            foreach (ProfilerRecorderHandle handle in handles)
+            {
+                ProfilerRecorderDescription description = ProfilerRecorderHandle.GetDescription(handle);
+                string name = description.Name;
+                bool isGc = name == "GC.Collect" || name == "GC.CollectIncremental" || name == "GC.MarkDependencies" || name == "GC.FinalizeCollection";
+                if (!isGc || description.UnitType != ProfilerMarkerDataUnit.TimeNanoseconds)
+                    continue;
+
+                ProfilerRecorder recorder = ProfilerRecorder.StartNew(description.Category, name);
+                if (recorder.Valid)
+                    gcRecorders.Add(recorder);
+            }
+        }
+
+        private double SumGcMs(int fromFrame, int toFrame)
+        {
+            double total = 0;
+            for (int f = fromFrame; f <= toFrame; f++)
+                total += frameGcMs[f % FRAME_RING];
+            return total;
+        }
+
+        private void StartMarkerRecorders()
+        {
+            markerNames = RuntimeApi.MarkerNames();
+            markerRecorders = new ProfilerRecorder[markerNames.Length];
+            markerFrameNs = new long[FRAME_RING, markerNames.Length];
+            for (int i = 0; i < markerNames.Length; i++)
+                markerRecorders[i] = ProfilerRecorder.StartNew(
+                    markerNames[i] == "ScreenSystem.LoadPrefab" ? ProfilerCategory.Loading : ProfilerCategory.Scripts, markerNames[i]);
+        }
+
+        private double[] SumMarkers(int fromFrame, int toFrame)
+        {
+            double[] sums = new double[markerNames.Length];
+            for (int f = fromFrame; f <= toFrame; f++)
+            {
+                for (int i = 0; i < markerNames.Length; i++)
+                    sums[i] += markerFrameNs[f % FRAME_RING, i] / 1e6;
+            }
+
+            return sums;
+        }
+
+        private int MarkerIndex(string name)
+            => Array.IndexOf(markerNames, name);
+
+        private void OnSceneLoadedForTimeline(Scene scene, LoadSceneMode mode)
+        {
+            if (mode != LoadSceneMode.Single)
+                return;
+
+            sceneLoadedTicks = Stopwatch.GetTimestamp();
+            sceneLoadedFrame = Time.frameCount;
+        }
+
+        private void OnTransitionStarted(string screenId)
+            => transitions.Add((screenId, Stopwatch.GetTimestamp(), Time.frameCount, false));
+
+        private void OnTransitionCompleted(string screenId)
+            => transitions.Add((screenId, Stopwatch.GetTimestamp(), Time.frameCount, true));
+
+        private static double TicksToMs(long ticks)
+            => ticks * 1000.0 / Stopwatch.Frequency;
+
         private Task WaitFrames(int count)
         {
             TaskCompletionSource<bool> source = new();
@@ -412,6 +545,13 @@ namespace ScreenSystem.Benchmark
                 AddMetric("logs.per-navigation", navigationCount > 0 ? (double)navigationLogCount / navigationCount : 0, "lines", "mean", navigationCount);
                 AddMetric("logs.errors-total", errorCount, "lines", "total", 1);
                 AddMetric("quit-requests", quitRequests, "count", "total", 1);
+                // The benchmark's own GC.Collect calls before memory snapshots don't count.
+                AddMetric("gc.collections-total", GC.CollectionCount(0) - runStartCollections - forcedCollections, "count", "total", 1);
+                AddMetric("gc.collections-forced-by-benchmark", forcedCollections, "count", "total", 1);
+                AddMetric("gc.ms-total", runGcMs, "ms", "total", 1);
+                AddMetric("gc.max-frame-ms", maxGcFrameMs, "ms", "max", 1);
+                AddMetric("gc.incremental", UnityEngine.Scripting.GarbageCollector.isIncremental ? 1 : 0, "bool", "last", 1);
+                AddMetric("gc.recorders", gcRecorders.Count, "count", "last", 1);
                 AddWindowRuleMetrics();
                 AddErrorNotes();
                 AddMemoryCounterNotes();
@@ -489,6 +629,11 @@ namespace ScreenSystem.Benchmark
             sceneCursor = (sceneCursor + 1) % sceneNames.Count;
             string sceneName = sceneNames[sceneCursor];
 
+            transitions.Clear();
+            sceneLoadedTicks = 0;
+            int sceneStartCollections = GC.CollectionCount(0);
+            long startTicks = Stopwatch.GetTimestamp();
+            int startFrame = Time.frameCount;
             Stopwatch watch = Stopwatch.StartNew();
             AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             while (!operation.isDone)
@@ -496,8 +641,52 @@ namespace ScreenSystem.Benchmark
 
             double loadMs = watch.Elapsed.TotalMilliseconds;
             await SettleAsync();
-            if (record)
-                AddSample("scene-change.load", new NavSample { Ms = loadMs, Ok = true });
+            if (!record)
+                return;
+
+            AddSample("scene-change.load", new NavSample { Ms = loadMs, Ok = true });
+            RecordSceneTimeline(startTicks, startFrame);
+
+            // Includes the GC that Resources.UnloadUnusedAssets runs during the package's cleanup.
+            AddSample("scene-change.gc-collections", new NavSample { Ms = GC.CollectionCount(0) - sceneStartCollections, Ok = true });
+            AddSample("scene-change.gc-ms", new NavSample { Ms = SumGcMs(startFrame + 1, Time.frameCount), Ok = true });
+        }
+
+        // Splits a scene change into activation, the package's cleanup, the wait for the scene to ask for its root,
+        // and the root's own load. total-to-root is what the player waits for.
+        private void RecordSceneTimeline(long startTicks, int startFrame)
+        {
+            if (sceneLoadedTicks == 0)
+                return;
+
+            AddSample("scene-change.activation-ms", new NavSample { Ms = TicksToMs(sceneLoadedTicks - startTicks), Ok = true });
+
+            int cleanup = MarkerIndex("ScreenSystem.SceneCleanup");
+            if (cleanup >= 0)
+                AddSample("scene-change.cleanup-ms", new NavSample { Ms = markerFrameNs[(sceneLoadedFrame + 1) % FRAME_RING, cleanup] / 1e6, Ok = true });
+
+            int startIndex = transitions.FindIndex(t => !t.completed && t.ticks >= sceneLoadedTicks);
+            if (startIndex < 0)
+                return;
+
+            (string id, long ticks, int frame, bool completed) rootStart = transitions[startIndex];
+            int doneIndex = transitions.FindIndex(startIndex, t => t.completed && t.id == rootStart.id);
+            AddSample("scene-change.until-root-start-ms", new NavSample { Ms = TicksToMs(rootStart.ticks - sceneLoadedTicks), Ok = true });
+            if (doneIndex < 0)
+                return;
+
+            (string id, long ticks, int frame, bool completed) rootDone = transitions[doneIndex];
+            AddSample("scene-change.root-show-ms", new NavSample { Ms = TicksToMs(rootDone.ticks - rootStart.ticks), Ok = true });
+            AddSample("scene-change.root-frames", new NavSample { Ms = rootDone.frame - rootStart.frame, Ok = true });
+            AddSample("scene-change.total-to-root-ms", new NavSample { Ms = TicksToMs(rootDone.ticks - startTicks), Ok = true });
+            AddSample("scene-change.frames-to-root", new NavSample { Ms = rootDone.frame - startFrame, Ok = true });
+
+            int loadPrefab = MarkerIndex("ScreenSystem.LoadPrefab");
+            if (loadPrefab >= 0)
+            {
+                double[] sums = SumMarkers(rootStart.frame + 1, rootDone.frame + 1);
+                AddSample("scene-change.root-load-prefab-ms", new NavSample { Ms = sums[loadPrefab], Ok = true });
+            }
         }
 
         private bool IsInstantiated(string screen)
@@ -569,6 +758,10 @@ namespace ScreenSystem.Benchmark
 
             for (int rep = 0; rep < warmRepetitions; rep++)
             {
+#if UNITY_EDITOR
+                // Records the first warm repetitions in the Profiler, so the Editor can split allocations by marker.
+                SetEditorProfiling(rep < ProfiledWarmRepetitions && SessionState.GetBool(ProfileAllocKey, false));
+#endif
                 foreach (string screen in result.fullscreenScreens)
                 {
                     if (ResolveId(screen) == root)
@@ -593,6 +786,9 @@ namespace ScreenSystem.Benchmark
                         AddSample("modal-close", await MeasureAsync(() => manager.GoBack()));
                 }
             }
+#if UNITY_EDITOR
+            SetEditorProfiling(false);
+#endif
         }
 
         private async Task SceneCyclesAsync()
@@ -707,8 +903,13 @@ namespace ScreenSystem.Benchmark
             if (layer.IsCanvasEnabled)
                 return true;
 
+            // UI Toolkit layers may be hidden with display: none while their UIDocument stays enabled.
             UnityEngine.UIElements.UIDocument document = layer.GetComponent<UnityEngine.UIElements.UIDocument>();
-            return document != null && document.enabled;
+            if (document == null || !document.enabled)
+                return false;
+
+            UnityEngine.UIElements.VisualElement root = document.rootVisualElement;
+            return root == null || root.style.display.value != UnityEngine.UIElements.DisplayStyle.None;
         }
 
         // The rule: at most one fullscreen, one modal and one alert rendering, and no layer of a covered screen rendering.
@@ -846,9 +1047,11 @@ namespace ScreenSystem.Benchmark
             while (!unload.isDone)
                 await WaitFrames(1);
 
+            int before = GC.CollectionCount(0);
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
+            forcedCollections += GC.CollectionCount(0) - before;
             await WaitFrames(2);
         }
 
@@ -857,6 +1060,7 @@ namespace ScreenSystem.Benchmark
             await WaitFrames(30);
             status = $"{name}...";
             int startFrame = Time.frameCount;
+            int idleStartCollections = GC.CollectionCount(0);
             await WaitFrames(idleFrames);
             int frames = Time.frameCount - startFrame;
             long bytes = SumAllocations(startFrame + 1, startFrame + frames);
@@ -872,6 +1076,8 @@ namespace ScreenSystem.Benchmark
             }
 
             AddMetric($"{name}.alloc-per-frame", frames > 0 ? (double)bytes / frames : 0, "bytes", "mean", frames);
+            AddMetric($"{name}.gc-collections", GC.CollectionCount(0) - idleStartCollections, "count", "total", frames);
+            AddMetric($"{name}.gc-ms", SumGcMs(startFrame + 1, startFrame + frames), "ms", "total", frames);
             AddMetric($"{name}.frame-ms", frames > 0 ? total / frames : 0, "ms", "mean", frames);
             AddMetric($"{name}.frame-ms-max", max, "ms", "max", frames);
             if (batchesRecorder.Valid)
@@ -885,6 +1091,7 @@ namespace ScreenSystem.Benchmark
         {
             int startFrame = Time.frameCount;
             int startLogs = logCount;
+            int startCollections = GC.CollectionCount(0);
             Stopwatch watch = Stopwatch.StartNew();
             bool ok;
 
@@ -920,7 +1127,10 @@ namespace ScreenSystem.Benchmark
                 Frames = endFrame - startFrame,
                 AllocBytes = alloc,
                 MaxFrameMs = maxFrame,
-                Ok = ok
+                Ok = ok,
+                StepMs = SumMarkers(startFrame + 1, endFrame + 1),
+                GcCollections = GC.CollectionCount(0) - startCollections,
+                GcMs = SumGcMs(startFrame + 1, endFrame + 1)
             };
         }
 
@@ -933,6 +1143,26 @@ namespace ScreenSystem.Benchmark
             }
 
             list.Add(sample);
+
+            if (sample.StepMs == null || phase.Contains("."))
+                return;
+
+            if (!stepSamples.TryGetValue(phase, out Dictionary<string, List<double>> steps))
+            {
+                steps = new Dictionary<string, List<double>>();
+                stepSamples[phase] = steps;
+            }
+
+            for (int i = 0; i < markerNames.Length && i < sample.StepMs.Length; i++)
+            {
+                if (!steps.TryGetValue(markerNames[i], out List<double> values))
+                {
+                    values = new List<double>();
+                    steps[markerNames[i]] = values;
+                }
+
+                values.Add(sample.StepMs[i]);
+            }
         }
 
         private void AddMetric(string name, double value, string unit, string aggregation, int count)
@@ -947,13 +1177,14 @@ namespace ScreenSystem.Benchmark
             {
                 string phase = pair.Key;
                 List<NavSample> list = pair.Value;
-                bool isValueOnly = phase.StartsWith("persistent.") || phase.StartsWith("scene-change.layers") || phase.StartsWith("scene-change.handles") || phase == "scene-change.load";
+                bool isValueOnly = phase.StartsWith("persistent.") || phase.StartsWith("scene-change.");
 
                 if (isValueOnly)
                 {
-                    string unit = phase == "scene-change.load" ? "ms" : phase.StartsWith("persistent.") ? "ratio" : "count";
+                    bool isMs = phase == "scene-change.load" || phase.EndsWith("-ms");
+                    string unit = isMs ? "ms" : phase.StartsWith("persistent.") ? "ratio" : phase.EndsWith("frames") || phase.EndsWith("-to-root") ? "frames" : "count";
                     AddMetric(phase, Percentile(list, s => s.Ms, 0.5), unit, "median", list.Count);
-                    if (phase == "scene-change.load")
+                    if (isMs)
                         AddMetric(phase + ".p95", Percentile(list, s => s.Ms, 0.95), unit, "p95", list.Count);
                     continue;
                 }
@@ -967,6 +1198,7 @@ namespace ScreenSystem.Benchmark
                 if (perScreen)
                 {
                     AddMetric($"{phase}.ms.max", Percentile(list, s => s.Ms, 1.0), "ms", "max", list.Count);
+                    AddMetric($"{phase}.alloc", Percentile(list, s => s.AllocBytes, 0.5), "bytes", "median", list.Count);
                     continue;
                 }
 
@@ -975,6 +1207,36 @@ namespace ScreenSystem.Benchmark
                 AddMetric($"{phase}.alloc", Percentile(list, s => s.AllocBytes, 0.5), "bytes", "median", list.Count);
                 AddMetric($"{phase}.max-frame-ms", Percentile(list, s => s.MaxFrameMs, 1.0), "ms", "max", list.Count);
                 AddMetric($"{phase}.failures", failures, "count", "total", list.Count);
+
+                int collections = 0;
+                double gcTotal = 0, gcMax = 0;
+                foreach (NavSample sample in list)
+                {
+                    collections += sample.GcCollections;
+                    gcTotal += sample.GcMs;
+                    gcMax = Math.Max(gcMax, sample.GcMs);
+                }
+
+                AddMetric($"{phase}.gc-collections", collections, "count", "total", list.Count);
+                AddMetric($"{phase}.gc-ms", gcTotal, "ms", "total", list.Count);
+                AddMetric($"{phase}.gc-ms.max", gcMax, "ms", "max", list.Count);
+            }
+
+            foreach (KeyValuePair<string, Dictionary<string, List<double>>> phaseSteps in stepSamples)
+            {
+                foreach (KeyValuePair<string, List<double>> step in phaseSteps.Value)
+                {
+                    List<double> values = step.Value;
+                    values.Sort();
+                    double median = values.Count > 0 ? values[values.Count / 2] : 0;
+                    double max = values.Count > 0 ? values[values.Count - 1] : 0;
+                    if (max <= 0)
+                        continue;
+
+                    string shortName = step.Key.Replace("ScreenSystem.", "");
+                    AddMetric($"{phaseSteps.Key}.step.{shortName}.ms", median, "ms", "median", values.Count);
+                    AddMetric($"{phaseSteps.Key}.step.{shortName}.ms.max", max, "ms", "max", values.Count);
+                }
             }
 
             result.metrics.Sort((a, b) => string.CompareOrdinal(a.name, b.name));

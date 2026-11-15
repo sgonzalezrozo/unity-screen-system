@@ -28,6 +28,12 @@ The [Benchmark sample](../../Samples~/Benchmark/README.md) measures these metric
 | `render.window-rule-violations` | Navigations that left more than one fullscreen, modal or alert rendering, or a covered layer rendering | 0 |
 | `render.layers-rendering` | Layers rendering after a navigation. Median and max. | Lower |
 | `layers.instances-all-loaded` | Layer instances with every screen loaded. Lower than the sum of each screen's layers when layers are shared. | Lower |
+| `*.gc-collections`, `*.gc-ms` | Garbage collections and time spent in GC during a kind of call, an idle window or a scene change | 0 for cached screens and idle |
+| `gc.collections-total`, `gc.ms-total`, `gc.max-frame-ms` | GC over the whole run, without the benchmark's own `GC.Collect` calls, and the longest GC frame | Lower |
+| `scene-change.activation-ms`, `cleanup-ms`, `until-root-start-ms`, `root-show-ms`, `total-to-root-ms` | A scene change split into Unity's activation, the package's cleanup, the wait for the scene to ask for its root, and the root's load. `total-to-root-ms` is what the player waits for. | Lower |
+| `*.step.<Marker>.ms` | Time in each `ScreenSystem.*` profiler marker during a kind of call: `LoadPrefab`, `InstantiateLayer`, `InjectLayer`, `ReassignLayers`, `PrepareLayers`, `ActivateLayers`, `HideLayers`, `LifecycleCallbacks`, `Metrics` | Lower |
+| `warm-show.<Screen>.alloc` | Allocations per warm show of each screen, to compare UI Toolkit and uGUI screens | 0 |
+| `allocations-*.md` (Editor only) | Warm show allocations split by profiler marker, from Profiler frames recorded during two warm repetitions | — |
 | `logs.per-navigation` | Console lines per navigation call | 0 in Release |
 | `quit-requests` | Times the quit flow ran | 0 |
 
