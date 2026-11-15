@@ -3,8 +3,12 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenDefinition : ScriptableObject
+    public class ScreenDefinition : ScriptableObject, ISerializationCallbackReceiver
     {
+        // Older assets stored these flags in a nested list. They're copied to the fields below on load.
+        [SerializeField, HideInInspector]
+        private System.Collections.Generic.List<ScreenBehavior> Behaviors = new();
+
         [ReadOnly]
         [Tooltip("Path to prefab: Resources path (e.g., 'Splash/SplashMain') or Addressable path/label. Resources takes priority.")]
         public string AssetPath;
@@ -59,6 +63,27 @@ namespace ScreenSystem
                 UnityEditor.EditorUtility.SetDirty(this);
         }
 #endif
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (Behaviors == null || Behaviors.Count == 0)
+                return;
+
+            foreach (ScreenBehavior behavior in Behaviors)
+            {
+                if (behavior == null)
+                    continue;
+
+                PersistOverScenes |= behavior.PersistOverScenes;
+                IgnoreNavigationRules |= behavior.IgnoreNavigationRules;
+            }
+
+            Behaviors.Clear();
+        }
 
         public override string ToString()
             => $"{ScreenName}";

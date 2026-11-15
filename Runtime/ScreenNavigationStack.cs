@@ -121,30 +121,28 @@ namespace ScreenSystem
             currentAlert = null;
         }
 
-        public void ClearNonPersistentMainScreens(ScreenRegistry screenRegistry)
+        /// <summary>Removes every screen that isn't kept on scene changes, keeping the order of the rest.</summary>
+        public void ClearNonPersistentMainScreens(ScreenRegistry screenRegistry, ICollection<string> alwaysKeptScreenIds = null)
         {
             if (screenRegistry == null)
                 return;
 
+            // A Stack enumerates from the top, so collect top to bottom and push back in reverse.
             List<string> screensToKeep = new();
 
             foreach (string screenId in mainHistory)
             {
-                ScreenDefinition screen = screenRegistry.GetScreen(screenId);
-                if (screen == null)
-                    continue;
-
-                if (screen.PersistOverScenes)
+                if (ScenePersistence.IsKept(screenRegistry.GetScreen(screenId), alwaysKeptScreenIds))
                     screensToKeep.Add(screenId);
             }
 
             mainHistory.Clear();
             mainHistorySet.Clear();
 
-            foreach (string screenId in screensToKeep)
+            for (int i = screensToKeep.Count - 1; i >= 0; i--)
             {
-                mainHistory.Push(screenId);
-                mainHistorySet.Add(screenId);
+                mainHistory.Push(screensToKeep[i]);
+                mainHistorySet.Add(screensToKeep[i]);
             }
         }
     }

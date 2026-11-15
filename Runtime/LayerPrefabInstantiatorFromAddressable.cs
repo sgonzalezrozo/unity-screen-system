@@ -21,6 +21,7 @@ namespace ScreenSystem
         private AsyncOperationHandle<GameObject> handle;
         private GameObject instance;
         private bool hasInitialized;
+        private bool isLoading;
         private CancellationTokenSource lifecycleCts;
 
         private IPrefabInstantiator Instantiator => injectedInstantiator ?? ToolInjectionServices.PrefabInstantiator;
@@ -58,36 +59,55 @@ namespace ScreenSystem
 
             if (instance)
                 Destroy(instance);
-            if (handle.IsValid())
-                Addressables.Release(handle);
+            ReleaseHandle();
         }
 
+        // The handle is held while the instance lives and released in OnDestroy, on failure and on cancellation.
         private async Task InstantiateAsync(CancellationToken ct)
         {
+            if (isLoading)
+                return;
+
+            isLoading = true;
             try
             {
-                handle = Addressables.LoadAssetAsync<GameObject>(layerPrefabName);
-                await handle.Task;
+                ReleaseHandle();
+                AsyncOperationHandle<GameObject> load = Addressables.LoadAssetAsync<GameObject>(layerPrefabName);
+                handle = load;
+                await load.Task;
 
-                if (handle.Status == AsyncOperationStatus.Failed || !handle.Result)
+                // OnDestroy may have run during the load and already released the handle.
+                if (ct.IsCancellationRequested || !load.IsValid())
                 {
-                    Debug.LogError($"[LayerPrefabInstantiator] Failed to load prefab from Addressables: '{layerPrefabName}'");
+                    if (load.IsValid())
+                        Addressables.Release(load);
+                    handle = default;
                     return;
                 }
 
-                ct.ThrowIfCancellationRequested();
-
-                try
+                if (load.Status != AsyncOperationStatus.Succeeded || !load.Result)
                 {
-                    instance = Instantiator.Instantiate(handle.Result, transform);
-                    OnPrefabInstantiated?.Invoke(instance);
+                    Debug.LogError($"[LayerPrefabInstantiator] Failed to load prefab from Addressables: '{layerPrefabName}'");
+                    ReleaseHandle();
+                    return;
                 }
-                finally { }
+
+                LayerPrefabLoader.RetainBundlesFor(layerPrefabName);
+                instance = Instantiator.Instantiate(load.Result, transform);
+                OnPrefabInstantiated?.Invoke(instance);
             }
-            catch (OperationCanceledException)
+            finally
             {
-                Debug.Log($"[LayerPrefabInstantiator] Instantiation of '{layerPrefabName}' was cancelled");
+                isLoading = false;
             }
+        }
+
+        private void ReleaseHandle()
+        {
+            if (handle.IsValid())
+                Addressables.Release(handle);
+
+            handle = default;
         }
     }
 }

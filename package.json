@@ -39,6 +39,11 @@
       "displayName": "Quick Start",
       "description": "Scripts that open a first screen and react to it opening and closing.",
       "path": "Samples~/QuickStart"
+    },
+    {
+      "displayName": "Benchmark",
+      "description": "Measures navigation time, allocations, idle cost and memory across scene changes with your own screens.",
+      "path": "Samples~/Benchmark"
     }
   ],
   "dependencies": {

@@ -9,6 +9,7 @@ namespace ScreenSystem
     {
         private readonly LoggingDictionary<string, List<LayerComponent>> instantiatedScreenLayers = new("ScreenCache");
         private readonly List<string> activeScreenIds = new();
+        private readonly HashSet<string> alwaysKeptScreenIds = new();
 
         public bool TryGetCachedLayers(string screenId, out List<LayerComponent> layers)
             => instantiatedScreenLayers.TryGetValue(screenId, out layers);
@@ -207,9 +208,16 @@ namespace ScreenSystem
             return contentUnloadedCount;
         }
 
-        private bool IsScreenPersistent(ScreenDefinition screen)
+        /// <summary>True for screens with Persist Over Scenes and for the special screens (splash and quit confirmation).</summary>
+        public bool IsScreenPersistent(ScreenDefinition screen)
+            => ScenePersistence.IsKept(screen, alwaysKeptScreenIds);
+
+        /// <summary>Screens kept on scene changes even without Persist Over Scenes, by ID.</summary>
+        public void SetAlwaysKeptScreens(IEnumerable<string> screenIds)
         {
-            return screen != null && screen.PersistOverScenes;
+            alwaysKeptScreenIds.Clear();
+            if (screenIds != null)
+                alwaysKeptScreenIds.UnionWith(screenIds);
         }
     }
 }

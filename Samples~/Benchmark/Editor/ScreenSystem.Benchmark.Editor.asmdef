@@ -1,0 +1,19 @@
+{
+    "name": "ScreenSystem.Benchmark.Editor",
+    "rootNamespace": "ScreenSystem.Benchmark.Editor",
+    "references": [
+        "ScreenSystem",
+        "ScreenSystem.Benchmark"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

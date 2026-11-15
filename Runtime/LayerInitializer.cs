@@ -3,8 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ToolsCore;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using Object = UnityEngine.Object;
 
 namespace ScreenSystem
@@ -37,40 +35,27 @@ namespace ScreenSystem
 
              ct.ThrowIfCancellationRequested();
 
+             // Another call may have created the layer while this one was loading.
+             if (layerCache.TryGetValue(layerName, out cachedLayer) && cachedLayer != null)
+                 return cachedLayer;
+
              GameObject layerInstance = instantiator.Instantiate(layerPrefab);
              layerInstance.name = layerName;
 
              if (screenContainer != null)
                  layerInstance.transform.SetParent(screenContainer, worldPositionStays: false);
 
-             ct.ThrowIfCancellationRequested();
+             // Cached before any cancellation check, so the instance is never left untracked.
              layerCache[layerName] = layerInstance;
-
              return layerInstance;
          }
 
+         // The prefab's handle is held by LayerPrefabLoader and released on scene change, unless the layer is kept.
          private async Task<GameObject> LoadLayerPrefabAsync(string layerName, CancellationToken ct)
          {
              try
              {
-                 GameObject resourcePrefab = Resources.Load<GameObject>(layerName);
-                 if (resourcePrefab != null)
-                     return resourcePrefab;
-
-                 AsyncOperationHandle<GameObject> handle = Addressables.LoadAssetAsync<GameObject>(layerName);
-
-                 if (!handle.IsDone)
-                     await handle.Task;
-
-                 ct.ThrowIfCancellationRequested();
-
-                 if (handle.Status == AsyncOperationStatus.Succeeded)
-                     return handle.Result;
-
-                 if (handle.IsValid())
-                     Addressables.Release(handle);
-
-                 return null;
+                 return await LayerPrefabLoader.LoadPrefabAsync(layerName, ct);
              }
              catch (System.OperationCanceledException)
              {
@@ -109,15 +94,32 @@ namespace ScreenSystem
              return layerCache.ToDictionary();
          }
 
-         public void ClearAllCachedLayers()
+         /// <summary>
+         /// Destroys every cached layer except the ones in <paramref name="keep"/>, which stay cached.
+         /// Returns the names (Resources paths or Addressables addresses) of the layers kept.
+         /// </summary>
+         public HashSet<string> ClearAllCachedLayers(ISet<GameObject> keep = null)
          {
+             HashSet<string> kept = new();
+             List<string> removed = new();
              foreach (KeyValuePair<string, GameObject> kvp in layerCache.Pairs)
              {
+                 if (kvp.Value != null && keep != null && keep.Contains(kvp.Value))
+                 {
+                     kept.Add(kvp.Key);
+                     continue;
+                 }
+
                  if (kvp.Value != null)
                      Object.Destroy(kvp.Value);
+
+                 removed.Add(kvp.Key);
              }
 
-             layerCache.Clear();
+             for (int i = 0; i < removed.Count; i++)
+                 layerCache.Remove(removed[i]);
+
+             return kept;
          }
      }
 }

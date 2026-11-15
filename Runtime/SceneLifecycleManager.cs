@@ -32,108 +32,26 @@ namespace ScreenSystem
             displayService.ClearActiveScreens();
         }
 
+        // Unloads every screen without Persist Over Scenes. Persistent screens keep their layers, their
+        // loaded prefab and their visibility, so a splash shown before the load stays up until the new
+        // scene opens its first fullscreen screen, which hides it.
         private void OnSceneChange()
         {
-            navigationService.ClearNavigationHistoryOnSceneChange();
+            // A load still running from the old scene would finish after the cleanup and leave its handle behind.
+            navigationService.AbandonRunningOperationForSceneChange();
+            displayService.CancelActiveOperations();
 
-            displayService.HidePersistentScreenLayers();
+            List<string> visiblePersistent = displayService.GetVisiblePersistentScreenIds();
+
+            navigationService.ClearNavigationHistoryOnSceneChange();
             displayService.RemoveNonPersistentScreens();
             displayService.ClearActiveScreens();
 
-            // Clear cached resources to prevent unbounded memory growth
+            for (int i = 0; i < visiblePersistent.Count; i++)
+                displayService.RegisterActiveScreen(visiblePersistent[i]);
+
             displayService.ClearAllCachedResources();
-
-            ShowSplashAfterSceneChange();
             Resources.UnloadUnusedAssets();
-        }
-
-        private void ShowSplashAfterSceneChange()
-        {
-            Dictionary<string, List<LayerComponent>> cachedScreens = displayService.GetCachedScreens();
-
-            foreach (KeyValuePair<string, List<LayerComponent>> kvp in cachedScreens)
-            {
-                string screenId = kvp.Key;
-                ScreenDefinition screen = screenRegistry.GetScreen(screenId);
-
-                bool isPersistent = IsScreenPersistent(screen);
-
-                if (!isPersistent)
-                    continue;
-
-                List<LayerComponent> layers = kvp.Value;
-                foreach (LayerComponent layer in layers)
-                {
-                    if (layer == null)
-                        continue;
-
-                    Canvas canvas = layer.GetComponent<Canvas>();
-                    if (canvas != null)
-                        canvas.enabled = true;
-
-                    if (layer.GraphicRaycaster != null)
-                        layer.GraphicRaycaster.enabled = true;
-                }
-            }
-
-            LayerFactory layerFactory = displayService.GetLayerFactory();
-            if (layerFactory == null)
-                return;
-
-            LayerInitializer layerInitializer = layerFactory.GetLayerInitializer();
-            if (layerInitializer == null)
-                return;
-
-            Dictionary<string, GameObject> allLayerObjects = layerInitializer.GetAllCachedLayers();
-            if (allLayerObjects == null)
-                return;
-
-            foreach (KeyValuePair<string, GameObject> kvp in allLayerObjects)
-            {
-                GameObject layerObj = kvp.Value;
-
-                // Skip if layer GameObject was destroyed
-                if (layerObj == null)
-                    continue;
-
-                // Get LayerComponent from the GameObject
-                LayerComponent layer = layerObj.GetComponent<LayerComponent>();
-                if (layer == null)
-                    continue;
-
-                // Check if this layer belongs to a persistent screen
-                // Shared layers maintain their CurrentScreenId (NOT empty after fix)
-                bool isPersistent = false;
-
-                if (!string.IsNullOrEmpty(layer.CurrentScreenId))
-                {
-                    ScreenDefinition layerScreen = screenRegistry.GetScreen(layer.CurrentScreenId);
-                    isPersistent = IsScreenPersistent(layerScreen);
-                }
-
-                if (!isPersistent)
-                    continue;
-
-                Canvas canvas = layer.GetComponent<Canvas>();
-                if (canvas == null)
-                    continue;
-
-                bool wasDisabled = !canvas.enabled;
-
-                if (!wasDisabled)
-                    continue;
-
-                canvas.enabled = true;
-
-                if (layer.GraphicRaycaster != null)
-                    layer.GraphicRaycaster.enabled = true;
-            }
-        }
-
-        private bool IsScreenPersistent(ScreenDefinition screen)
-        {
-            return screen != null && screen.PersistOverScenes;
         }
     }
 }
-

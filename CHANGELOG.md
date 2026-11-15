@@ -4,6 +4,27 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Addressables handles leaked: layers loaded through Addressables were never released, so their assets stayed in memory for the whole session. Each address now has one handle, released on a single scene load unless a kept screen uses it. Cancelled and failed loads release their handle.
+- Content loaders released their handle while the instance was alive, or never released it.
+- **Persist Over Scenes** screens lost their layers on a scene change, and a persistent screen that was hidden came back visible.
+- A navigation still loading when a scene changed blocked the new scene's first `SetRoot` and left its handle behind. Scene changes now cancel it.
+- `ScreenDefinition` assets saved with the older nested `Behaviors` list lost **Persist Over Scenes** and **Ignore Navigation Rules**. They're read again.
+- The navigation stack reversed the order of persistent screens on a scene change.
+
+### Changed
+
+- On a single scene load, every screen is unloaded except those with **Persist Over Scenes**, the splash and the quit confirmation modal.
+- AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes. Closing and reopening a bundle on each scene change leaked about 29 MB of native memory per change on a Pixel 5.
+- A call ignored during a transition now logs which call was running.
+
+### Added
+
+- `ScreenManager.IsTransitioning`.
+- EditMode tests for navigation, the stack, the registry, layer order, the definition migration and the handle cache.
+- A Benchmark sample that measures navigation time, allocations, idle cost, memory and handles across scene changes, and the overdraw window rule, with the project's own screens.
+
 ### Documentation
 
 - An FAQ, rules for AI coding agents in `Documentation~/agent-rules.md`, `llms.txt` and more package keywords.

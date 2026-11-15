@@ -20,6 +20,7 @@ namespace ScreenSystem
         private readonly Transform layerTransform;
         private readonly string contentName;
         private GameObject loadedContentGameObject;
+        private AsyncOperationHandle<GameObject> contentHandle;
 
         public bool HasContent => loadedContentGameObject != null;
         public bool IsLoadingContent { get; private set; }
@@ -33,7 +34,7 @@ namespace ScreenSystem
 
          public async Task LoadContentAsync(CancellationToken ct = default)
          {
-             if (string.IsNullOrEmpty(contentName))
+             if (string.IsNullOrEmpty(contentName) || loadedContentGameObject != null || IsLoadingContent)
                  return;
 
              IsLoadingContent = true;
@@ -46,18 +47,26 @@ namespace ScreenSystem
                  // Fallback to Addressables if not in Resources
                  if (prefab == null)
                  {
-                     AsyncOperationHandle<GameObject> handle = Addressables.LoadAssetAsync<GameObject>(contentName);
-                     await handle.Task;
+                     // Held while the content lives, released by ReleaseHandle on failure, cancellation and unload.
+                     ReleaseHandle();
+                     contentHandle = Addressables.LoadAssetAsync<GameObject>(contentName);
+                     await contentHandle.Task;
 
-                     ct.ThrowIfCancellationRequested();
+                     if (ct.IsCancellationRequested)
+                     {
+                         ReleaseHandle();
+                         ct.ThrowIfCancellationRequested();
+                     }
 
-                     if (handle.Status != AsyncOperationStatus.Succeeded)
+                     if (contentHandle.Status != AsyncOperationStatus.Succeeded || contentHandle.Result == null)
                      {
                          Debug.LogError($"[LayerContentLoader_UIToolkit] Failed to load content prefab '{contentName}' from Resources or Addressables");
+                         ReleaseHandle();
                          return;
                      }
 
-                     prefab = handle.Result;
+                     prefab = contentHandle.Result;
+                     LayerPrefabLoader.RetainBundlesFor(contentName);
                  }
 
                  ct.ThrowIfCancellationRequested();
@@ -100,6 +109,10 @@ namespace ScreenSystem
             finally
             {
                 IsLoadingContent = false;
+
+                // Loaded but never instantiated, for example when an exception stopped it halfway.
+                if (loadedContentGameObject == null)
+                    ReleaseHandle();
             }
         }
 
@@ -111,6 +124,8 @@ namespace ScreenSystem
                 loadedContentGameObject = null;
                 OnContentUnloaded?.Invoke();
             }
+
+            ReleaseHandle();
         }
 
         public bool DestroyContent()
@@ -118,10 +133,16 @@ namespace ScreenSystem
             if (loadedContentGameObject == null)
                 return false;
 
-            Object.Destroy(loadedContentGameObject);
-            loadedContentGameObject = null;
-            OnContentUnloaded?.Invoke();
+            UnloadContent();
             return true;
+        }
+
+        private void ReleaseHandle()
+        {
+            if (contentHandle.IsValid())
+                Addressables.Release(contentHandle);
+
+            contentHandle = default;
         }
 
         public async Task WaitForLoadingCompleteAsync(CancellationToken ct = default)

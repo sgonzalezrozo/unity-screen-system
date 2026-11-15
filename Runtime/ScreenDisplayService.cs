@@ -171,6 +171,16 @@ namespace ScreenSystem
             }
         }
 
+        /// <summary>Cancels the running show or hide, so its pending loads release their handles. Used on scene changes.</summary>
+        public void CancelActiveOperations()
+        {
+            lock (navigationLock)
+            {
+                navigationCts?.Cancel();
+                navigationOperationId++;
+            }
+        }
+
         public string GetTopScreen()
             => cacheManager.GetTopScreen();
 
@@ -254,10 +264,57 @@ namespace ScreenSystem
         public ScreenCacheManager GetCacheManager()
             => cacheManager;
 
+        /// <summary>Releases prefabs and destroys cached layers, except those of screens still cached, which are the persistent ones after a scene change.</summary>
         public void ClearAllCachedResources()
         {
-            LayerPrefabLoader.ReleaseAllLoadedPrefabs();
-            layerFactory.ClearAllCachedLayers();
+            HashSet<GameObject> keepLayers = new();
+            HashSet<string> keepAddresses = new();
+
+            foreach (KeyValuePair<string, List<LayerComponent>> pair in cacheManager.GetAllCachedScreens())
+            {
+                ScreenDefinition screen = screenRegistry.GetScreen(pair.Key);
+                if (screen != null && !string.IsNullOrEmpty(screen.AssetPath))
+                    keepAddresses.Add(screen.AssetPath);
+
+                if (pair.Value == null)
+                    continue;
+
+                foreach (LayerComponent layer in pair.Value)
+                {
+                    if (layer != null)
+                        keepLayers.Add(layer.gameObject);
+                }
+            }
+
+            // Layers first, so the handles of the layers kept are known before releasing the rest.
+            keepAddresses.UnionWith(layerFactory.ClearAllCachedLayers(keepLayers));
+            // Releases the assets. Their bundles stay open (see AddressablesBundleKeeper).
+            LayerPrefabLoader.ReleaseAllLoadedPrefabs(keepAddresses);
         }
+
+        /// <summary>IDs of persistent screens whose main layer is visible.</summary>
+        public List<string> GetVisiblePersistentScreenIds()
+        {
+            List<string> visible = new();
+            foreach (KeyValuePair<string, List<LayerComponent>> pair in cacheManager.GetAllCachedScreens())
+            {
+                ScreenDefinition screen = screenRegistry.GetScreen(pair.Key);
+                if (!cacheManager.IsScreenPersistent(screen) || pair.Value == null || pair.Value.Count == 0)
+                    continue;
+
+                LayerComponent mainLayer = pair.Value[0];
+                if (mainLayer != null && mainLayer.IsVisible)
+                    visible.Add(pair.Key);
+            }
+
+            return visible;
+        }
+
+        public void RegisterActiveScreen(string screenId)
+            => cacheManager.RegisterActiveScreen(screenId);
+
+        /// <summary>Screens kept on scene changes even without Persist Over Scenes, by ID.</summary>
+        public void SetAlwaysKeptScreens(IEnumerable<string> screenIds)
+            => cacheManager.SetAlwaysKeptScreens(screenIds);
     }
 }

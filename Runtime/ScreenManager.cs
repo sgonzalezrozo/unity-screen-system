@@ -86,6 +86,18 @@ namespace ScreenSystem
                 navigationService = serviceInitializer.NavigationService;
                 displayService = serviceInitializer.DisplayService;
                 idResolver = new ScreenIdResolver(serviceInitializer.Registry);
+
+                // The splash and the quit confirmation are always kept on scene changes, like Persist Over Scenes screens.
+                List<string> specialScreenIds = new();
+                foreach (string special in new[] { splashScreenId, quitConfirmationModalId })
+                {
+                    ScreenDefinition definition = string.IsNullOrEmpty(special) ? null : serviceInitializer.Registry.GetScreen(special);
+                    if (definition != null)
+                        specialScreenIds.Add(definition.ScreenId);
+                }
+
+                navigationService.SetAlwaysKeptScreens(specialScreenIds);
+                displayService.SetAlwaysKeptScreens(specialScreenIds);
                 inputHandler = new ScreenInputHandler(this);
 
                 if (!string.IsNullOrEmpty(splashScreenId))
@@ -214,6 +226,11 @@ namespace ScreenSystem
         public bool IsAlertActive
             => navigationService?.IsAlertActive ?? false;
 
+        /// <summary>True while a navigation call is running. Calls made meanwhile are ignored and return false.</summary>
+        [UnityEngine.Scripting.Preserve]
+        public bool IsTransitioning
+            => navigationService?.IsNavigating ?? false;
+
         /// <summary>True when there is a screen or modal to go back from.</summary>
         public bool CanGoBack
             => navigationService?.CanGoBack ?? false;
@@ -271,6 +288,13 @@ namespace ScreenSystem
             initializationCts?.Cancel();
             initializationCts?.Dispose();
             serviceInitializer?.Cleanup();
+
+            // The screens go with this object, so release every Addressables handle they held.
+            if (instance == this)
+            {
+                LayerPrefabLoader.ReleaseAllLoadedPrefabs();
+                LayerPrefabLoader.ReleaseAllBundles();
+            }
         }
     }
 }

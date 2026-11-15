@@ -10,12 +10,15 @@ namespace ScreenSystem
     public class ScreenNavigationService : IScreenNavigation
     {
         private bool isNavigating;
+        private string currentOperation;
+        private int operationGeneration;
 
         private readonly ScreenNavigationStack navigationStack;
         private readonly ScreenNavigator navigator;
         private readonly ScreenModalNavigator modalNavigator;
         private readonly ScreenVisibilityController visibilityController;
         private readonly ScreenRegistry screenRegistry;
+        private readonly HashSet<string> alwaysKeptScreenIds = new();
 
         public ScreenNavigationService(ScreenRegistry screenRegistry, IScreenDisplay displayService)
         {
@@ -34,7 +37,7 @@ namespace ScreenSystem
 
         public async Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync(async () =>
+            return await WithNavigationGuardAsync($"GoTo({screenId})", async () =>
             {
                 return await navigator.GoToAsync(screenId, ct);
             });
@@ -42,7 +45,7 @@ namespace ScreenSystem
 
         public async Task<bool> GoBackAsync(CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync(async () =>
+            return await WithNavigationGuardAsync("GoBack", async () =>
             {
                 return await navigator.GoBackAsync(ct);
             });
@@ -50,7 +53,7 @@ namespace ScreenSystem
 
         public async Task<bool> PopToAsync(string screenId, CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync(async () =>
+            return await WithNavigationGuardAsync($"PopTo({screenId})", async () =>
             {
                 return await navigator.PopToAsync(screenId, ct);
             });
@@ -58,7 +61,7 @@ namespace ScreenSystem
 
         public async Task<bool> SetRootAsync(string screenId, CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync(async () =>
+            return await WithNavigationGuardAsync($"SetRoot({screenId})", async () =>
             {
                 return await navigator.SetRootAsync(screenId, ct);
             });
@@ -72,7 +75,7 @@ namespace ScreenSystem
 
         public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
         {
-            return await WithNavigationGuardAsync(async () =>
+            return await WithNavigationGuardAsync("DismissAlert", async () =>
             {
                 return await navigator.DismissAlertAsync(ct);
             });
@@ -112,10 +115,18 @@ namespace ScreenSystem
             await GoToAsync(fullscreenId, ct);
         }
 
+        /// <summary>Screens kept on scene changes even without Persist Over Scenes, by ID.</summary>
+        public void SetAlwaysKeptScreens(IEnumerable<string> screenIds)
+        {
+            alwaysKeptScreenIds.Clear();
+            if (screenIds != null)
+                alwaysKeptScreenIds.UnionWith(screenIds);
+        }
+
         public void ClearNavigationHistoryOnSceneChange()
         {
             navigationStack.ClearAllModals();
-            navigationStack.ClearNonPersistentMainScreens(screenRegistry);
+            navigationStack.ClearNonPersistentMainScreens(screenRegistry, alwaysKeptScreenIds);
             navigator.ClearAlert();
             NavigationEvents.NotifyStackCleared();
         }
@@ -136,20 +147,50 @@ namespace ScreenSystem
             }
         }
 
-        private async Task<T> WithNavigationGuardAsync<T>(Func<Task<T>> operation)
+        private async Task<T> WithNavigationGuardAsync<T>(string operationName, Func<Task<T>> operation)
         {
             if (isNavigating)
+            {
+                Debug.LogWarning($"[ScreenNav] {operationName} ignored: {currentOperation} is still running.");
                 return default;
+            }
 
             isNavigating = true;
+            currentOperation = operationName;
+            int generation = ++operationGeneration;
             try
             {
                 return await operation();
             }
+            catch (OperationCanceledException) when (generation != operationGeneration)
+            {
+                // A scene change cancelled this operation. The new scene's calls must not see an exception.
+                return default;
+            }
             finally
             {
-                isNavigating = false;
+                // A scene change may have released the guard and started a newer operation. Leave that one alone.
+                if (generation == operationGeneration)
+                {
+                    isNavigating = false;
+                    currentOperation = null;
+                }
             }
+        }
+
+        /// <summary>True while a navigation call is running. Calls made meanwhile are ignored and return false.</summary>
+        public bool IsNavigating
+            => isNavigating;
+
+        /// <summary>
+        /// Called on a single scene load. Releases the guard so the new scene can navigate right away, and marks the
+        /// running operation as stale. The display service cancels its loads, which release their handles.
+        /// </summary>
+        public void AbandonRunningOperationForSceneChange()
+        {
+            operationGeneration++;
+            isNavigating = false;
+            currentOperation = null;
         }
 
 #if UNITY_EDITOR

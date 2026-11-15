@@ -42,6 +42,8 @@ namespace ScreenSystem
             int baseZ = zOrderManager.CalculateBaseZOrder(screen.screenType, screenId);
 
             GameObject mainLayerObj = await layerInitializer.GetOrInstantiateLayer(screen.AssetPath, ct);
+            // A cancelled load returns null. Report it as a cancellation, not as a missing prefab.
+            ct.ThrowIfCancellationRequested();
             if (mainLayerObj == null)
             {
                 Debug.LogError($"[LayerFactory] Failed to get main layer for screen '{screen.ScreenName}' (AssetPath: '{screen.AssetPath}')");
@@ -81,6 +83,7 @@ namespace ScreenSystem
                     continue;
 
                 GameObject layerObj = await layerInitializer.GetOrInstantiateLayer(layerName, ct);
+                ct.ThrowIfCancellationRequested();
                 if (layerObj == null)
                     continue;
 
@@ -205,10 +208,8 @@ namespace ScreenSystem
         public LayerInitializer GetLayerInitializer()
             => layerInitializer;
 
-        public void ClearAllCachedLayers()
-        {
-            layerInitializer.ClearAllCachedLayers();
-        }
+        public HashSet<string> ClearAllCachedLayers(ISet<GameObject> keep = null)
+            => layerInitializer.ClearAllCachedLayers(keep);
 
         private void InjectLayerComponents(GameObject layerObj)
         {

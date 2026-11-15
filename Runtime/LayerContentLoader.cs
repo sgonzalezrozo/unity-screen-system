@@ -111,26 +111,16 @@ namespace ScreenSystem
                     return;
                 }
 
-                if (contentHandle.Status == AsyncOperationStatus.Failed)
+                if (contentHandle.Status == AsyncOperationStatus.Failed || contentHandle.Result == null)
                 {
                     Debug.LogError($"[LayerContentLoader] Failed to load content '{contentPrefabName}' from Resources or Addressables");
+                    ReleaseHandle();
                     return;
                 }
 
-                prefab = contentHandle.Result;
-                if (prefab == null)
-                {
-                    Debug.LogError($"[LayerContentLoader] Loaded content is null: '{contentPrefabName}'");
-                    return;
-                }
-
-                InstantiatePrefab(prefab);
-
-                if (contentHandle.IsValid())
-                {
-                    Addressables.Release(contentHandle);
-                    contentHandle = default;
-                }
+                // The handle stays held while the instance lives. Releasing it now could unload the bundle under it.
+                LayerPrefabLoader.RetainBundlesFor(contentPrefabName);
+                InstantiatePrefab(contentHandle.Result);
             }
             finally
             {
@@ -194,38 +184,17 @@ namespace ScreenSystem
                 yield break;
             }
 
-            if (contentHandle.Status == AsyncOperationStatus.Failed)
+            if (contentHandle.Status == AsyncOperationStatus.Failed || contentHandle.Result == null)
             {
                 Debug.LogError($"[LayerContentLoader] Failed to load content '{contentPrefabName}' from Resources or Addressables");
-
-                if (contentHandle.IsValid())
-                    Addressables.Release(contentHandle);
-
+                ReleaseHandle();
                 isLoadingContent = false;
                 yield break;
             }
 
-            prefab = contentHandle.Result;
-            if (prefab == null)
-            {
-                Debug.LogError($"[LayerContentLoader] Loaded content is null: '{contentPrefabName}'");
-
-                if (contentHandle.IsValid())
-                    Addressables.Release(contentHandle);
-
-                isLoadingContent = false;
-                yield break;
-            }
-
-            InstantiatePrefab(prefab);
-
-            // Release handle after instantiation (important!)
-            if (contentHandle.IsValid())
-            {
-                Addressables.Release(contentHandle);
-                contentHandle = default;
-            }
-
+            // The handle stays held while the instance lives. Releasing it now could unload the bundle under it.
+            LayerPrefabLoader.RetainBundlesFor(contentPrefabName);
+            InstantiatePrefab(contentHandle.Result);
             isLoadingContent = false;
         }
 
@@ -236,9 +205,7 @@ namespace ScreenSystem
 
             UnityEngine.Object.Destroy(contentInstance);
             contentInstance = null;
-
-            if (contentHandle.IsValid())
-                Addressables.Release(contentHandle);
+            ReleaseHandle();
 
             OnContentUnloaded?.Invoke();
 
@@ -250,8 +217,16 @@ namespace ScreenSystem
             if (contentInstance != null)
                 UnityEngine.Object.Destroy(contentInstance);
 
+            contentInstance = null;
+            ReleaseHandle();
+        }
+
+        private void ReleaseHandle()
+        {
             if (contentHandle.IsValid())
                 Addressables.Release(contentHandle);
+
+            contentHandle = default;
         }
 
         private void InstantiatePrefab(GameObject prefab)

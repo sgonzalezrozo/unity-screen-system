@@ -73,6 +73,10 @@ namespace ScreenSystem
         public bool IsCanvasEnabled
             => canvasController?.IsCanvasEnabled ?? false;
 
+        /// <summary>True when the layer's Canvas or UIDocument is enabled.</summary>
+        public bool IsVisible
+            => IsCanvasEnabled || (uiDocumentController?.UIDocument != null && uiDocumentController.UIDocument.enabled);
+
         public UIFramework Framework
             => framework;
 
