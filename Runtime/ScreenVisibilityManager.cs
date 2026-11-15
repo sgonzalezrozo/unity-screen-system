@@ -91,16 +91,14 @@ namespace ScreenSystem
             }
         }
 
+        // A layer already visible, such as a top bar shared with the previous screen, isn't shown again, so its
+        // OnScreenShown doesn't run again. IsVisible covers uGUI and UI Toolkit layers.
         private bool IsLayerCurrentlyVisibleOnScreen(LayerComponent layer)
         {
             if (layer == null)
                 return false;
 
-            Canvas canvas = layer.GetComponent<Canvas>();
-            bool canvasEnabled = canvas != null && canvas.enabled;
-            bool gameObjectActive = layer.gameObject.activeInHierarchy;
-
-            return canvasEnabled && gameObjectActive;
+            return layer.gameObject.activeInHierarchy && layer.IsVisible;
         }
     }
 }
