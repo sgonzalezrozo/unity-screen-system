@@ -57,8 +57,11 @@ namespace ScreenSystem
                 if (!string.IsNullOrEmpty(preserveLayersForScreenId) && cacheManager.TryGetCachedLayers(preserveLayersForScreenId, out List<LayerComponent> preserveScreenLayers))
                     preserveLayers = preserveScreenLayers;
 
-                layerHider.HideLayersInstantly(layers, screenId, preserveLayers);
-                layerHider.DisableRaycasters(layers);
+                using (ScreenSystemMarkers.HideLayers.Auto())
+                {
+                    layerHider.HideLayersInstantly(layers, screenId, preserveLayers);
+                    layerHider.DisableRaycasters(layers);
+                }
             }
             catch (OperationCanceledException)
             {

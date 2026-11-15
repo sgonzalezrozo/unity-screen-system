@@ -50,7 +50,8 @@ namespace ScreenSystem
             if (!IsLocal(address))
                 return false;
 
-            handle.WaitForCompletion();
+            using (ScreenSystemMarkers.LoadPrefab.Auto())
+                handle.WaitForCompletion();
             return handle.IsDone;
         }
 
@@ -228,7 +229,61 @@ namespace ScreenSystem
             if (fromResources != null)
                 return fromResources;
 
-            IPrefabLoad load = startLoad(address);
+            return await FinishLoadAsync(address, startLoad(address), ct);
+        }
+
+        /// <summary>
+        /// Loads several addresses at once: every load not held yet is started before any is waited on, so
+        /// Addressables reads them together and the total is close to the slowest one instead of the sum.
+        /// Held and Resources addresses start nothing. Every started handle is kept or released, even on cancellation.
+        /// </summary>
+        public async Task LoadManyAsync(IReadOnlyList<string> addresses, CancellationToken ct = default)
+        {
+            if (addresses == null || addresses.Count == 0)
+                return;
+
+            ct.ThrowIfCancellationRequested();
+
+            List<(string address, IPrefabLoad load)> started = new(addresses.Count);
+            HashSet<string> seen = new();
+            foreach (string address in addresses)
+            {
+                if (string.IsNullOrEmpty(address) || !seen.Add(address) || held.ContainsKey(address))
+                    continue;
+
+                if (loadFromResources(address) != null)
+                    continue;
+
+                started.Add((address, startLoad(address)));
+            }
+
+            bool cancelled = false;
+            Exception failure = null;
+            foreach ((string address, IPrefabLoad load) in started)
+            {
+                // Finish every load, even after a cancellation, so each handle is released or kept.
+                try
+                {
+                    await FinishLoadAsync(address, load, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    cancelled = true;
+                }
+                catch (Exception ex)
+                {
+                    failure ??= ex;
+                }
+            }
+
+            if (cancelled)
+                throw new OperationCanceledException(ct);
+            if (failure != null)
+                throw failure;
+        }
+
+        private async Task<GameObject> FinishLoadAsync(string address, IPrefabLoad load, CancellationToken ct)
+        {
             try
             {
                 if (!load.TryCompleteNow())

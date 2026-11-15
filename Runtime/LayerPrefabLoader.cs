@@ -65,6 +65,10 @@ namespace ScreenSystem
         public static Task<GameObject> LoadPrefabAsync(string address, CancellationToken ct = default)
             => cache.LoadAsync(address, ct);
 
+        /// <summary>Starts every load that isn't held yet, then waits for all of them. Used for a screen's layers.</summary>
+        public static Task LoadPrefabsAsync(IReadOnlyList<string> addresses, CancellationToken ct = default)
+            => cache.LoadManyAsync(addresses, ct);
+
         /// <summary>Returns a prefab that is already loaded, without starting a load.</summary>
         public static GameObject GetLoadedScreenPrefab(ScreenDefinition screen)
             => screen == null ? null : cache.GetLoaded(screen.AssetPath);

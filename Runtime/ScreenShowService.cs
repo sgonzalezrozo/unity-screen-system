@@ -41,8 +41,11 @@ namespace ScreenSystem
 
         private async Task ShowScreenAsyncInternal(string screenId, bool autoHideParents, CancellationToken ct)
         {
-            ScreenMetrics.Instance.BeginOperation($"ShowScreen({screenId})");
-            ScreenMetrics.Instance.UpdateScreenStatus(screenId, ScreenMetrics.ScreenStatus.Loading);
+            using (ScreenSystemMarkers.Metrics.Auto())
+            {
+                ScreenMetrics.Instance.BeginOperation($"ShowScreen({screenId})");
+                ScreenMetrics.Instance.UpdateScreenStatus(screenId, ScreenMetrics.ScreenStatus.Loading);
+            }
 
             try
             {
@@ -82,7 +85,8 @@ namespace ScreenSystem
 
                 ct.ThrowIfCancellationRequested();
 
-                layerPreparer.ActivateLayers(layers, screenId);
+                using (ScreenSystemMarkers.ActivateLayers.Auto())
+                    layerPreparer.ActivateLayers(layers, screenId);
 
                 if (autoHideParents && screen.screenType == ScreenType.fullscreen)
                 {
@@ -93,7 +97,8 @@ namespace ScreenSystem
                     await hideService.HideOtherScreensAsync(screenId, screen.screenType, ct, layers);
                 }
 
-                RecordMetrics(screenId, screen, layers);
+                using (ScreenSystemMarkers.Metrics.Auto())
+                    RecordMetrics(screenId, screen, layers);
                 await blurHandler.ApplyBlurAsync(screenId, screen, ct);
 
                 NavigationEvents.NotifyTransitionInCompleted(screenId);

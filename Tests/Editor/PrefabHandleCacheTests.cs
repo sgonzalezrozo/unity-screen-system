@@ -272,5 +272,79 @@ namespace ScreenSystem.Tests
             cache.ReleaseAll();
             AssertEveryLoadReleasedOnce();
         }
+
+        // A screen's layers: every missing load starts before any is waited on.
+        [Test]
+        public async Task LoadManyStartsEveryMissingLoadBeforeWaiting()
+        {
+            completeImmediately = false;
+            resources["Splash/SplashMain"] = prefab;
+            PrefabHandleCache cache = CreateCache();
+            await LoadHeld(cache, "TopBar");
+
+            Task loading = cache.LoadManyAsync(new[] { "ShopBg", "TopBar", "Navigation", "ShopBg", "Splash/SplashMain", null });
+
+            Assert.AreEqual(3, starts.Count, "TopBar is held, Splash is in Resources and the duplicate is skipped.");
+            Assert.IsFalse(loading.IsCompleted);
+
+            foreach (FakeLoad load in starts)
+                load.Completion.TrySetResult(true);
+            await loading;
+
+            CollectionAssert.AreEquivalent(new[] { "TopBar", "ShopBg", "Navigation" }, cache.HeldAddresses);
+            cache.ReleaseAll();
+            AssertEveryLoadReleasedOnce();
+        }
+
+        [Test]
+        public async Task LoadManyCancelledReleasesEveryStartedLoad()
+        {
+            completeImmediately = false;
+            PrefabHandleCache cache = CreateCache();
+            using CancellationTokenSource cts = new();
+
+            Task loading = cache.LoadManyAsync(new[] { "A", "B", "C" }, cts.Token);
+            cts.Cancel();
+            foreach (FakeLoad load in starts)
+                load.Completion.TrySetResult(true);
+
+            bool cancelled = false;
+            try
+            {
+                await loading;
+            }
+            catch (OperationCanceledException)
+            {
+                cancelled = true;
+            }
+
+            Assert.IsTrue(cancelled);
+            Assert.AreEqual(0, cache.HeldCount);
+            AssertEveryLoadReleasedOnce();
+        }
+
+        [Test]
+        public async Task LoadManyKeepsTheLoadsThatSucceed()
+        {
+            PrefabHandleCache cache = CreateCache();
+            failLoads = true;
+            Task failing = cache.LoadManyAsync(new[] { "Missing" });
+            await failing;
+            failLoads = false;
+
+            await cache.LoadManyAsync(new[] { "A", "B" });
+
+            CollectionAssert.AreEquivalent(new[] { "A", "B" }, cache.HeldAddresses);
+            cache.ReleaseAll();
+            AssertEveryLoadReleasedOnce();
+        }
+
+        private async Task LoadHeld(PrefabHandleCache cache, string address)
+        {
+            bool previous = completeImmediately;
+            completeImmediately = true;
+            await cache.LoadAsync(address);
+            completeImmediately = previous;
+        }
     }
 }

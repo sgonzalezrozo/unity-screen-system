@@ -82,6 +82,7 @@ namespace ScreenSystem
 
         private Task HideAllOtherScreens(string currentScreenId, List<LayerComponent> preserveLayers = null)
         {
+            using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.HideLayers.Auto();
             IReadOnlyList<string> activeScreens = cacheManager.GetActiveScreens();
 
             for (int i = 0; i < activeScreens.Count; i++)

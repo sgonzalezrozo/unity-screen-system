@@ -84,6 +84,7 @@ namespace ScreenSystem
                     Debug.LogWarning($"{LOG_PREFIX} Cancelling previous operation op:{previousOpId}");
 
                 navigationCts?.Cancel();
+                navigationCts?.Dispose();
                 navigationCts = new CancellationTokenSource();
                 opId = ++navigationOperationId;
 
@@ -273,6 +274,10 @@ namespace ScreenSystem
             foreach (KeyValuePair<string, List<LayerComponent>> pair in cacheManager.GetAllCachedScreens())
             {
                 ScreenDefinition screen = screenRegistry.GetScreen(pair.Key);
+            // A modal open during the scene change took the blur with it. Turn the blur off and forget its layers.
+            blurService.HideAllBlurs();
+            blurService.Cleanup();
+
                 if (screen != null && !string.IsNullOrEmpty(screen.AssetPath))
                     keepAddresses.Add(screen.AssetPath);
 

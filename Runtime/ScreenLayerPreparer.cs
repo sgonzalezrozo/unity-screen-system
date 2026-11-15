@@ -18,7 +18,8 @@ namespace ScreenSystem
         {
             ct.ThrowIfCancellationRequested();
 
-            PrepareCanvasState(layers);
+            using (ScreenSystemMarkers.PrepareLayers.Auto())
+                PrepareCanvasState(layers);
             await Task.Yield();
 
             ct.ThrowIfCancellationRequested();

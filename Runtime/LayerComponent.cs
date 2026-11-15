@@ -75,7 +75,7 @@ namespace ScreenSystem
 
         /// <summary>True when the layer's Canvas or UIDocument is enabled.</summary>
         public bool IsVisible
-            => IsCanvasEnabled || (uiDocumentController?.UIDocument != null && uiDocumentController.UIDocument.enabled);
+            => IsCanvasEnabled || (uiDocumentController?.IsVisible ?? false);
 
         public UIFramework Framework
             => framework;
@@ -350,6 +350,7 @@ namespace ScreenSystem
                 if (isShown)
                 {
                     // Use only cached components, never recache after Awake
+            using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.LifecycleCallbacks.Auto();
                     for (int i = 0; i < cachedShowComponents.Length; i++)
                     {
                         if (cachedShowComponents[i] == null)

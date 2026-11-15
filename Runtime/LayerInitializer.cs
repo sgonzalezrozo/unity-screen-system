@@ -39,11 +39,15 @@ namespace ScreenSystem
              if (layerCache.TryGetValue(layerName, out cachedLayer) && cachedLayer != null)
                  return cachedLayer;
 
-             GameObject layerInstance = instantiator.Instantiate(layerPrefab);
-             layerInstance.name = layerName;
+             GameObject layerInstance;
+             using (ScreenSystemMarkers.InstantiateLayer.Auto())
+             {
+                 layerInstance = instantiator.Instantiate(layerPrefab);
+                 layerInstance.name = layerName;
 
-             if (screenContainer != null)
-                 layerInstance.transform.SetParent(screenContainer, worldPositionStays: false);
+                 if (screenContainer != null)
+                     layerInstance.transform.SetParent(screenContainer, worldPositionStays: false);
+             }
 
              // Cached before any cancellation check, so the instance is never left untracked.
              layerCache[layerName] = layerInstance;
@@ -88,6 +92,9 @@ namespace ScreenSystem
              for (int i = 0; i < layersToRemove.Count; i++)
                  layerCache.Remove(layersToRemove[i]);
          }
+
+         public bool HasCachedLayer(string layerName)
+             => !string.IsNullOrEmpty(layerName) && layerCache.TryGetValue(layerName, out GameObject layer) && layer != null;
 
          public Dictionary<string, GameObject> GetAllCachedLayers()
          {

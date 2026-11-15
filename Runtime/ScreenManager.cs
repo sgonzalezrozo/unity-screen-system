@@ -157,6 +157,7 @@ namespace ScreenSystem
 
 
         private void EnsureInitialized()
+            serviceInitializer?.SceneLifecycleManager?.Tick();
         {
             if (!isInitialized)
                 throw new InvalidOperationException($"[ScreenManager] Initialization failed: {initializationError ?? "Unknown error"}");
@@ -298,3 +299,4 @@ namespace ScreenSystem
         }
     }
 }
+            serviceInitializer?.SceneLifecycleManager?.Dispose();

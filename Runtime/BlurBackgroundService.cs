@@ -79,8 +79,14 @@ namespace ScreenSystem
 
 		private LayerComponent GetOrFindModalLayer(string screenId)
 		{
+			// A cached layer is destroyed when its screen unloads. Drop it instead of returning it.
 			if (modalLayerCache.TryGetValue(screenId, out LayerComponent cachedLayer))
-				return cachedLayer;
+			{
+				if (cachedLayer != null)
+					return cachedLayer;
+
+				modalLayerCache.Remove(screenId);
+			}
 
 			// Use cache manager if available (preferred, O(1) lookup)
 			if (cacheManager != null)

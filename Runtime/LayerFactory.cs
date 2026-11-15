@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ToolsCore;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace ScreenSystem
@@ -40,6 +41,23 @@ namespace ScreenSystem
             List<LayerComponent> screenLayers = new(estimatedCapacity);
 
             int baseZ = zOrderManager.CalculateBaseZOrder(screen.screenType, screenId);
+
+            // Start the loads of this screen's layers that aren't instantiated yet, all at once. Shared layers
+            // already in the scene start nothing. The loop below then finds each prefab loaded.
+            if (layerDef != null && layerDef.LayerCount > 0)
+            {
+                List<string> missing = new(layerDef.LayerCount);
+                for (int i = 0; i < layerDef.LayerCount; i++)
+                {
+                    LayerEntry entry = layerDef.GetLayer(i);
+                    string name = layerDef.GetLayerName(i);
+                    if (entry != null && !entry.isScreenSeparator && !layerInitializer.HasCachedLayer(name))
+                        missing.Add(name);
+                }
+
+                if (missing.Count > 0)
+                    await LayerPrefabLoader.LoadPrefabsAsync(missing, ct);
+            }
 
             GameObject mainLayerObj = await layerInitializer.GetOrInstantiateLayer(screen.AssetPath, ct);
             // A cancelled load returns null. Report it as a cancellation, not as a missing prefab.
@@ -113,6 +131,7 @@ namespace ScreenSystem
 
         public void ReassignLayersToScreen(List<LayerComponent> layers, string screenId, ScreenDefinition screen, string readableId = null)
         {
+            using ProfilerMarker.AutoScope _ = ScreenSystemMarkers.ReassignLayers.Auto();
             if (layers == null || layers.Count == 0)
                 return;
 
@@ -213,6 +232,7 @@ namespace ScreenSystem
 
         private void InjectLayerComponents(GameObject layerObj)
         {
+            using ProfilerMarker.AutoScope _ = ScreenSystemMarkers.InjectLayer.Auto();
             MonoBehaviour[] components = layerObj.GetComponentsInChildren<MonoBehaviour>(true);
             foreach (MonoBehaviour component in components)
             {
