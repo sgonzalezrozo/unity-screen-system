@@ -12,17 +12,29 @@ All notable changes to this package are documented in this file.
 - A navigation still loading when a scene changed blocked the new scene's first `SetRoot` and left its handle behind. Scene changes now cancel it.
 - `ScreenDefinition` assets saved with the older nested `Behaviors` list lost **Persist Over Scenes** and **Ignore Navigation Rules**. They're read again.
 - The navigation stack reversed the order of persistent screens on a scene change.
+- `GoTo` for a screen already lower in the stack returned `false` after popping back to it. It now returns `true`.
+- `GoBack` ignored during a transition at the root started the quit flow, which quits the app without a `QuitConfirmation` modal.
+- Navigation calls made before initialization threw a `NullReferenceException`. They now log an error and return `false`.
+- The `CancellationToken` passed to a navigation call was ignored once the screen started loading. Cancelling now stops the show, undoes the stack change and throws `OperationCanceledException`.
+- UI Toolkit layers always counted as hidden, so a visible shared UI Toolkit layer was shown again with its callbacks.
+- With domain reload disabled, the registry kept its index from the previous Play session, so screens added in between weren't found. Static state and `NavigationEvents` subscribers are reset at the start of each Play session.
+- On a scene change with a modal open, the blur could stay on and its cache kept the destroyed layer.
+- Hiding a UI Toolkit layer disabled its `UIDocument`, which rebuilt its visual tree on every show (about 330 KB per show on a Pixel 5). Its root is now hidden with `display: none`.
+- Unused assets were unloaded during the scene change, which made the new scene's first screen wait for that work. They're unloaded once that screen is drawn.
 
 ### Changed
 
 - On a single scene load, every screen is unloaded except those with **Persist Over Scenes**, the splash and the quit confirmation modal.
 - AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes. Closing and reopening a bundle on each scene change leaked about 29 MB of native memory per change on a Pixel 5.
 - A call ignored during a transition now logs which call was running.
+- A screen's layers that aren't loaded yet start loading together.
 - Prefabs in local bundles finish loading in the same frame instead of waiting for later frames. A cold show on a Pixel 5 at 30 fps went from 99 ms (3 frames) to 15 ms. Remote bundles still load asynchronously.
 
 ### Added
 
 - `ScreenManager.IsTransitioning`.
+- `ScreenSystem.*` profiler markers for each synchronous step of showing, hiding, loading and scene cleanup.
+- Benchmark metrics for scene change phases, time per step, allocations per screen and garbage collections, plus an Editor report of allocations by profiler marker.
 - EditMode tests for navigation, the stack, the registry, layer order, the definition migration and the handle cache.
 - A Benchmark sample that measures navigation time, allocations, idle cost, memory and handles across scene changes, and the overdraw window rule, with the project's own screens.
 

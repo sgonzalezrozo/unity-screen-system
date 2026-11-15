@@ -9,6 +9,12 @@ Copy this file into your project's agent rules (for example `AGENTS.md`, `CLAUDE
 - Each screen is a prefab with a `ScreenDefinition` asset. Screens are created with **Assets > Screen System > New Screen Feature**. After adding or renaming a screen, the developer runs **Tools > Screen System > Rebuild Registry Cache**.
 - Never write `.prefab` or `.asset` files as text. Describe the prefab and the Inspector steps instead, or use Unity editor tools if you have them.
 
+## Layers
+
+- A screen is a prefab plus the layers listed in its `LayerDefinition` (edited in the Inspector). Repeated parts, such as a top bar or a background, are layer prefabs shared by name, not copied into each screen.
+- Don't set `Canvas.sortingOrder` or UI Toolkit sorting by hand on screens or layers. The system sets it.
+- Don't unload screens, release Addressables handles or disable covered screens yourself. Scene changes and navigation do it.
+
 ## Navigate
 
 All methods return `Task<bool>` (`false` when blocked or unknown) and take an optional `CancellationToken`:
@@ -22,7 +28,7 @@ await screens.PopTo("ShopMain");
 await screens.SetRoot("Lobby");
 ```
 
-Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`. A screen argument is its name (from the prefab) or its ID.
+Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`, `IsTransitioning`. A screen argument is its name (from the prefab) or its ID.
 
 - `ScreenManager.Instance` is set in `Start()`. At boot, wait until it's not `null`, then `await ScreenManager.Instance.WaitForInitializationAsync()` before the first `SetRoot`.
 - Wrap `async void` Unity methods in `try`/`catch` and log the exception.
@@ -30,7 +36,7 @@ Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`. A sc
 
 ## React to a screen
 
-Components on the screen prefab implement `IScreenShow` (`OnScreenShown()`), `IScreenHide` (`OnScreenHidden()`) or both through `IScreenLifecycle`. Use `IScreenContent` for `InitializeAsync()` and `Cleanup()`.
+Components on the screen prefab implement `IScreenShow` (`OnScreenShown()`), `IScreenHide` (`OnScreenHidden()`) or both through `IScreenLifecycle`. Hidden screens stay active (only their `Canvas` or UI Toolkit root is hidden), so don't rely on `OnEnable` or `OnDisable` for show and hide.
 
 Static events live on `NavigationEvents`, such as `OnNavigationCompleted` and `OnNavigationFailed`. Unsubscribe when the object is destroyed.
 

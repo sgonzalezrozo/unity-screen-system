@@ -2,7 +2,7 @@
   "name": "com.sgonzalezrozo.screen-system",
   "version": "0.3.0",
   "displayName": "Screen System",
-  "description": "UI manager for Unity: screen navigation with a back stack, popups, modals and alerts, for uGUI and UI Toolkit. Loads screens from Resources or Addressables.",
+  "description": "UI manager for Unity: build screens from reusable, shared layers with automatic draw order, navigate with a back stack, modals and alerts, and unload everything on scene change without leaks. For uGUI and UI Toolkit, with Resources or Addressables.",
   "unity": "2022.3",
   "license": "MIT",
   "author": {
@@ -32,7 +32,10 @@
     "navigation-stack",
     "modal",
     "popup",
-    "addressables"
+    "addressables",
+    "layers",
+    "ui-layers",
+    "memory"
   ],
   "samples": [
     {

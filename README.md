@@ -1,64 +1,111 @@
 # Screen System
 
-**Declarative UI navigation for Unity. Feature code asks for a screen, and the system handles the rest.**
+**Build Unity screens from reusable layers, like layers in an image editor. Ask for a screen by name, and the system loads it, orders it, hides what it covers and unloads it when the scene changes.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
 [![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
 
-Screen System is a free, open-source UI manager for Unity 6 that handles screen navigation, popups and modals, for uGUI and UI Toolkit. Feature code calls `ScreenManager.Instance.GoTo("Shop")`, and the system loads the screen from Resources or Addressables, keeps a back stack, and handles fullscreen, modal and alert layers, the Escape key and cleanup on scene changes. Features don't manage navigation themselves.
+Screen System is a free, open-source UI manager for Unity 6, for uGUI and UI Toolkit. Each screen is a stack of layers: a background, the screen itself, a top bar, a navigation bar. Screens share layers instead of copying them, and the system sets every layer's draw order from where the screen sits in the navigation stack.
+
+Feature code calls `ScreenManager.Instance.GoTo("Shop")`. The system loads the screen from Resources or Addressables, keeps the back stack, renders only what's visible, and unloads everything the next scene doesn't need. Features never manage navigation, visibility or memory themselves.
 
 <!-- Demo GIF: Documentation~/images/demo.gif -->
 
-## Why I built it
+## Why use it
 
-Most projects I worked on had no formal layer controller. Their screens repeated other prefabs instead of reusing them, even with nested and variant prefabs.
+### Screens built from layers
 
-My first time using one was on a recent project, with a custom layer system. That experience, and remembering how apps like Photoshop handle layers, made me want my own tool: a more robust system that covers all my use cases without time-based loops or other detection routines that hurt the game's performance.
+A screen is a prefab plus an ordered list of layers. In the `LayerDefinition` inspector, you drag layer prefabs into a list and reorder them. Layers above the `SCREEN` entry draw behind the screen, and layers below it draw in front.
 
-I built it for uGUI. With the canvas set to overlay, it also works with uGUI and UI Toolkit at the same time.
+- **Reuse instead of duplicating.** A top bar, a navigation bar or a shop background is one prefab that any screen can list. Change it once, and every screen that uses it changes.
+- **One instance per shared layer.** When two screens list the same layer, they share one instance. In a test project with 8 screens, 20 layer references resolved to 12 instances.
+- **No sort orders to manage.** The system sets each layer's sorting order from its position in the list and its screen's depth in the stack. A shared layer takes the order of the topmost screen that uses it.
+- **Shared layers stay put.** Moving between two screens that share a top bar keeps the bar visible and keeps its state.
 
-I built and refined it on my own time in personal projects. It isn't used in production yet. In November 2026 I extracted it into this standalone package and documented it. Earlier history lives in a private repository.
+### Memory that cleans itself up
+
+All UI lives in one persistent object, so scenes hold no UI and load faster.
+
+- **Automatic unloading.** On a single scene load, every screen is unloaded except those marked **Persist Over Scenes**, the splash screen and the quit confirmation. Their Addressables handles are released and their assets are unloaded.
+- **No hitch on the next scene's first screen.** Unused assets are unloaded after the new scene's first screen is drawn, so its load doesn't wait for that work.
+- **No leaks across scene changes.** Memory stays flat over 12 scene changes on a Pixel 5, with no Addressables handle left behind.
+- **Loads only what's asked for.** A screen loads when it's requested, never ahead of time. Its missing layers load together, and layers already in the scene aren't loaded again.
+
+### Only what's visible is rendered
+
+- **At most three windows render at once:** one fullscreen screen, one modal over it and one alert over the modal. Opening a fullscreen screen hides the one under it.
+- **Hiding keeps state.** A hidden uGUI layer only has its `Canvas` disabled, and a hidden UI Toolkit layer has its root set to `display: none`. Neither rebuilds its hierarchy or visual tree when it's shown again.
+- **No per-frame work.** Nothing polls or runs on a timer, and navigation is event-driven. The benchmark saw no garbage collection while screens sat idle.
+
+### One API for uGUI and UI Toolkit
+
+Each screen, and each layer, picks its framework. Both work in the same project at the same time when the canvas uses Screen Space - Overlay, which is the default.
+
+### Tools included
+
+Setup in one command, a wizard that scaffolds screen features, a registry, a Screen Manager window with the live stack and metrics, a layer editor, EditMode tests and a benchmark that runs on your own screens.
+
+## Performance
+
+Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screens of a test project: 8 screens mixing uGUI and UI Toolkit, two scenes, Addressables. Pixel 5, Android 14, IL2CPP Development build, 30 fps.
+
+| Measure | Result |
+|---|---|
+| Show a cached screen | 2.5 ms, no frame waited |
+| Show a screen that isn't loaded | 16 ms median |
+| Go back | 2.3 ms |
+| Scene change until the new scene's first screen is visible | 130 ms, of which 75 ms is Unity's scene activation |
+| Allocations per cached show, uGUI and UI Toolkit | 33 to 41 KB |
+| Garbage collections while idle | 0 in 600 frames |
+| Memory after 12 scene changes | flat (207.2 MB to 207.8 MB) |
+| Addressables handles left behind | 0 |
+| Navigations that broke the three-window rule | 0 of 264 |
+
+Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mode**, or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
 
 ## Is it right for your project?
 
 **Use Screen System if you:**
 
-- Have many screens, overlays or dialogs
+- Have many screens, overlays or dialogs that share parts
 - Want one source of truth for the back stack
 - Use uGUI, UI Toolkit or both
-- Want editor scaffolding and diagnostics
+- Load content with Addressables and care about memory across scenes
+- Want editor scaffolding, diagnostics and measurable performance
 
 **Consider something else if you:**
 
 - Have only a few screens and simple scene transitions
-- Need to pass data through navigation calls. `GoTo` currently takes only a screen ID.
+- Need to pass data through navigation calls. `GoTo` takes only a screen ID for now.
 
 ## Features
 
-- `GoTo`, `GoBack`, `SetRoot` and `PopTo` navigation
+- `GoTo`, `GoBack`, `PopTo` and `SetRoot` navigation, by screen name or ID
+- Screens composed from ordered, shareable layers, with automatic draw order
 - Fullscreen, modal and alert screen types
-- Automatic layer ordering, including layers shared between screens
-- Screens kept loaded and reused until their scene ends
+- Screens kept loaded and reused until their scene ends, and unloaded automatically after it
 - Optional screens that persist across scene changes
-- Guarded async navigation, which ignores calls made during a transition
-- uGUI and UI Toolkit screen frameworks
-- Screens loaded from Resources or Addressables
+- Guarded async navigation: a call made during a transition is ignored, logged and returns `false`
+- uGUI and UI Toolkit screens, alone or together
+- Loading from Resources or Addressables
 - Back handling with Escape through the Input System
-- Navigation and transition events
+- Navigation and transition events, and lifecycle callbacks on screen components
+- Profiler markers for each step, so the package shows up in the Unity Profiler
 - Optional background blur and glass effects
-- Feature scaffolding, a registry and a Screen Manager window
+- Setup, feature scaffolding, a registry, a Screen Manager window and a layer editor
+- A benchmark sample and EditMode tests
 
 ## Compatibility
 
 | Requirement | Supported |
 |---|---|
-| Unity | Tested on Unity 6 (`6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
-| Scripting backend | Not verified yet |
-| Platforms | Not verified yet |
+| Unity | Tested on Unity 6 (`6000.3.6f1`, `6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
+| Scripting backend | Mono and IL2CPP |
+| Platforms | Editor (macOS) and Android, tested on a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). Other platforms aren't verified yet. |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
-| Enter Play Mode with domain reload disabled | Not verified yet. The package has no static reset for this mode, so keep domain reload on until you've tested it. |
-| Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System |
+| Enter Play Mode with domain reload disabled | Not verified yet. Keep domain reload on until you've tested it. |
+| Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System. No DI container is required. |
 
 ## Installation
 
@@ -104,8 +151,9 @@ The prefab is created automatically before the first scene loads, so you don't n
 1. In the Project window, select a folder for the feature.
 2. Select **Assets > Screen System > New Screen Feature**.
 3. Finish the wizard. It creates `Screens` and `Prefabs` folders with a `ScreenDefinition` and a prefab.
-4. On the `ScreenDefinition`, check its screen type and framework. Its name, ID and asset path are filled in from the prefab.
-5. Run **Tools > Screen System > Rebuild Registry Cache**.
+4. Make the prefab loadable: mark it Addressable, or move it into a `Resources` folder.
+5. Drag the prefab onto the drop area of its `ScreenDefinition`. That fills in its asset path. Check its screen type and framework.
+6. Run **Tools > Screen System > Rebuild Registry Cache**.
 
 ### What's on a screen prefab
 
@@ -118,9 +166,44 @@ The wizard adds these for you. If you build a prefab by hand, add them yourself:
 
 `LayerComponent` is added when the screen loads, if the prefab doesn't have it. For UI Toolkit, also assign your UXML and the `GlobalPanelSettings` asset that Setup creates in `Assets/Resources/Tools/Screen System/Prefabs/`.
 
-### React to a screen opening or closing
+## Compose a screen from layers
 
-Add a component like this to the prefab:
+1. Make each reusable part a prefab with its own `Canvas` (uGUI) or `UIDocument` (UI Toolkit): a background, a top bar, a navigation bar.
+2. Put each layer prefab in a `Resources` folder or mark it Addressable. Layers are found by that name or address.
+3. Select the screen prefab and open its `LayerDefinition` in the Inspector.
+4. Drag layer prefabs into the list. Keep the ones that should draw behind the screen above the `SCREEN` entry, and the ones that should draw in front below it.
+5. Reorder the list to change the draw order.
+
+Any screen that lists the same layer shares its instance.
+
+### Layers and draw order
+
+```mermaid
+flowchart TB
+    subgraph S2["Second screen: base order 30"]
+        direction TB
+        S2F["In front of the screen: 32"] --> S2M["SCREEN: 30"] --> S2B["Behind the screen: 28"]
+    end
+    subgraph S1["First screen: base order 10"]
+        direction TB
+        S1F["In front of the screen: 12"] --> S1M["SCREEN: 10"] --> S1B["Behind the screen: 8"]
+    end
+    S2 --> S1
+```
+
+Higher numbers draw on top, so the diagram reads from front to back. Each screen's base order is `10 + 20 × its depth`, and each step away from `SCREEN` adds or subtracts `2`.
+
+### Shared layers
+
+A shared layer:
+
+- Uses the draw order of the topmost screen that's using it
+- Stays visible when you navigate between two screens that use it
+- Keeps its content, rather than loading a copy for each screen
+
+## React to a screen opening or closing
+
+Hidden layers stay active, so Unity's `OnEnable` and `OnDisable` don't run when a screen is shown or hidden. Implement these interfaces on any component of the prefab instead:
 
 ```csharp
 using ScreenSystem;
@@ -140,7 +223,7 @@ public class SettingsScreen : MonoBehaviour, IScreenLifecycle
 }
 ```
 
-Implement only `IScreenShow` or `IScreenHide` if you need just one callback. A component can also implement `IScreenContent` for `InitializeAsync()` and `Cleanup()`.
+Implement only `IScreenShow` or `IScreenHide` if you need just one callback. Start show animations from `OnScreenShown()`, for example with [UI Tweens](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example).
 
 ## Open the first screen
 
@@ -211,7 +294,7 @@ Load scenes as usual. Screen System cleans up automatically when a new scene loa
 SceneManager.LoadScene("MainMenu");
 ```
 
-This needs `using UnityEngine.SceneManagement;`.
+This needs `using UnityEngine.SceneManagement;`. Additive loads don't change your screens.
 
 ### Open a modal
 
@@ -222,7 +305,7 @@ await ScreenManager.Instance.GoTo("ShopModal");
 await ScreenManager.Instance.GoBack(); // Closes the modal.
 ```
 
-- Only one modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes.
+- One modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes.
 - Calling `GoTo` for a screen already in the stack closes the modal and returns to that screen.
 
 ### Handle back at the root
@@ -239,9 +322,9 @@ NavigationEvents.OnQuitApplicationRequested += SaveGame;
 
 ### Keep a screen across scenes
 
-Turn on **Persist Over Scenes** on the `ScreenDefinition`. This suits screens such as a loading overlay.
+Turn on **Persist Over Scenes** on the `ScreenDefinition`. This suits screens such as a loading overlay. The splash screen (**Splash Screen Id** on the `ScreenManager`) and the quit confirmation are kept across scenes without it.
 
-When a scene loads in single mode, a persistent screen stays loaded and its canvas is turned back on, but the navigation history is cleared.
+When a scene loads in single mode, a persistent screen keeps its layers and its visibility, but the navigation history is cleared. A persistent screen that's showing when the scene loads, such as a splash, stays up until the new scene opens its first screen.
 
 ### Show an alert
 
@@ -261,20 +344,14 @@ await ScreenManager.Instance.DismissAlert();
 
 ### Show a screen over a modal or alert
 
-Turn on **Ignore Navigation Rules** on the `ScreenDefinition`. This suits splash screens and critical errors:
+Turn on **Ignore Navigation Rules** on the `ScreenDefinition` for splash screens and critical errors:
 
 - A fullscreen screen opens on top and leaves the modal or alert open underneath. `GoBack()` closes that screen first.
 - A modal screen replaces the open modal.
 
-### Animate a screen
-
-To animate a screen's entrance, start the animation from `OnScreenShown()`, as in the [UI Tweens example](https://github.com/sgonzalezrozo/unity-ui-tweens#usage-example). To run code around a transition, use the [transition events](#events).
-
-Screens hide instantly, so exit animations aren't supported yet.
-
 ### Inject services into a screen
 
-With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), add `internal` fields to any MonoBehaviour on the prefab or its children:
+Components on a screen's layers are injected by whatever container you connect (see [Dependency injection](#dependency-injection)). With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), add `internal` fields to any MonoBehaviour on the prefab or its children:
 
 ```csharp
 using ScreenSystem;
@@ -293,23 +370,6 @@ public class ShopMainScreen : MonoBehaviour, IScreenShow
 
 Bind `IInventoryService` in an installer. Fast IoC regenerates after your scripts compile.
 
-### Add editor shortcuts
-
-This needs `using UnityEngine.InputSystem;`.
-
-```csharp
-#if UNITY_EDITOR
-private void Update()
-{
-    if (Keyboard.current?.digit1Key.wasPressedThisFrame ?? false)
-        ScreenManager.Instance.GoTo("ShopMain").Forget("Open ShopMain");
-
-    if (Keyboard.current?.digit2Key.wasPressedThisFrame ?? false)
-        ScreenManager.Instance.GoTo("ShopDetail").Forget("Open ShopDetail");
-}
-#endif
-```
-
 ## Navigation reference
 
 All navigation methods return `Task<bool>` and take an optional `CancellationToken`.
@@ -323,28 +383,32 @@ await screens.PopTo("ShopMain");
 await screens.SetRoot("Lobby");
 ```
 
-| Operation | Purpose |
+| Member | Purpose |
 |---|---|
-| `GoTo(screen)` | Open a screen |
+| `GoTo(screen)` | Open a screen. For a screen already in the stack, return to it like `PopTo`. |
 | `GoBack()` | Return to the previous screen |
 | `PopTo(screen)` | Return to a screen already in the stack |
 | `SetRoot(screen)` | Replace the root screen |
-| `CanGoBack` | Check whether there's a screen to return to |
-| `GetCurrentScreen()` | Get the current screen ID |
 | `DismissAlert()` | Close the open alert |
+| `CanGoBack` | Check whether there's a screen to return to |
 | `IsAlertActive` | Check whether an alert is open |
+| `IsTransitioning` | Check whether a navigation call is running |
+| `GetCurrentScreen()` | Get the current screen ID |
 
-Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID survives renames, and the wizard creates it from the feature and screen names, such as `Shop_ShopMain`. Names are the simpler choice, but they must be unique, because the first match wins.
+Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID survives renames, and the wizard creates it from the feature and screen names, such as `Shop_ShopMain`. Names must be unique, because the first match wins.
 
 ## Navigation behavior
 
-- **During a transition:** another navigation call is ignored and returns `false`.
+- **Going to a screen already in the stack:** `GoTo` works like `PopTo`. It removes every screen above that one from the stack, hides them, and shows it again. This is by design: the stack never holds the same screen twice.
+- **During a transition:** another navigation call is ignored, logs which call is running, and returns `false`.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
 - **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
 - **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
 - **Back at the root:** `GoBack()` starts the [quit flow](#handle-back-at-the-root).
 - **Escape key:** runs back navigation through the Input System.
-- **Scene changes:** cleanup runs automatically when a scene loads in single mode. Additive loads don't change your screens. Screens with **Persist Over Scenes** stay available.
+- **Scene changes:** a single scene load cancels a navigation still loading, so the new scene can open its first screen right away.
+- **Cancellation:** cancelling the token passed to a navigation call stops it before the screen shows and leaves the stack as it was. The call throws `OperationCanceledException`.
+- **Before initialization:** a navigation call logs an error and returns `false`. Await `WaitForInitializationAsync()` first.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
 
 ## Events
@@ -365,23 +429,15 @@ Four more events follow a screen's transitions:
 | `OnTransitionOutStarted` | A screen starts hiding |
 | `OnTransitionOutCompleted` | Its layers are hidden |
 
-## Dependency injection
-
-Screen System works without a container, using standard `Instantiate`. With [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc), its components are injected automatically. See [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) for using another container.
-
-The package exposes its internals to `Assembly-CSharp`, so Fast IoC `0.4.0` and later assign its `internal` fields (such as `injectedInstantiator`) directly, without reflection.
-
 ## How it works
 
 Screen System runs from one persistent `ScreenSystem` object, marked `DontDestroyOnLoad`.
 
-- **Loading:** a screen's layers load the first time it opens, then stay cached.
-- **Showing and hiding:** hidden screens stay loaded, but their `Canvas` or `UIDocument` is disabled. Reopening one reuses the same objects.
-- **Layers:** each screen is made of one or more layers, and each layer has its own `Canvas` or `UIDocument`. Layers can be shared between screens.
-- **Draw order:** the system sets each layer's sort order from its position in the navigation stack and its `LayerDefinition`, so you don't set sort orders by hand.
-- **Scene changes:** screens without **Persist Over Scenes** are destroyed, their cached resources are released, and unused assets are unloaded. Persistent screens are kept.
-
-Each `ScreenDefinition` in the registry stores the settings that control this, so features don't manage these lifetimes themselves.
+- **Loading:** a screen's layers load the first time it opens. The ones not in the scene yet load together, and prefabs in local Addressables bundles finish loading in the same frame.
+- **Showing and hiding:** hidden screens stay loaded. A uGUI layer's `Canvas` is disabled, and a UI Toolkit layer's root is set to `display: none`. Reopening a screen reuses the same objects.
+- **Draw order:** each layer's sorting order comes from its screen's depth in the stack and its position in the `LayerDefinition`.
+- **Scene changes:** screens without **Persist Over Scenes**, other than the splash and the quit confirmation, are destroyed and their Addressables handles released. Unused assets are unloaded once the new scene's first screen is drawn.
+- **Addressables:** each address has one handle, held while a screen uses it. AssetBundles stay open for the session once a screen needs them, while their assets load and unload with the screens. Closing and reopening a bundle on every scene change cost about 29 MB of native memory per change on a Pixel 5.
 
 ### A screen's lifetime
 
@@ -390,53 +446,27 @@ stateDiagram-v2
     [*] --> Loading: First GoTo or SetRoot
     Loading --> Visible: Layers created and shown
     Visible --> Cached: Navigate away
-    Cached --> Visible: Navigate back
+    Cached --> Visible: Navigate back, or GoTo it again
     Visible --> Unloaded: Single scene load
     Cached --> Unloaded: Single scene load
     Unloaded --> [*]
 ```
 
-Screens with **Persist Over Scenes** skip the `Unloaded` state.
+Persistent screens, the splash and the quit confirmation skip the `Unloaded` state.
 
-### Layers and draw order
-
-A screen's prefab is its main layer. To add more, list them in its `LayerDefinition`. The `SCREEN` entry marks the main layer: entries above it draw behind the screen, and entries below it draw in front.
-
-```mermaid
-flowchart TB
-    subgraph S2["Second screen: base order 30"]
-        direction TB
-        S2F["In front of the screen: 32"] --> S2M["SCREEN: 30"] --> S2B["Behind the screen: 28"]
-    end
-    subgraph S1["First screen: base order 10"]
-        direction TB
-        S1F["In front of the screen: 12"] --> S1M["SCREEN: 10"] --> S1B["Behind the screen: 8"]
-    end
-    S2 --> S1
-```
-
-Higher numbers draw on top, so the diagram reads from front to back. Each screen's base order is `10 + 20 × its depth`, and each step away from `SCREEN` adds or subtracts `2`.
-
-Extra layers are found by name, in Resources first and then Addressables.
-
-### Shared layers
-
-Layers are cached by name, so two screens that list the same name share one instance. A shared layer:
-
-- Uses the draw order of the topmost screen that's using it
-- Stays visible when you navigate between two screens that use it
-- Keeps its content, rather than loading a copy for each screen
+Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in the stack removes the screens above it from the stack. They stay cached, hidden, until they're opened again or the scene changes.
 
 ## Core concepts
 
 | Concept | Meaning |
 |---|---|
-| Screen feature | A folder of screens created by the wizard |
+| Layer | A prefab with its own `Canvas` or `UIDocument`, drawn as part of one or more screens |
+| `LayerDefinition` | The ordered list of a screen's layers, edited in the Inspector |
 | `ScreenDefinition` | An asset holding a screen's ID, asset path, type, framework and behavior |
 | `ScreenRegistry` | The lookup of available screens |
 | `ScreenManager` | The entry point for navigation |
 | `LayerComponent` | Handles a layer's runtime behavior |
-| `LayerDefinition` | Defines a screen's layers and their order |
+| Screen feature | A folder of screens created by the wizard |
 | Screen type | `fullscreen`, `modal` or `alert` |
 | Framework | `uGUI`, `UIToolkit` or `Both` |
 
@@ -446,13 +476,17 @@ Layers are cached by name, so two screens that list the same name share one inst
 |---|---|
 | `Tools/Screen System/Setup` | Create the required project assets |
 | `Tools/Screen System/Rebuild Registry Cache` | Rebuild the registry from `ScreenDefinition` assets |
-| `Tools/Screen System/Screen Manager Window` | Inspect screens and metrics |
+| `Tools/Screen System/Screen Manager Window` | Inspect the live stack, screens and metrics |
+| `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
 | `Assets/Screen System/New Screen Feature` | Scaffold a new screen feature |
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
 | `GameObject/UI/Blur Background Layer` | Add a blur background layer |
 
+In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, such as `ScreenSystem.LoadPrefab` and `ScreenSystem.ActivateLayers`.
+
 ## Recommended usage
 
+- Split repeated parts of your screens into layers and share them.
 - Keep screen names unique and stable.
 - Use a single root screen for your app's boot flow.
 - Prefer stack-based transitions over direct scene loads when UI should stay mounted.
@@ -473,13 +507,21 @@ There are no MCP tools for Screen System yet. The rules file works with any agen
 
 Create each screen as a prefab with a `ScreenDefinition`, then navigate by name: `await ScreenManager.Instance.GoTo("ShopDetail")`. Screen System keeps the back stack and the modal and alert layers. See [Create your first screen](#create-your-first-screen).
 
+### How do I reuse a top bar or background across screens?
+
+Make it a layer prefab and add it to each screen's `LayerDefinition`. Screens that list it share one instance, and its draw order follows the topmost screen using it. See [Compose a screen from layers](#compose-a-screen-from-layers).
+
 ### How do I go back to the previous screen?
 
 Call `await ScreenManager.Instance.GoBack()`. The Escape key does the same through the Input System. See [Navigation reference](#navigation-reference).
 
+### Does it unload screens when the scene changes?
+
+Yes. A single scene load unloads every screen except persistent ones, the splash and the quit confirmation, and releases their Addressables handles. See [How it works](#how-it-works).
+
 ### Does it work with uGUI and UI Toolkit?
 
-Yes. Each `ScreenDefinition` sets its framework.
+Yes. Each `ScreenDefinition` sets its framework, and both can be used at once.
 
 ### Does it load screens with Addressables?
 
@@ -491,15 +533,19 @@ Yes. It's tested on Unity `6000.3`. The package declares `2022.3` as its minimum
 
 ### Does it work with IL2CPP and mobile?
 
-Not verified yet. See [Compatibility](#compatibility).
+Yes on Android with IL2CPP, tested on a Pixel 5 and a Samsung Galaxy A02s. iOS and other platforms aren't verified yet. See [Compatibility](#compatibility).
+
+### How fast is it?
+
+On a Pixel 5, a cached screen shows in 2.5 ms and a screen that isn't loaded in about 16 ms, and memory stays flat across scene changes. See [Performance](#performance), and run the benchmark on your own screens.
 
 ### Can I pass parameters to a screen?
 
-Not through navigation calls yet. See [Limitations](#limitations).
+Not through navigation calls yet. Put shared data in a model the screen reads. See [Limitations](#limitations).
 
-### Does it work with dependency injection?
+### Does it work with dependency injection? Do I need Fast IoC?
 
-Yes. It works without a container, and [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) injects its components automatically. See [Dependency injection](#dependency-injection).
+It works with any container, or none. Screen System depends only on the injection interfaces in Tools Core. Fast IoC registers itself; for Zenject, VContainer or your own container, implement those two interfaces. See [Dependency injection](#dependency-injection).
 
 ### Does it work with AI coding agents?
 
@@ -525,27 +571,37 @@ Not yet. Screen System is a pre-release package (`0.x`) by a single author. It i
 
 Yes. It's MIT licensed.
 
+## Dependency injection
+
+Screen System doesn't depend on any container. It only uses the two interfaces in [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), so it works with Fast IoC, Zenject (Extenject), VContainer or no container at all:
+
+| Interface | What Screen System does with it |
+|---|---|
+| `IPrefabInstantiator` | Creates each layer from its prefab |
+| `IMonoBehaviourInjector` | Injects the components of each new layer and its content |
+
+- **No container:** the defaults use standard `Instantiate` and inject nothing.
+- **[Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc):** registers itself, so screens are injected with no setup. The package exposes its internals to `Assembly-CSharp`, so Fast IoC `0.4.0` and later assign its `internal` fields directly, without reflection.
+- **Any other container:** implement both interfaces with your container and assign them to `ToolInjectionServices` before the first scene loads. Tools Core has [a complete Zenject example](https://github.com/sgonzalezrozo/unity-tools-core#example-zenject).
+
 ## Troubleshooting
 
 | Problem | Try this |
 |---|---|
 | `TryResolveScreenId FAILED` or `screen not found` | Run **Rebuild Registry Cache** and check the screen name or ID |
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
-| `AssetPath is EMPTY` | Set the screen's asset path on its `ScreenDefinition` |
-| `GoTo` does nothing | Check whether a transition, modal or alert is blocking it |
+| `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
+| `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
 | Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root) |
 | An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
 | `ScreenManager.Instance` is `null` | Wait for it as shown in [Open the first screen](#open-the-first-screen) |
+| A layer doesn't appear | Check that its prefab is in `Resources` or Addressable under the name listed in the `LayerDefinition` |
 
 ## Limitations
 
-- Navigation calls can't pass parameters to a screen.
-- Modals can't return a result through `GoTo`.
+- Navigation calls can't pass parameters to a screen, and modals can't return a result through `GoTo`.
 - Screens are requested by string, so typos are only caught at runtime.
 - Calls made during a transition are ignored, not queued.
-- Only one alert can be open at a time.
-- Screens hide instantly, so there are no exit animations.
-- Only one modal can be open at a time.
 
 ## Project status
 
