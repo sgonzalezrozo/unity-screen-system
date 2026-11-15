@@ -14,6 +14,11 @@ namespace ScreenSystem
     {
         private static ScreenManager instance;
 
+        // With Enter Play Mode Options and domain reload off, statics survive between Play sessions. Start each one clean.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+            => instance = null;
+
         [Header("Quit")] [SerializeField] private string quitConfirmationModalId = "QuitConfirmation";
 
         [Header("Splash Screen")] [SerializeField]
@@ -152,30 +157,33 @@ namespace ScreenSystem
             if (!isInitialized)
                 return;
 
+            serviceInitializer?.SceneLifecycleManager?.Tick();
             inputHandler?.CheckForInput(CancellationToken.None);
         }
 
 
-        private void EnsureInitialized()
-            serviceInitializer?.SceneLifecycleManager?.Tick();
+        // Navigation before initialization logs a clear error and returns false, instead of throwing.
+        private bool IsReady(string call)
         {
-            if (!isInitialized)
-                throw new InvalidOperationException($"[ScreenManager] Initialization failed: {initializationError ?? "Unknown error"}");
+            if (isInitialized && navigationService != null && idResolver != null)
+                return true;
 
-            if (navigationService == null)
-                throw new InvalidOperationException("[ScreenManager] navigationService is null - initialization incomplete");
+            string reason = initializationError != null ? $"initialization failed: {initializationError}" : "it isn't initialized yet. Await WaitForInitializationAsync() first";
+            Debug.LogError($"[ScreenManager] {call} ignored: {reason}.");
+            return false;
         }
 
         /// <summary>Opens a screen by name or ID. Returns false if the call is ignored or blocked.</summary>
         public async Task<bool> GoTo(string screenId, CancellationToken ct = default)
         {
+            if (!IsReady(nameof(GoTo)))
+                return false;
+
             if (!idResolver.TryResolveScreenId(screenId, nameof(GoTo), out string resolvedId))
             {
                 Debug.LogError($"[ScreenManager] TryResolveScreenId FAILED for: {screenId}");
                 return false;
             }
-
-            EnsureInitialized();
 
             bool result = await navigationService.GoToAsync(resolvedId, ct);
             return result;
@@ -184,10 +192,19 @@ namespace ScreenSystem
         /// <summary>Closes the open modal or returns to the previous screen. At the root, starts the quit flow.</summary>
         public async Task<bool> GoBack(CancellationToken ct = default)
         {
-            EnsureInitialized();
+            if (!IsReady(nameof(GoBack)))
+                return false;
+
+            // A call ignored during a transition also returns false at the root. That must not start the quit flow.
+            if (navigationService.IsNavigating)
+            {
+                Debug.LogWarning("[ScreenManager] GoBack ignored: a navigation call is still running.");
+                return false;
+            }
+
             bool result = await navigationService.GoBackAsync(ct);
 
-            if (!result && navigationService != null && !navigationService.CanGoBack)
+            if (!result && !navigationService.CanGoBack)
                 await serviceInitializer?.QuitManager?.HandleQuitRequestAsync(ct);
 
             return result;
@@ -196,30 +213,36 @@ namespace ScreenSystem
         /// <summary>Returns to a screen that is already in the stack.</summary>
         public async Task<bool> PopTo(string screenId, CancellationToken ct = default)
         {
+            if (!IsReady(nameof(PopTo)))
+                return false;
+
             if (!idResolver.TryResolveScreenId(screenId, nameof(PopTo), out string resolvedId))
                 return false;
 
-            EnsureInitialized();
             return await navigationService.PopToAsync(resolvedId, ct);
         }
 
         /// <summary>Replaces the root screen.</summary>
         public async Task<bool> SetRoot(string screenId, CancellationToken ct = default)
         {
+            if (!IsReady(nameof(SetRoot)))
+                return false;
+
             if (!idResolver.TryResolveScreenId(screenId, nameof(SetRoot), out string resolvedId))
             {
                 Debug.LogError($"[ScreenManager] TryResolveScreenId FAILED for SetRoot: {screenId}");
                 return false;
             }
 
-            EnsureInitialized();
             return await navigationService.SetRootAsync(resolvedId, ct);
         }
 
         /// <summary>Closes the open alert. Returns false if there's none, or during a transition.</summary>
         public async Task<bool> DismissAlert(CancellationToken ct = default)
         {
-            EnsureInitialized();
+            if (!IsReady(nameof(DismissAlert)))
+                return false;
+
             return await navigationService.DismissAlertAsync(ct);
         }
 
@@ -257,7 +280,7 @@ namespace ScreenSystem
         /// <summary>Gets the layers of a screen.</summary>
         public List<LayerComponent> GetScreenLayers(string screenId)
         {
-            if (!idResolver.TryResolveScreenId(screenId, nameof(GetScreenLayers), out string resolvedId))
+            if (idResolver == null || !idResolver.TryResolveScreenId(screenId, nameof(GetScreenLayers), out string resolvedId))
                 return new List<LayerComponent>();
 
             return displayService?.GetScreenLayers(resolvedId) ?? new List<LayerComponent>();
@@ -288,6 +311,7 @@ namespace ScreenSystem
             SceneManager.sceneLoaded -= OnSceneLoaded;
             initializationCts?.Cancel();
             initializationCts?.Dispose();
+            serviceInitializer?.SceneLifecycleManager?.Dispose();
             serviceInitializer?.Cleanup();
 
             // The screens go with this object, so release every Addressables handle they held.
@@ -299,4 +323,3 @@ namespace ScreenSystem
         }
     }
 }
-            serviceInitializer?.SceneLifecycleManager?.Dispose();

@@ -14,7 +14,7 @@ namespace ScreenSystem
             if (layer == null)
                 return false;
 
-            return layer.IsCanvasEnabled;
+            return layer.IsVisible;
         }
 
         public static bool IsVisible(Component component)

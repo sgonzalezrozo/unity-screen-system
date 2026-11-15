@@ -23,6 +23,24 @@ namespace ScreenSystem
         public static event Action OnBackAtRoot;
         public static event Action OnQuitApplicationRequested;
 
+        // With domain reload off, subscribers from the previous Play session would still be called. Drop them.
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSubscribers()
+        {
+            OnNavigationStarted = null;
+            OnNavigationCompleted = null;
+            OnNavigationFailed = null;
+            OnTransitionInStarted = null;
+            OnTransitionInCompleted = null;
+            OnTransitionOutStarted = null;
+            OnTransitionOutCompleted = null;
+            OnScreenPushed = null;
+            OnScreenPopped = null;
+            OnStackCleared = null;
+            OnBackAtRoot = null;
+            OnQuitApplicationRequested = null;
+        }
+
 
         public static void NotifyNavigationStarted(string screenId)
         {

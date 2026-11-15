@@ -9,6 +9,11 @@ namespace ScreenSystem
     {
         private static ScreenMetrics instance;
 
+        // With Enter Play Mode Options and domain reload off, statics survive between Play sessions. Start each one clean.
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+            => instance = null;
+
         private Dictionary<string, ScreenMetricEntry> screenMetrics = new();
         private Dictionary<string, List<float>> loadTimeHistory = new();
         private Stopwatch currentOperation;

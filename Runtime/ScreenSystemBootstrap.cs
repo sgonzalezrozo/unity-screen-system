@@ -6,6 +6,11 @@ namespace ScreenSystem
     {
         private static ScreenSystemBootstrap instance;
 
+        // With Enter Play Mode Options and domain reload off, statics survive between Play sessions. Start each one clean.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+            => instance = null;
+
         public static ScreenSystemBootstrap Instance
             => instance;
 

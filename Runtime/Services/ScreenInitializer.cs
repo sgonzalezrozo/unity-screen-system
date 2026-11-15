@@ -58,7 +58,8 @@ namespace ScreenSystem.Services
                     return false;
                 }
 
-                screenRegistry.Initialize();
+                // ForceReinitialize, not Initialize: with domain reload off the index from the last session is still cached.
+                screenRegistry.ForceReinitialize();
                 await Task.Yield();
 
                 ComponentDiscovery componentDiscovery = new(screenSystemRoot);

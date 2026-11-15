@@ -192,9 +192,9 @@ namespace ScreenSystem.Tests
             Assert.AreEqual(1, stack.MainHistoryCount);
         }
 
-        // Known bug: GoTo for a screen lower in the stack runs PopTo and then returns false.
-        [Test, Category("KnownBug")]
-        public async Task GoTo_ScreenLowerInTheStackReturnsTrue()
+        // GoTo for a screen already in the stack works like PopTo, by design.
+        [Test]
+        public async Task GoTo_ScreenLowerInTheStackPopsBackToItAndReturnsTrue()
         {
             await StartAtRoot();
             await navigator.GoToAsync("Shop");
@@ -202,8 +202,53 @@ namespace ScreenSystem.Tests
 
             bool result = await navigator.GoToAsync("Root");
 
-            Assert.AreEqual("Root", stack.GetCurrentScreen());
             Assert.IsTrue(result);
+            Assert.AreEqual("Root", stack.GetCurrentScreen());
+            Assert.AreEqual(1, stack.MainHistoryCount, "Shop and Detail are removed from the stack.");
+            CollectionAssert.Contains(display.Calls, "hide:Detail");
+            CollectionAssert.Contains(display.Calls, "hide:Shop");
+        }
+
+        [Test]
+        public async Task GoTo_CancelledBeforeTheScreenShowsLeavesTheStackAsItWas()
+        {
+            await StartAtRoot();
+            display.ThrowIfCancelled = true;
+            using System.Threading.CancellationTokenSource cts = new();
+            cts.Cancel();
+
+            bool cancelled = false;
+            try
+            {
+                await navigator.GoToAsync("Shop", cts.Token);
+            }
+            catch (System.OperationCanceledException)
+            {
+                cancelled = true;
+            }
+
+            Assert.IsTrue(cancelled);
+            Assert.AreEqual("Root", stack.GetCurrentScreen());
+            Assert.AreEqual(1, stack.MainHistoryCount);
+        }
+
+        [Test]
+        public async Task GoTo_CancelledModalIsNotLeftOpen()
+        {
+            await StartAtRoot();
+            display.ThrowIfCancelled = true;
+            using System.Threading.CancellationTokenSource cts = new();
+            cts.Cancel();
+
+            try
+            {
+                await navigator.GoToAsync("Modal", cts.Token);
+            }
+            catch (System.OperationCanceledException)
+            {
+            }
+
+            Assert.IsFalse(stack.HasModal);
         }
     }
 }

@@ -29,5 +29,31 @@ namespace ScreenSystem.Tests
 
             Assert.IsNull(screens.Registry.GetScreen("NoId"));
         }
+
+        // With domain reload off, the registry asset keeps its index between Play sessions.
+        // ScreenManager rebuilds it on start so screens added in between are found.
+        [Test]
+        public void ForceReinitializeFindsScreensAddedAfterTheIndexWasBuilt()
+        {
+            using TestRegistry screens = new TestRegistry().Add("Shop");
+            ScreenDefinition added = ScriptableObject.CreateInstance<ScreenDefinition>();
+            added.ScreenName = "Added";
+            added.ScreenId = "Added";
+
+            try
+            {
+                screens.Registry.Screens.Add(added);
+                screens.Registry.Initialize();
+                Assert.IsNull(screens.Registry.GetScreen("Added"), "Initialize keeps the index it already built.");
+
+                screens.Registry.ForceReinitialize();
+                Assert.AreSame(added, screens.Registry.GetScreen("Added"));
+            }
+            finally
+            {
+                screens.Registry.Screens.Remove(added);
+                Object.DestroyImmediate(added);
+            }
+        }
     }
 }

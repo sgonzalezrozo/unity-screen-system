@@ -12,9 +12,13 @@ namespace ScreenSystem.Tests
         public readonly List<string> Calls = new();
         public readonly HashSet<string> Instantiated = new();
         public TaskCompletionSource<bool> PendingShow;
+        public bool ThrowIfCancelled;
 
         public async Task ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
         {
+            if (ThrowIfCancelled)
+                ct.ThrowIfCancellationRequested();
+
             Calls.Add($"show:{screenId}");
             Instantiated.Add(screenId);
             if (PendingShow != null)

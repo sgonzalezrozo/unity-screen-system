@@ -246,11 +246,12 @@ namespace ScreenSystem
             if (layer == null)
                 return false;
 
+            // IsVisible covers UI Toolkit layers too, so a shared UI Toolkit layer isn't shown again with its callbacks.
             bool isGameObjectActive = layer.gameObject.activeSelf;
-            bool isCanvasEnabled = layer.IsCanvasEnabled;
+            bool isVisible = layer.IsVisible;
             bool isAlreadyAssigned = !string.IsNullOrEmpty(layer.CurrentScreenId);
 
-            return isGameObjectActive && isCanvasEnabled && isAlreadyAssigned;
+            return isGameObjectActive && isVisible && isAlreadyAssigned;
         }
     }
 }

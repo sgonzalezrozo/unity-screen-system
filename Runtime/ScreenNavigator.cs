@@ -70,11 +70,17 @@ namespace ScreenSystem
                 return await GoToWithModalDismissal(screenId, ct);
             }
 
+            // A screen lower in the stack: going to it means popping back to it.
+            if (screen.screenType == ScreenType.fullscreen && isAlreadyShown && navigationStack.PeekMainScreen() != screenId)
+                return await PopToAsync(screenId, ct);
+
             bool opensOverOverlay = ignoreRules && (navigationStack.HasModal || (alertService?.IsAlertActive ?? false));
 
             if (opensOverOverlay && screen.screenType == ScreenType.modal)
                 await ClearAllModalsAsync(ct);
 
+            int historyBefore = navigationStack.MainHistoryCount;
+            string modalBefore = navigationStack.GetCurrentModal();
             bool shouldShowScreen = await TryPushToNavigationStackAsync(screenId, screen, ct);
 
             if (!shouldShowScreen)
@@ -83,7 +89,22 @@ namespace ScreenSystem
             if (opensOverOverlay && screen.screenType == ScreenType.fullscreen)
                 screenShownOverOverlay = screenId;
 
-            await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: !opensOverOverlay);
+            try
+            {
+                await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: !opensOverOverlay);
+            }
+            catch (OperationCanceledException)
+            {
+                // The caller cancelled before the screen showed. Undo the push so the stack matches what's visible.
+                if (navigationStack.MainHistoryCount > historyBefore && navigationStack.PeekMainScreen() == screenId)
+                    navigationStack.PopMainScreen();
+                if (modalBefore == null && navigationStack.GetCurrentModal() == screenId)
+                    navigationStack.ClearModal();
+                if (screenShownOverOverlay == screenId)
+                    screenShownOverOverlay = null;
+                throw;
+            }
+
             return true;
         }
 
@@ -184,8 +205,7 @@ namespace ScreenSystem
                 if (layer == null)
                     continue;
 
-                Canvas canvas = layer.GetComponent<Canvas>();
-                if (canvas != null && canvas.enabled)
+                if (layer.IsVisible)
                     visibleCanvasCount++;
             }
 
@@ -211,7 +231,6 @@ namespace ScreenSystem
                 NavigationEvents.NotifyNavigationStarted(screenId);
 
                 await displayService.ShowScreen(screenId, autoHideParents, ct);
-                await HideSplashIfActiveAsync(screenId, ct);
 
                 NavigationEvents.NotifyScreenPushed(screenId);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
@@ -478,56 +497,6 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenNav] PopTo show failed: {ex.Message}\n{ex.StackTrace}");
             }
-        }
-
-        private async Task HideSplashIfActiveAsync(string excludeScreenId, CancellationToken ct)
-        {
-            Dictionary<string, List<LayerComponent>> cachedScreens = displayService.GetCachedScreens();
-
-            foreach (KeyValuePair<string, List<LayerComponent>> kvp in cachedScreens)
-            {
-                string screenId = kvp.Key;
-                List<LayerComponent> layers = kvp.Value;
-
-                if (layers == null || layers.Count == 0)
-                    continue;
-
-                if (screenId == excludeScreenId)
-                    continue;
-
-                ScreenDefinition screen = screenRegistry.GetScreen(screenId);
-
-                if (!IsSplashScreen(screen))
-                    continue;
-
-                if (!IsScreenVisible(layers))
-                    continue;
-
-                await displayService.HideScreen(screenId, null, ct);
-            }
-        }
-
-        private bool IsSplashScreen(ScreenDefinition screen)
-        {
-            return screen == null;
-        }
-
-        private bool IsScreenVisible(List<LayerComponent> layers)
-        {
-            for (int i = 0; i < layers.Count; i++)
-            {
-                LayerComponent layer = layers[i];
-
-                if (layer == null)
-                    continue;
-
-                Canvas canvas = layer.GetComponent<Canvas>();
-
-                if (canvas != null && canvas.enabled)
-                    return true;
-            }
-
-            return false;
         }
 
         public async Task<bool> DismissAlertAsync(CancellationToken ct = default)

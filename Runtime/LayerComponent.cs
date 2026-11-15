@@ -29,6 +29,11 @@ namespace ScreenSystem
         // Current layer being initialized (for child components to check)
         private static LayerComponent currentInitializingLayer;
 
+        // With Enter Play Mode Options and domain reload off, statics survive between Play sessions. Start each one clean.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+            => currentInitializingLayer = null;
+
         private CanvasController canvasController;
         private UIDocumentController uiDocumentController;
         private ILayerUIView uiView;
@@ -345,12 +350,12 @@ namespace ScreenSystem
 
         private void NotifyScreenLifecycleComponents(bool isShown)
         {
+            using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.LifecycleCallbacks.Auto();
             try
             {
                 if (isShown)
                 {
                     // Use only cached components, never recache after Awake
-            using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.LifecycleCallbacks.Auto();
                     for (int i = 0; i < cachedShowComponents.Length; i++)
                     {
                         if (cachedShowComponents[i] == null)

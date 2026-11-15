@@ -47,7 +47,7 @@ namespace ScreenSystem
                 await ContinueWithShow(screenId, autoHideParents, operationCt, opId, linkedCts);
             };
 
-            await ExecuteNavigationOperation(operation, screenId, "show");
+            await ExecuteNavigationOperation(operation, screenId, "show", ct);
         }
 
         public async Task HideScreen(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default)
@@ -63,10 +63,10 @@ namespace ScreenSystem
                 await ContinueWithHide(screenId, preserveLayersForScreenId, operationCt, opId, linkedCts);
             };
 
-            await ExecuteNavigationOperation(operation, screenId, "hide");
+            await ExecuteNavigationOperation(operation, screenId, "hide", ct);
         }
 
-        private async Task ExecuteNavigationOperation(Func<CancellationToken, int, CancellationTokenSource, Task> operation, string screenId, string operationName)
+        private async Task ExecuteNavigationOperation(Func<CancellationToken, int, CancellationTokenSource, Task> operation, string screenId, string operationName, CancellationToken callerToken)
         {
             Task currentTask;
             CancellationToken operationCt;
@@ -88,7 +88,8 @@ namespace ScreenSystem
                 navigationCts = new CancellationTokenSource();
                 opId = ++navigationOperationId;
 
-                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(navigationCts.Token);
+                // Cancelled by a newer operation, a scene change, or the caller's own token.
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(navigationCts.Token, callerToken);
                 operationCt = linkedCts.Token;
 
                 activeNavigationTask = operation(operationCt, opId, linkedCts);
@@ -101,6 +102,11 @@ namespace ScreenSystem
             try
             {
                 await currentTask;
+            }
+            catch (OperationCanceledException) when (callerToken.IsCancellationRequested)
+            {
+                // The caller cancelled: let the navigation call see it, so it can undo its stack change.
+                throw;
             }
             catch (OperationCanceledException)
             {
@@ -268,16 +274,16 @@ namespace ScreenSystem
         /// <summary>Releases prefabs and destroys cached layers, except those of screens still cached, which are the persistent ones after a scene change.</summary>
         public void ClearAllCachedResources()
         {
+            // A modal open during the scene change took the blur with it. Turn the blur off and forget its layers.
+            blurService.HideAllBlurs();
+            blurService.Cleanup();
+
             HashSet<GameObject> keepLayers = new();
             HashSet<string> keepAddresses = new();
 
             foreach (KeyValuePair<string, List<LayerComponent>> pair in cacheManager.GetAllCachedScreens())
             {
                 ScreenDefinition screen = screenRegistry.GetScreen(pair.Key);
-            // A modal open during the scene change took the blur with it. Turn the blur off and forget its layers.
-            blurService.HideAllBlurs();
-            blurService.Cleanup();
-
                 if (screen != null && !string.IsNullOrEmpty(screen.AssetPath))
                     keepAddresses.Add(screen.AssetPath);
 
