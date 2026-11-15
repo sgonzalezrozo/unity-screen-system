@@ -17,14 +17,82 @@ namespace ScreenSystem
         bool Succeeded { get; }
         GameObject Result { get; }
         void Release();
+
+        /// <summary>Finishes the load now when that can't stall on the network. Returns true if it's done.</summary>
+        bool TryCompleteNow();
     }
 
     internal sealed class AddressablesPrefabLoad : IPrefabLoad
     {
+        // Whether every bundle an address needs is on the device, cached per address.
+        private static readonly Dictionary<string, bool> localAddresses = new();
+
+        private readonly string address;
         private AsyncOperationHandle<GameObject> handle;
 
         private AddressablesPrefabLoad(string address)
-            => handle = Addressables.LoadAssetAsync<GameObject>(address);
+        {
+            this.address = address;
+            handle = Addressables.LoadAssetAsync<GameObject>(address);
+        }
+
+        // An async load waits for later frames to finish, about 3 frames on device (100 ms at 30 fps) even when the
+        // data is a few milliseconds away in a local bundle. Local loads finish now instead. Remote bundles stay
+        // async, so a download never blocks the frame.
+        public bool TryCompleteNow()
+        {
+            if (!handle.IsValid())
+                return false;
+
+            if (handle.IsDone)
+                return true;
+
+            if (!IsLocal(address))
+                return false;
+
+            handle.WaitForCompletion();
+            return handle.IsDone;
+        }
+
+        private static bool IsLocal(string address)
+        {
+            if (localAddresses.TryGetValue(address, out bool local))
+                return local;
+
+            local = true;
+            AsyncOperationHandle<IList<IResourceLocation>> locations = Addressables.LoadResourceLocationsAsync(address, typeof(GameObject));
+            try
+            {
+                locations.WaitForCompletion();
+                if (locations.Status != AsyncOperationStatus.Succeeded || locations.Result == null || locations.Result.Count == 0)
+                {
+                    local = false;
+                }
+                else
+                {
+                    foreach (IResourceLocation location in locations.Result)
+                    {
+                        if (location?.Dependencies == null)
+                            continue;
+
+                        foreach (IResourceLocation bundle in location.Dependencies)
+                        {
+                            string id = bundle?.InternalId ?? "";
+                            if (id.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || id.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                                local = false;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (locations.IsValid())
+                    Addressables.Release(locations);
+            }
+
+            localAddresses[address] = local;
+            return local;
+        }
 
         public static IPrefabLoad Start(string address)
             => new AddressablesPrefabLoad(address);
@@ -163,7 +231,8 @@ namespace ScreenSystem
             IPrefabLoad load = startLoad(address);
             try
             {
-                await load.Task;
+                if (!load.TryCompleteNow())
+                    await load.Task;
             }
             catch
             {

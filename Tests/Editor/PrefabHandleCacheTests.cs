@@ -22,6 +22,17 @@ namespace ScreenSystem.Tests
             public bool Succeeded => !Fails && Completion.Task.IsCompleted && ReleaseCount == 0;
             public GameObject Result => Succeeded ? Prefab : null;
             public void Release() => ReleaseCount++;
+
+            public bool TryCompleteNow()
+            {
+                if (!CompletesNow)
+                    return Completion.Task.IsCompleted;
+
+                Completion.TrySetResult(true);
+                return true;
+            }
+
+            public bool CompletesNow;
         }
 
         private sealed class FakeBundleKeeper : IBundleKeeper
@@ -38,6 +49,7 @@ namespace ScreenSystem.Tests
         private GameObject prefab;
         private bool completeImmediately = true;
         private bool failLoads;
+        private bool completeNow;
 
         [SetUp]
         public void SetUp()
@@ -46,6 +58,7 @@ namespace ScreenSystem.Tests
             resources.Clear();
             completeImmediately = true;
             failLoads = false;
+            completeNow = false;
             prefab = new GameObject("Prefab");
             keeper = new FakeBundleKeeper();
         }
@@ -59,7 +72,7 @@ namespace ScreenSystem.Tests
 
         private IPrefabLoad StartLoad(string address)
         {
-            FakeLoad load = new() { Prefab = prefab, Fails = failLoads };
+            FakeLoad load = new() { Prefab = prefab, Fails = failLoads, CompletesNow = completeNow };
             starts.Add(load);
             if (completeImmediately)
                 load.Completion.SetResult(true);
@@ -242,6 +255,22 @@ namespace ScreenSystem.Tests
             }
 
             Assert.AreEqual(0, keeper.HeldCount);
+        }
+
+        // A load that can finish now returns without waiting for a later frame.
+        [Test]
+        public void LoadThatCompletesNowReturnsSynchronously()
+        {
+            completeImmediately = false;
+            completeNow = true;
+            PrefabHandleCache cache = CreateCache();
+
+            Task<GameObject> loading = cache.LoadAsync("Shop");
+
+            Assert.IsTrue(loading.IsCompleted, "The task is complete before any frame passes.");
+            Assert.AreSame(prefab, loading.Result);
+            cache.ReleaseAll();
+            AssertEveryLoadReleasedOnce();
         }
     }
 }
