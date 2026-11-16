@@ -47,12 +47,17 @@ namespace ScreenSystem
             if (handle.IsDone)
                 return true;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL fetches every bundle with a web request, which WaitForCompletion can't wait on. Stay async.
+            return false;
+#else
             if (!IsLocal(address))
                 return false;
 
             using (ScreenSystemMarkers.LoadPrefab.Auto())
                 handle.WaitForCompletion();
             return handle.IsDone;
+#endif
         }
 
         private static bool IsLocal(string address)

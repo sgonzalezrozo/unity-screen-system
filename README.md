@@ -159,7 +159,7 @@ Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** bac
 |---|---|
 | Unity | Tested on Unity 6 (`6000.3.6f1`, `6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
 | Scripting backend | Mono and IL2CPP |
-| Platforms | Editor (macOS) and Android, tested on a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). Other platforms aren't verified yet. |
+| Platforms | Targets mobile and WebGL. Tested in the Editor (macOS) and on Android: a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). iOS and WebGL aren't verified yet; on WebGL, layers always load asynchronously, because WebGL fetches every bundle with a web request. |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
 | Enter Play Mode with domain reload disabled | Supported. Verified across repeated Play sessions with domain and scene reload off: static state, events and the registry reset at the start of each session. |
 | Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System. No DI container is required. |
@@ -566,7 +566,7 @@ Each `screen` argument can be the screen's name or its ID. The name comes from t
 
 - **Going to a screen already in the stack:** `GoTo` works like `PopTo`. It removes every screen above that one from the stack, hides them, and shows it again. This is by design: the stack never holds the same screen twice.
 - **Clearing to the root:** `GoTo(screen, NavigationHistory.ClearToRoot)` closes the open modal, hides every screen above the root and opens the screen over the root, without drawing the root on the way. Back then returns to the root. It works only for fullscreen screens, and fails while an alert is open.
-- **While a navigation call is running:** another one is ignored, logs which call is running, and returns `false`.
+- **While a navigation call is running:** another one is ignored, logs which call is running, and returns `false`. Calls are never queued, by design.
 - **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
 - **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
 - **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
@@ -795,7 +795,19 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 - Modals can't return a result through `GoTo`. Write the result to a Model.
 - Screens are requested by string, so typos are only caught at runtime.
-- Navigation calls made while another is running are ignored, not queued.
+
+## By design
+
+- **Calls during a transition are ignored, never queued.** A navigation call made while another is running returns `false` and logs which call is running. It either goes now or it doesn't; check `IsTransitioning` if you need to know.
+- **One modal and one alert at a time.** See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
+- **No screen transitions or animations.** Animate inside layers from `OnScreenShown()` and `OnScreenHidden()`.
+
+## Future development
+
+Screen System targets mobile and WebGL. For PC and consoles, these would be added:
+
+- **Back from a gamepad:** today back comes from the Escape key and the Android back button. Mapping the Input System's UI Cancel action (gamepad B) to `GoBack()` would cover gamepads.
+- **Focus when returning to a screen:** remembering the selected button when a screen hides and selecting it again when it returns, so gamepad and keyboard navigation pick up where they left off.
 
 ## Project status
 
