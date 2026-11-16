@@ -18,7 +18,7 @@ All notable changes to this package are documented in this file.
 ### Fixed
 
 - A screen that couldn't be shown (its prefab didn't load, or an exception was thrown) made `GoTo` return `true` and stay in the stack. It now returns `Failed` and the stack is undone, so a failed modal isn't left open and a failed alert doesn't block navigation. `GoTo` for a screen already in the stack that pops back to it returns success.
-- Layer components ran `Awake` and `OnEnable` before their dependencies were injected, and layers that already existed were injected again every time another screen used them. New layers are now created inactive, injected once, then activated. A registered `IPrefabInstantiator` owns injection and isn't followed by a second pass. In the Editor benchmark, injection per cold show went from 10.4 ms to 0.01 ms (median).
+- Layer components ran `Awake` and `OnEnable` before their dependencies were injected, and layers that already existed were injected again every time another screen used them. New layers are now created inactive, injected once, then activated. An instantiator marked `IInjectingPrefabInstantiator` (Tools Core 0.4.0, such as its VContainer and Zenject adapters) owns injection and isn't followed by a second pass; any other instantiator creates the copy and Screen System injects it. In the Editor benchmark, injection per cold show went from 10.4 ms to 0.01 ms (median).
 - On WebGL, local Addressables loads tried to finish in the same frame with `WaitForCompletion`, which WebGL doesn't support for bundles. They stay asynchronous there.
 - The package didn't compile in a project without the Screen Capture and UI Elements built-in modules. They're now declared as dependencies.
 - The back key with no Screen System screen open quit the app, so a project with its own UI closed on Escape or Android back. It now does nothing.
@@ -41,6 +41,7 @@ All notable changes to this package are documented in this file.
 
 ### Changed
 
+- Requires Tools Core 0.4.0.
 - **Breaking:** unused types and services are removed: `LayerPrefabInstantiator`, `LayerPrefabInstantiatorFromAddressable`, the old glass effect (`ModalGlassEffect`, `GlassmorphismPanel`, `BlurEffectRenderer`), `IScreenContent`, `IScreenContentEvents`, `ScreenContentEvents`, `IShellTemplateProvider`, `NavigationTracker`, `ScreenIndexEntry`, `SerializableDictionary`, and `HideAllScreensAsync`, `RestoreAllScreensAsync` and `NavigateFromModalToScreenAsync` with their classes. With Fast IoC, regenerate its code after updating.
 - **Breaking:** navigation calls return `NavigationResult` instead of `bool`. It converts to `bool`, so `if (await GoTo(...))` and `bool ok = await GoTo(...)` still compile; code that types the task as `Task<bool>` needs `Task<NavigationResult>`. `Status` says why a call didn't happen.
 - The Screen Manager window shows what the next back does, what's rendering from front to back (including the blurred snapshot and the dim), and the back stack down to the root with what back does at each step. Layers show whether they render, are hidden or are suspended behind the blur, and which are shared. Buttons for Back, Dismiss Alert, Close All and Pop To.

@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.sgonzalezrozo.screen-system": "file:../../..",
-    "com.sgonzalezrozo.core": "https://github.com/sgonzalezrozo/unity-tools-core.git",
+    "com.sgonzalezrozo.core": "https://github.com/sgonzalezrozo/unity-tools-core.git#v0.4.0",
     "com.unity.addressables": "2.8.1",
     "com.unity.inputsystem": "1.18.0",
     "com.unity.ugui": "2.0.0",

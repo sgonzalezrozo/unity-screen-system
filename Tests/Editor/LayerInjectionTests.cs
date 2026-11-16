@@ -20,7 +20,7 @@ namespace ScreenSystem.Tests
         }
 
         // Stands in for a container's instantiator, which injects as it creates the copy.
-        private sealed class InjectingInstantiator : IPrefabInstantiator
+        private sealed class InjectingInstantiator : IInjectingPrefabInstantiator
         {
             public int Calls;
 
@@ -79,6 +79,38 @@ namespace ScreenSystem.Tests
             CollectionAssert.AreEqual(new[] { false, false }, injector.ActiveWhenInjected, "injected before Awake and OnEnable can run");
             Assert.AreSame(container.transform, layer.transform.parent);
             Assert.IsTrue(layer.activeInHierarchy, "awake once it's in place");
+        }
+
+        // A custom instantiator that doesn't inject still creates the copy, and Screen System injects it.
+        private sealed class PlainInstantiator : IPrefabInstantiator
+        {
+            public int Calls;
+
+            public GameObject Instantiate(GameObject prefab, Transform parent = null)
+            {
+                Calls++;
+                return Object.Instantiate(prefab, parent);
+            }
+
+            public GameObject Instantiate(GameObject prefab, Transform parent, object data) => Instantiate(prefab, parent);
+            public T Instantiate<T>(GameObject prefab, Transform parent = null) where T : Component => Instantiate(prefab, parent).GetComponent<T>();
+            public T Instantiate<T>(GameObject prefab, Transform parent, object data) where T : Component => Instantiate<T>(prefab, parent);
+        }
+
+        [Test]
+        public void ACustomInstantiatorThatDoesntInjectIsUsedAndInjectedOnce()
+        {
+            GameObject container = Make("Container");
+            GameObject holder = Make("Holder", active: false);
+            RecordingInjector injector = new();
+            PlainInstantiator instantiator = new();
+
+            GameObject layer = LayerInitializer.InstantiateInjected(Template(), container.transform, holder.transform, instantiator, injector);
+            objects.Add(layer);
+
+            Assert.AreEqual(1, instantiator.Calls);
+            Assert.AreEqual(2, injector.Injected.Count);
+            CollectionAssert.AreEqual(new[] { false, false }, injector.ActiveWhenInjected);
         }
 
         [Test]

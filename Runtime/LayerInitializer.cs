@@ -52,11 +52,12 @@ namespace ScreenSystem
          /// Creates a layer with its dependencies injected before its components' Awake and OnEnable run, and only
          /// once. With the default instantiator the copy is created under an inactive holder, every MonoBehaviour is
          /// injected, then the copy moves to <paramref name="container"/> and wakes up. A registered
-         /// IPrefabInstantiator owns injection, so it isn't injected again.
+         /// IInjectingPrefabInstantiator (a container's InstantiatePrefab) owns injection, so it isn't injected again;
+         /// any other instantiator creates the copy, and Screen System injects it.
          /// </summary>
          internal static GameObject InstantiateInjected(GameObject prefab, Transform container, Transform inactiveHolder, IPrefabInstantiator instantiator, IMonoBehaviourInjector injector)
          {
-             if (instantiator != null && instantiator is not NullPrefabInstantiator)
+             if (instantiator is IInjectingPrefabInstantiator)
              {
                  GameObject injected;
                  using (ScreenSystemMarkers.InstantiateLayer.Auto())
@@ -68,7 +69,7 @@ namespace ScreenSystem
 
              GameObject instance;
              using (ScreenSystemMarkers.InstantiateLayer.Auto())
-                 instance = inactiveHolder != null ? Object.Instantiate(prefab, inactiveHolder, worldPositionStays: false) : Object.Instantiate(prefab);
+                 instance = instantiator != null ? instantiator.Instantiate(prefab, inactiveHolder) : Object.Instantiate(prefab, inactiveHolder, worldPositionStays: false);
 
              using (ScreenSystemMarkers.InjectLayer.Auto())
              {
