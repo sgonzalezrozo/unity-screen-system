@@ -34,6 +34,7 @@ Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`, `IsT
 
 - At boot, `ScreenManager screens = await ScreenManager.WhenReadyAsync();` then `SetRoot` if it isn't `null`. Don't poll `ScreenManager.Instance` in a loop. `Instance` is set before the first scene's `Awake`, but may still be initializing.
 - Wrap `async void` Unity methods in `try`/`catch` and log the exception.
+- For a confirmation or picker, `ModalResult<bool> answer = await screens.GoToForResult<bool>(ScreenIds.Confirm);` and the modal calls `ScreenManager.Instance.CloseWithResult(true)`. Check `answer.Returned` before reading `answer.Value`; back or any other close gives `Dismissed`.
 - A tab bar is a layer shared by the tab screens. Its buttons call `GoTo(tab, NavigationHistory.ClearToRoot)`, so back returns to the root instead of walking through tabs. It works for fullscreen screens only.
 - Pass what a navigation is about with `GoTo(screen, value)`; components on any of the screen's layers receive it by implementing `IScreenParameter<T>` (`OnScreenParameter(T value)`), once, before `OnScreenShown`. It isn't delivered again on back and Screen System doesn't keep it, so the component stores what it needs. Keep state shared by several screens in a Model.
 

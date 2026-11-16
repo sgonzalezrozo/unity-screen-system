@@ -10,6 +10,9 @@ namespace ScreenSystem
 		Task<NavigationResult> GoTo<T>(string screenId, T parameter, CancellationToken ct = default);
 		Task<NavigationResult> GoTo<T>(string screenId, T parameter, NavigationHistory history, CancellationToken ct = default);
 		Task<NavigationResult> GoBack(CancellationToken ct = default);
+		Task<ModalResult<TResult>> GoToForResult<TResult>(string screenId, CancellationToken ct = default);
+		Task<ModalResult<TResult>> GoToForResult<TParameter, TResult>(string screenId, TParameter parameter, CancellationToken ct = default);
+		Task<NavigationResult> CloseWithResult<T>(T value, CancellationToken ct = default);
 		Task<NavigationResult> SetRoot(string screenId, CancellationToken ct = default);
 		bool CanGoBack { get; }
 		string GetCurrentScreen();

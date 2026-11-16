@@ -66,6 +66,7 @@ namespace ScreenSystem
         private ScreenServiceInitializer serviceInitializer;
         private ScreenInputHandler inputHandler;
         private ScreenIdResolver idResolver;
+        private readonly ScreenResultBroker resultBroker = new();
         private ScreenNavigationService navigationService;
         private ScreenDisplayService displayService;
         private bool isInitialized;
@@ -202,6 +203,7 @@ namespace ScreenSystem
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             serviceInitializer?.SceneLifecycleManager?.OnSceneLoaded(scene, mode);
+            SettleResults();
         }
 
         private void Update()
@@ -256,7 +258,9 @@ namespace ScreenSystem
             if (!idResolver.TryResolveScreenId(screenId, nameof(GoTo), out string resolvedId))
                 return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            return Result(await navigationService.GoToAsync(resolvedId, history, parameter, ct), screenId);
+            NavigationResult result = Result(await navigationService.GoToAsync(resolvedId, history, parameter, ct), screenId);
+            SettleResults();
+            return result;
         }
 
         /// <summary>
@@ -280,6 +284,7 @@ namespace ScreenSystem
                 return new NavigationResult(NavigationStatus.NothingToClose);
 
             NavigationResult result = Result(await navigationService.GoBackAsync(ct), null);
+            SettleResults();
 
             if (!result && !navigationService.CanGoBack && QuitsOnBackAtRoot)
                 await serviceInitializer?.QuitManager?.HandleQuitRequestAsync(ct);
@@ -296,7 +301,9 @@ namespace ScreenSystem
             if (!idResolver.TryResolveScreenId(screenId, nameof(PopTo), out string resolvedId))
                 return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            return Result(await navigationService.PopToAsync(resolvedId, ct), screenId);
+            NavigationResult result = Result(await navigationService.PopToAsync(resolvedId, ct), screenId);
+            SettleResults();
+            return result;
         }
 
         /// <summary>Replaces the root screen.</summary>
@@ -308,7 +315,9 @@ namespace ScreenSystem
             if (!idResolver.TryResolveScreenId(screenId, nameof(SetRoot), out string resolvedId))
                 return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            return Result(await navigationService.SetRootAsync(resolvedId, ct), screenId);
+            NavigationResult result = Result(await navigationService.SetRootAsync(resolvedId, ct), screenId);
+            SettleResults();
+            return result;
         }
 
         /// <summary>
@@ -321,8 +330,105 @@ namespace ScreenSystem
             if (!IsReady(nameof(CloseAll)))
                 return new NavigationResult(NavigationStatus.NotReady);
 
-            return Result(await navigationService.CloseAllAsync(ct), null);
+            NavigationResult result = Result(await navigationService.CloseAllAsync(ct), null);
+            SettleResults();
+            return result;
         }
+
+        /// <summary>
+        /// Opens a modal or alert and waits until it closes, for its answer:
+        /// <code>
+        /// ModalResult&lt;bool&gt; answer = await screens.GoToForResult&lt;bool&gt;(ScreenIds.ConfirmPurchase);
+        /// if (answer.Returned &amp;&amp; answer.Value)
+        ///     Buy();
+        /// </code>
+        /// The screen answers with <see cref="CloseWithResult{T}"/>. Any other way it closes (back, CloseAll, a GoTo
+        /// that closes it, a scene change) completes as Dismissed. If it can't open, the result is NotOpened and its
+        /// Navigation says why. Cancelling <paramref name="ct"/> closes it and throws OperationCanceledException.
+        /// </summary>
+        public Task<ModalResult<TResult>> GoToForResult<TResult>(string screenId, CancellationToken ct = default)
+            => GoToForResultCore<TResult>(screenId, null, ct);
+
+        /// <summary>Opens a modal or alert with a value for its IScreenParameter&lt;T&gt; components, and waits for its answer.</summary>
+        public Task<ModalResult<TResult>> GoToForResult<TParameter, TResult>(string screenId, TParameter parameter, CancellationToken ct = default)
+            => GoToForResultCore<TResult>(screenId, ScreenParameter.Create(parameter), ct);
+
+        /// <summary>
+        /// Closes the topmost modal or alert and returns <paramref name="value"/> to the GoToForResult that opened
+        /// it. The caller resumes once the screen has closed. Without a GoToForResult waiting, it only closes it.
+        /// </summary>
+        public async Task<NavigationResult> CloseWithResult<T>(T value, CancellationToken ct = default)
+        {
+            if (!IsReady(nameof(CloseWithResult)))
+                return new NavigationResult(NavigationStatus.NotReady);
+
+            bool alertOnTop = navigationService.IsAlertActive;
+            if (!alertOnTop && string.IsNullOrEmpty(navigationService.CurrentModal))
+            {
+                Debug.LogWarning("[ScreenManager] CloseWithResult ignored: no modal or alert is open.");
+                return new NavigationResult(NavigationStatus.NothingToClose);
+            }
+
+            ScreenResultBroker.IPending staged = resultBroker.Stage(value, alertOnTop);
+            NavigationResult closed = alertOnTop ? await DismissAlert(ct) : await GoBack(ct);
+
+            // The close didn't happen, so the value isn't returned later by another close.
+            if (!closed)
+                staged?.Unstage();
+
+            return closed;
+        }
+
+        private async Task<ModalResult<TResult>> GoToForResultCore<TResult>(string screenId, ScreenParameter parameter, CancellationToken ct)
+        {
+            if (!IsReady("GoToForResult"))
+                return NotOpened<TResult>(NavigationStatus.NotReady, screenId);
+
+            if (!idResolver.TryResolveScreenId(screenId, "GoToForResult", out string resolvedId))
+                return NotOpened<TResult>(NavigationStatus.NotFound, screenId);
+
+            ScreenDefinition definition = serviceInitializer.Registry.GetScreen(resolvedId);
+            if (definition == null || definition.ScreenType == ScreenType.Fullscreen)
+            {
+                Debug.LogError($"[ScreenManager] GoToForResult({screenId}) needs a Modal or Alert screen; use GoTo for fullscreen screens.");
+                return NotOpened<TResult>(NavigationStatus.InvalidRequest, screenId);
+            }
+
+            bool isAlert = definition.ScreenType == ScreenType.Alert;
+            ScreenResultBroker.Pending<TResult> pending = resultBroker.Begin<TResult>(resolvedId, isAlert, out ScreenResultBroker.IPending previous);
+
+            NavigationResult opened = await GoToWithParameter(screenId, NavigationHistory.Push, parameter, ct);
+            if (!opened)
+            {
+                resultBroker.Restore(pending, previous, isAlert);
+                return new ModalResult<TResult>(ModalResultStatus.NotOpened, default, opened);
+            }
+
+            pending.Navigation = opened;
+            if (!ct.CanBeCanceled)
+                return await pending.Task;
+
+            TaskCompletionSource<bool> cancelled = new();
+            using (ct.Register(() => cancelled.TrySetResult(true)))
+            {
+                if (await Task.WhenAny(pending.Task, cancelled.Task) == pending.Task)
+                    return await pending.Task;
+            }
+
+            // Cancelled while it was open: close it, then let the caller see the cancellation.
+            bool stillOpen = isAlert ? navigationService.CurrentAlert == resolvedId : navigationService.CurrentModal == resolvedId;
+            if (stillOpen)
+                _ = isAlert ? await DismissAlert() : await GoBack();
+
+            throw new OperationCanceledException(ct);
+        }
+
+        private static ModalResult<TResult> NotOpened<TResult>(NavigationStatus status, string screenId)
+            => new(ModalResultStatus.NotOpened, default, new NavigationResult(status, screenId));
+
+        // Completes the pending results of screens that are no longer open.
+        private void SettleResults()
+            => resultBroker.Settle(navigationService?.CurrentModal, navigationService?.CurrentAlert);
 
         private NavigationResult Result(bool succeeded, string screen)
             => new(succeeded ? NavigationStatus.Succeeded : FailureStatus(), screen);
@@ -349,7 +455,9 @@ namespace ScreenSystem
             if (!IsReady(nameof(DismissAlert)))
                 return new NavigationResult(NavigationStatus.NotReady);
 
-            return Result(await navigationService.DismissAlertAsync(ct), null);
+            NavigationResult result = Result(await navigationService.DismissAlertAsync(ct), null);
+            SettleResults();
+            return result;
         }
 
         /// <summary>True while an alert is open. Navigation is blocked until it's dismissed.</summary>
@@ -438,6 +546,7 @@ namespace ScreenSystem
 
         private void OnDestroy()
         {
+            resultBroker.CompleteAll();
             SceneManager.sceneLoaded -= OnSceneLoaded;
             initializationCts?.Cancel();
             initializationCts?.Dispose();

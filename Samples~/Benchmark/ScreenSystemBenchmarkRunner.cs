@@ -161,9 +161,19 @@ namespace ScreenSystem.Benchmark
             NavigationEvents.OnQuitApplicationRequested += OnQuitRequested;
         }
 
-        private void Start()
+        private async void Start()
         {
-            RunAsync().Forget("ScreenSystemBenchmarkRunner.RunAsync");
+            try
+            {
+                await RunAsync();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         private void OnDestroy()
@@ -541,6 +551,9 @@ namespace ScreenSystem.Benchmark
                 await AlertPassAsync();
                 Save();
 
+                await ResultPassAsync();
+                Save();
+
                 await MeasureIdleAsync("idle.all-cached");
                 Save();
 
@@ -802,6 +815,55 @@ namespace ScreenSystem.Benchmark
 
         // An alert over a fullscreen screen gets the blurred snapshot. An alert over a modal leaves the modal visible
         // and dims it: the dim must sit above every layer of the modal and below every layer of the alert.
+        // GoToForResult on a real modal: an answer is returned, back dismisses, and the caller can navigate right after
+        // the answer, since the result completes once the modal has closed.
+        private async Task ResultPassAsync()
+        {
+            if (result.modalScreens.Count == 0)
+            {
+                result.notes.Add("No modal screen in the registry, so GoToForResult wasn't measured.");
+                return;
+            }
+
+            ScreenManager manager = ScreenManager.Instance;
+            string modal = result.modalScreens[0];
+            string root = manager.GetRootScreen();
+            // The lists hold screen names and the stack holds IDs, so compare IDs to skip the root.
+            ScreenSystem.ScriptableObjects.ScreenRegistry registry = ScreenSystem.ScriptableObjects.ScreenSystemSettings.Instance?.ScreenRegistry;
+            string next = result.fullscreenScreens.Find(name => registry?.GetScreen(name)?.ScreenId is { } id && id != root);
+
+            for (int rep = 0; rep < ALERT_REPETITIONS; rep++)
+            {
+                if (manager.GetCurrentScreen() != root)
+                    await manager.PopTo(root);
+
+                Task<ModalResult<bool>> answered = manager.GoToForResult<bool>(modal);
+                await WaitUntilIdleAsync(manager);
+                await manager.CloseWithResult(true);
+                ModalResult<bool> answer = await answered;
+                AddSample("result.returned", new NavSample { Ms = answer.Returned && answer.Value ? 1 : 0, Ok = true });
+
+                if (next != null)
+                {
+                    NavigationResult afterAnswer = await manager.GoTo(next);
+                    AddSample("result.next-goto-after-answer", new NavSample { Ms = afterAnswer ? 1 : 0, Ok = true });
+                    await manager.PopTo(root);
+                }
+
+                Task<ModalResult<bool>> backedOut = manager.GoToForResult<bool>(modal);
+                await WaitUntilIdleAsync(manager);
+                await manager.GoBack();
+                ModalResult<bool> dismissed = await backedOut;
+                AddSample("result.dismissed-by-back", new NavSample { Ms = dismissed.Status == ModalResultStatus.Dismissed ? 1 : 0, Ok = true });
+            }
+        }
+
+        private async Task WaitUntilIdleAsync(ScreenManager manager)
+        {
+            for (int frame = 0; frame < 300 && manager.IsTransitioning; frame++)
+                await WaitFrames(1);
+        }
+
         private async Task AlertPassAsync()
         {
             if (result.alertScreens.Count == 0)

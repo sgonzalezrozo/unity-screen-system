@@ -428,6 +428,39 @@ await ScreenManager.Instance.GoBack(); // Closes the modal.
 - One modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes. See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
 - Calling `GoTo` for a screen already in the stack closes the modal and returns to that screen.
 
+### Get an answer from a modal
+
+For a confirmation or a picker, open the modal with `GoToForResult` and await its answer:
+
+```csharp
+ModalResult<bool> answer = await ScreenManager.Instance.GoToForResult<bool>(ScreenIds.ConfirmPurchase);
+if (answer.Returned && answer.Value)
+    Buy();
+
+// With a value for the modal's IScreenParameter<T> components:
+ModalResult<bool> answer = await ScreenManager.Instance.GoToForResult<ProductRequest, bool>(
+    ScreenIds.ConfirmPurchase, new ProductRequest("sword_01"));
+```
+
+The modal answers and closes itself with `CloseWithResult`:
+
+```csharp
+public void OnYes() => ScreenManager.Instance.CloseWithResult(true);
+public void OnNo() => ScreenManager.Instance.CloseWithResult(false);
+```
+
+| `answer.Status` | When |
+|---|---|
+| `Returned` | The modal called `CloseWithResult(value)`; `answer.Value` holds it |
+| `Dismissed` | It closed without a value: back, `CloseAll()`, a `GoTo` that closed it, a scene change, or a value of another type (logged as an error) |
+| `NotOpened` | It didn't open; `answer.Navigation` says why, such as `BlockedByModal` |
+
+- **Completes after the modal closes:** the caller resumes once the modal is gone, so its next `GoTo` isn't refused as `Transitioning`.
+- **Always completes:** whatever closes the modal, nobody is left waiting.
+- **Modals and alerts:** an alert such as "Connection lost: Retry / Quit" can answer too. An alert over a modal answers first, and the modal keeps waiting for its own answer.
+- **Cancellation:** cancelling the token passed to `GoToForResult` closes the modal and throws `OperationCanceledException`.
+- Fullscreen screens can't answer; `GoToForResult` returns `NotOpened` with `InvalidRequest`.
+
 ### Pass a value to a screen
 
 `GoTo(screen, value)` passes any type to the screen. Every component on any of its layers that implements `IScreenParameter<T>` for that type receives it.
@@ -618,6 +651,8 @@ await screens.SetRoot("Lobby");
 | `PopTo(screen)` | Return to a screen already in the stack |
 | `SetRoot(screen)` | Replace the root screen |
 | `DismissAlert()` | Close the open alert |
+| `GoToForResult<T>(screen)` | Open a modal or alert and await its answer as a `ModalResult<T>` |
+| `CloseWithResult(value)` | Close the topmost modal or alert and return a value to its `GoToForResult` |
 | `CloseAll()` | Hide every screen, modal and alert and empty the stack, to return to UI outside Screen System |
 | `CanGoBack` | Check whether there's a screen to return to |
 | `IsAlertActive` | Check whether an alert is open |
@@ -848,7 +883,7 @@ Transitions depend on each game's art direction, so Screen System doesn't impose
 
 ### Can a modal return a result, like a confirmation?
 
-Not through `GoTo`. The modal writes the result to a Model, or raises an event the caller listens to, and closes with `GoBack()`. Passing data *into* a screen is supported with `GoTo(screen, value)`.
+Yes. Open it with `GoToForResult<bool>(screen)` and await a `ModalResult<bool>`; the modal answers with `CloseWithResult(true)`. Back or any other close completes it as `Dismissed`. See [Get an answer from a modal](#get-an-answer-from-a-modal).
 
 ### How do I switch tabs from a bottom bar?
 
@@ -884,7 +919,7 @@ In Play Mode, open **Tools > Screen System > Screen Manager Window**. It shows w
 
 ### What's verified, and what isn't?
 
-Verified: the navigation rules, back stack, parameters, results and injection order, covered by Edit Mode tests (a GitHub Actions workflow runs them once a Unity license is added to the repository); memory, handles, render budget and timings on a Pixel 5 and a Samsung Galaxy A02s with IL2CPP; a WebGL build in a browser; and Enter Play Mode with domain reload off. Not verified yet: iOS, Screen Space - Camera canvases, Unity versions before 6, a shipped game, and the VContainer and Zenject adapters in a running game (they're compiled against those containers).
+Verified: the navigation rules, back stack, parameters, modal answers, results and injection order, covered by Edit Mode tests (a GitHub Actions workflow runs them once a Unity license is added to the repository); memory, handles, render budget and timings on a Pixel 5 and a Samsung Galaxy A02s with IL2CPP; a WebGL build in a browser; and Enter Play Mode with domain reload off. Not verified yet: iOS, Screen Space - Camera canvases, Unity versions before 6, a shipped game, and the VContainer and Zenject adapters in a running game (they're compiled against those containers).
 
 ### Is it production-ready? Does anyone use it?
 
@@ -926,7 +961,10 @@ A new layer is created under an inactive holder, injected, then moved into place
 
 ## Limitations
 
-- Modals can't return a result through `GoTo`. Write the result to a Model.
+- AssetBundles stay open for the session once a screen needs them, so in a game with a lot of UI content the open bundles grow with the screens visited. There's no limit or eviction policy yet.
+- Only Screen Space - Overlay canvases are verified; the blurred snapshot behind modals assumes them.
+- iOS isn't verified yet, and the package declares Unity `2022.3` as its minimum but is only tested on Unity 6.
+- Each tab of a bottom bar doesn't keep its own back stack; `ClearToRoot` returns to the root.
 
 ## By design
 

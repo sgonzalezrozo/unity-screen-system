@@ -6,6 +6,7 @@ All notable changes to this package are documented in this file.
 
 ### Added
 
+- `GoToForResult<TResult>(screen)` opens a modal or alert and awaits its answer as a `ModalResult<TResult>` (`Returned`, `Dismissed` or `NotOpened`); the screen answers with `CloseWithResult(value)`. The result completes once the screen has closed, whatever closed it, so the caller's next navigation goes through. An overload passes a value to the screen's `IScreenParameter<T>` components.
 - `ScreenIds`: a generated class with one constant per screen (`GoTo(ScreenIds.ShopMain)`), so typos and renamed or deleted screens are caught at compile time. It's regenerated when `ScreenDefinition`s change; turn it off or move it in `ScreenSystemSettings`, or run **Tools > Screen System > Generate Screen IDs**.
 - `ScreenAuthoring` (Editor) builds screens from code, for editor scripts and AI agents with editor tools: `CreateScreen`, `CreateLayer`, `AddLayer` with a placement, `RemoveLayer`, `GetLayers`, and `-executeMethod` entry points.
 - `ScreenManager.WhenReadyAsync()` waits until Screen System is ready and returns the manager, or `null` if it failed or isn't set up. It replaces polling `ScreenManager.Instance` and then awaiting `WaitForInitializationAsync()`.

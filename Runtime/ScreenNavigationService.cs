@@ -28,6 +28,14 @@ namespace ScreenSystem
         public bool CanGoBack
             => navigationStack.CanGoBack;
 
+        /// <summary>The open modal's ID, or null.</summary>
+        public string CurrentModal
+            => navigationStack.GetCurrentModal();
+
+        /// <summary>The open alert's ID, or null.</summary>
+        public string CurrentAlert
+            => navigationStack.GetCurrentAlert();
+
         public string GetCurrentScreen()
             => navigationStack.GetCurrentScreen();
 

@@ -31,6 +31,8 @@ The [Benchmark sample](../../Samples~/Benchmark/README.md) measures these metric
 | `alert.snapshot-over-fullscreen` | 1 when an alert over a fullscreen screen gets the blurred snapshot | 1 |
 | `alert.dim-over-modal`, `alert.modal-rendering-under-alert`, `alert.dim-between-modal-and-alert` | An alert over a modal: the dim shows, the modal keeps rendering, and the dim sits above every modal layer and below every alert layer | 1 |
 | `alert.dim-hidden-after-dismiss` | 1 when dismissing the alert removes the dim | 1 |
+| `result.returned`, `result.dismissed-by-back` | `GoToForResult` on a real modal: `CloseWithResult(true)` returns `true`, and back completes it as `Dismissed` | 1 |
+| `result.next-goto-after-answer` | 1 when the caller's `GoTo` right after the answer goes through, because the result completes once the modal has closed | 1 |
 | `render.layers-rendering` | Layers rendering after a navigation. Median and max. | Lower |
 | `layers.instances-all-loaded` | Layer instances with every screen loaded. Lower than the sum of each screen's layers when layers are shared. | Lower |
 | `*.gc-collections`, `*.gc-ms` | Garbage collections and time spent in GC during a kind of call, an idle window or a scene change | 0 for cached screens and idle |
