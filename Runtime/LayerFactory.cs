@@ -74,8 +74,6 @@ namespace ScreenSystem
             if (mainLayer == null)
                 mainLayer = mainLayerObj.AddComponent<LayerComponent>();
 
-            InjectLayerComponents(mainLayerObj);
-
             mainLayer.AllowInitialization();
 
             bool shouldShowMainLayer = !IsLayerAlreadyVisibleAndAssigned(mainLayer);
@@ -110,8 +108,6 @@ namespace ScreenSystem
                 LayerComponent layer = layerObj.GetComponent<LayerComponent>();
                 if (layer == null)
                     layer = layerObj.AddComponent<LayerComponent>();
-
-                InjectLayerComponents(layerObj);
 
                 layer.AllowInitialization();
 
@@ -229,17 +225,6 @@ namespace ScreenSystem
 
         public HashSet<string> ClearAllCachedLayers(ISet<GameObject> keep = null)
             => layerInitializer.ClearAllCachedLayers(keep);
-
-        private void InjectLayerComponents(GameObject layerObj)
-        {
-            using ProfilerMarker.AutoScope _ = ScreenSystemMarkers.InjectLayer.Auto();
-            MonoBehaviour[] components = layerObj.GetComponentsInChildren<MonoBehaviour>(true);
-            foreach (MonoBehaviour component in components)
-            {
-                if (component != null)
-                    ToolInjectionServices.MonoBehaviourInjector.InjectIfNeeded(component);
-            }
-        }
 
         private bool IsLayerAlreadyVisibleAndAssigned(LayerComponent layer)
         {

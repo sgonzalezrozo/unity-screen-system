@@ -12,6 +12,7 @@ namespace ScreenSystem
         private readonly Transform screenContainer;
         private readonly IPrefabInstantiator instantiator;
         private readonly LoggingDictionary<string, GameObject> layerCache = new("LayerCache");
+        private Transform inactiveHolder;
 
          public LayerInitializer(Transform screenContainer, IPrefabInstantiator instantiator = null)
          {
@@ -39,19 +40,69 @@ namespace ScreenSystem
              if (layerCache.TryGetValue(layerName, out cachedLayer) && cachedLayer != null)
                  return cachedLayer;
 
-             GameObject layerInstance;
-             using (ScreenSystemMarkers.InstantiateLayer.Auto())
-             {
-                 layerInstance = instantiator.Instantiate(layerPrefab);
-                 layerInstance.name = layerName;
-
-                 if (screenContainer != null)
-                     layerInstance.transform.SetParent(screenContainer, worldPositionStays: false);
-             }
+             GameObject layerInstance = InstantiateInjected(layerPrefab, screenContainer, GetInactiveHolder(), instantiator, ToolInjectionServices.MonoBehaviourInjector);
+             layerInstance.name = layerName;
 
              // Cached before any cancellation check, so the instance is never left untracked.
              layerCache[layerName] = layerInstance;
              return layerInstance;
+         }
+
+         /// <summary>
+         /// Creates a layer with its dependencies injected before its components' Awake and OnEnable run, and only
+         /// once. With the default instantiator the copy is created under an inactive holder, every MonoBehaviour is
+         /// injected, then the copy moves to <paramref name="container"/> and wakes up. A registered
+         /// IPrefabInstantiator owns injection, so it isn't injected again.
+         /// </summary>
+         internal static GameObject InstantiateInjected(GameObject prefab, Transform container, Transform inactiveHolder, IPrefabInstantiator instantiator, IMonoBehaviourInjector injector)
+         {
+             if (instantiator != null && instantiator is not NullPrefabInstantiator)
+             {
+                 GameObject injected;
+                 using (ScreenSystemMarkers.InstantiateLayer.Auto())
+                     injected = instantiator.Instantiate(prefab);
+                 if (container != null)
+                     injected.transform.SetParent(container, worldPositionStays: false);
+                 return injected;
+             }
+
+             GameObject instance;
+             using (ScreenSystemMarkers.InstantiateLayer.Auto())
+                 instance = inactiveHolder != null ? Object.Instantiate(prefab, inactiveHolder, worldPositionStays: false) : Object.Instantiate(prefab);
+
+             using (ScreenSystemMarkers.InjectLayer.Auto())
+             {
+                 MonoBehaviour[] components = instance.GetComponentsInChildren<MonoBehaviour>(true);
+                 for (int i = 0; i < components.Length; i++)
+                 {
+                     if (components[i] != null)
+                         injector?.InjectIfNeeded(components[i]);
+                 }
+             }
+
+             // Waking the copy runs its Awake and OnEnable. Measured with instantiation, as before injection moved ahead of it.
+             using (ScreenSystemMarkers.InstantiateLayer.Auto())
+             {
+                 if (container != null)
+                     instance.transform.SetParent(container, worldPositionStays: false);
+                 else
+                     instance.transform.SetParent(null, worldPositionStays: false);
+             }
+
+             return instance;
+         }
+
+         // Children of an inactive object don't run Awake or OnEnable, so a new layer waits here until it's injected.
+         private Transform GetInactiveHolder()
+         {
+             if (inactiveHolder != null || screenContainer == null)
+                 return inactiveHolder;
+
+             GameObject holder = new("LayerInjectionHolder");
+             holder.SetActive(false);
+             holder.transform.SetParent(screenContainer, worldPositionStays: false);
+             inactiveHolder = holder.transform;
+             return inactiveHolder;
          }
 
          // The prefab's handle is held by LayerPrefabLoader and released on scene change, unless the layer is kept.
