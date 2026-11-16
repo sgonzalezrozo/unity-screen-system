@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenNavigationService : IScreenNavigation
+    internal class ScreenNavigationService : IScreenNavigation
     {
         private bool isNavigating;
         private string currentOperation;

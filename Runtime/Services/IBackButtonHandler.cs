@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem.Services
 {
-    public interface IBackButtonHandler
+    internal interface IBackButtonHandler
     {
         Task HandleBackPressAsync(CancellationToken ct = default);
 

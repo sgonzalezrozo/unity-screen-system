@@ -214,7 +214,7 @@ Screen System handles two screens by name but doesn't ship them, because every g
 | Splash | `SplashMain` (**Splash Screen Id** on the `ScreenManager`) | Shows it as soon as it starts, before your first `SetRoot`, and keeps it across scene changes. It stays up until the new scene opens its first screen. |
 | Quit confirmation | `QuitConfirmation` (**Quit Confirmation Modal Id** on the `ScreenManager`) | Opens it when back is pressed at the root, and keeps it across scene changes. Without it, back at the root quits the app straight away, and stops Play Mode in the Editor. |
 
-1. Select **Assets > Screen System > New Screen Feature**, name the feature `Boot`, and add two screens: `SplashMain` as `fullscreen` and `QuitConfirmation` as `modal`.
+1. Select **Assets > Screen System > New Screen Feature**, name the feature `Boot`, and add two screens: `SplashMain` as `Fullscreen` and `QuitConfirmation` as `Modal`.
 2. On `SplashMain`'s `ScreenDefinition`, turn on **Ignore Navigation Rules**, so it can show over anything while the game boots.
 3. Give `QuitConfirmation` two buttons:
 
@@ -254,7 +254,7 @@ On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation 
 
 Two steps, about a minute:
 
-1. In the Project window, right-click the folder that holds your features and select **Screen System > New Screen Feature**. Name the feature and its screens, and pick each screen's type: `fullscreen`, `modal` or `alert`.
+1. In the Project window, right-click the folder that holds your features and select **Screen System > New Screen Feature**. Name the feature and its screens, and pick each screen's type: `Fullscreen`, `Modal` or `Alert`.
 2. Click **Create**, then call `ScreenManager.Instance.GoTo("ShopMain")` with your screen's name.
 
 For a feature `Shop` with a screen `ShopMain`, the wizard creates:
@@ -395,7 +395,7 @@ public class ShopMainScreen : MonoBehaviour
 }
 ```
 
-`ShopModal` opens as a modal because its `ScreenDefinition` type is `modal`.
+`ShopModal` opens as a modal because its `ScreenDefinition` type is `Modal`.
 
 ### Check the result
 
@@ -418,7 +418,7 @@ This needs `using UnityEngine.SceneManagement;`. Additive loads don't change you
 
 ### Open a modal
 
-Set the `ScreenDefinition` type to `modal`, then use the same navigation calls:
+Set the `ScreenDefinition` type to `Modal`, then use the same navigation calls:
 
 ```csharp
 await ScreenManager.Instance.GoTo("ShopModal");
@@ -525,7 +525,7 @@ When a scene loads in single mode, a persistent screen keeps its layers and its 
 
 ### Show an alert
 
-Set the `ScreenDefinition` type to `alert`, then open it with `GoTo`:
+Set the `ScreenDefinition` type to `Alert`, then open it with `GoTo`:
 
 ```csharp
 await ScreenManager.Instance.GoTo("ConnectionLost");
@@ -707,7 +707,7 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | `ScreenManager` | The entry point for navigation |
 | `LayerComponent` | Handles a layer's runtime behavior |
 | Screen feature | A folder with one folder per screen and a `Services` folder for its `ScreenDefinition` assets |
-| Screen type | `fullscreen`, `modal` or `alert` |
+| Screen type | `Fullscreen`, `Modal` or `Alert` |
 | Framework | `uGUI`, `UIToolkit` or `Both` |
 
 ## Editor tools
@@ -864,7 +864,7 @@ A new layer is created under an inactive holder, injected, then moved into place
 | `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
 | `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
 | Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root), or turn off **Quit On Back At Root** while migrating |
-| An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
+| An `Alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
 | `ScreenManager.Instance` is `null` or a navigation call says it isn't initialized | Await `ScreenManager.WhenReadyAsync()` first, as shown in [Open the first screen](#open-the-first-screen). If it returns `null`, run **Tools > Screen System > Setup** and check the console. |
 | A layer doesn't appear | Check that its prefab is in `Resources` or Addressable under the name listed in the `LayerDefinition` |
 

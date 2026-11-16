@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-	public interface IScreenNavigation
+	internal interface IScreenNavigation
 	{
 		Task<bool> GoToAsync(string screenId, CancellationToken ct = default);
 		Task<bool> GoToAsync(string screenId, NavigationHistory history, CancellationToken ct = default);

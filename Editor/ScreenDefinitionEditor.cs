@@ -21,7 +21,7 @@ namespace ScreenSystem.Editor
             assetPathProp = serializedObject.FindProperty("AssetPath");
             screenNameProp = serializedObject.FindProperty("ScreenName");
             screenIdProp = serializedObject.FindProperty("ScreenId");
-            screenTypeProp = serializedObject.FindProperty("screenType");
+            screenTypeProp = serializedObject.FindProperty("ScreenType");
             persistOverScenesProp = serializedObject.FindProperty("PersistOverScenes");
             ignoreNavigationRulesProp = serializedObject.FindProperty("IgnoreNavigationRules");
         }

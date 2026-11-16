@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public interface ILayerContentLoader
+    internal interface ILayerContentLoader
     {
         event Action<GameObject> OnContentLoaded;
         event Action OnContentUnloaded;

@@ -5,14 +5,14 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-	public class LayerContentLifecycle
+	internal class LayerContentLifecycle
 	{
 		private readonly ILayerContentLoader contentLoader;
 		private readonly string contentPrefabName;
 		private readonly LoadTiming loadTiming;
 		private CancellationToken currentNavigationToken;
 
-		public enum LoadTiming
+		internal enum LoadTiming
 		{
 			OnFirstShow,
 			OnEveryShow,

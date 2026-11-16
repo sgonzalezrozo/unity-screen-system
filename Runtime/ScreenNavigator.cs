@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenNavigator
+    internal class ScreenNavigator
     {
         private readonly ScreenRegistry screenRegistry;
         private readonly IScreenDisplay displayService;
@@ -99,7 +99,7 @@ namespace ScreenSystem
             if (history == NavigationHistory.ClearToRoot)
                 return await GoToClearingToRootAsync(screenId, screen, parameter, ct);
 
-            if (screen.screenType == ScreenType.alert)
+            if (screen.ScreenType == ScreenType.Alert)
                 return await ShowAlertScreenAsync(screenId, ct);
 
             // Already showing on top: there's nothing to show again, but a value passed with GoTo still arrives.
@@ -124,12 +124,12 @@ namespace ScreenSystem
             }
 
             // A screen lower in the stack: going to it means popping back to it.
-            if (screen.screenType == ScreenType.fullscreen && isAlreadyShown && navigationStack.PeekMainScreen() != screenId)
+            if (screen.ScreenType == ScreenType.Fullscreen && isAlreadyShown && navigationStack.PeekMainScreen() != screenId)
                 return await PopToAsync(screenId, ct);
 
             bool opensOverOverlay = ignoreRules && (navigationStack.HasModal || (alertService?.IsAlertActive ?? false));
 
-            if (opensOverOverlay && screen.screenType == ScreenType.modal)
+            if (opensOverOverlay && screen.ScreenType == ScreenType.Modal)
                 await ClearAllModalsAsync(ct);
 
             int historyBefore = navigationStack.MainHistoryCount;
@@ -140,7 +140,7 @@ namespace ScreenSystem
             if (!shouldShowScreen)
                 return LastStatus == NavigationStatus.Succeeded;
 
-            if (opensOverOverlay && screen.screenType == ScreenType.fullscreen)
+            if (opensOverOverlay && screen.ScreenType == ScreenType.Fullscreen)
                 screenShownOverOverlay = screenId;
 
             // Undo the push so the stack matches what's visible.
@@ -177,7 +177,7 @@ namespace ScreenSystem
         // Pops every screen above the root and opens the target over it, without showing the root on the way.
         private bool IsShowingOnTop(string screenId, ScreenDefinition screen)
         {
-            bool onTop = screen.screenType == ScreenType.modal
+            bool onTop = screen.ScreenType == ScreenType.Modal
                 ? navigationStack.GetCurrentModal() == screenId
                 : navigationStack.PeekMainScreen() == screenId && !navigationStack.HasModal;
             return onTop && IsScreenCurrentlyVisible(screenId);
@@ -185,7 +185,7 @@ namespace ScreenSystem
 
         private async Task<bool> GoToClearingToRootAsync(string screenId, ScreenDefinition screen, ScreenParameter? parameter, CancellationToken ct)
         {
-            if (screen.screenType != ScreenType.fullscreen)
+            if (screen.ScreenType != ScreenType.Fullscreen)
             {
                 Debug.LogError($"[ScreenNav] GoTo({screenId}, ClearToRoot) failed: only fullscreen screens can clear the stack. Use GoTo without it for modals and alerts.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "ClearToRoot needs a fullscreen screen");
@@ -298,7 +298,7 @@ namespace ScreenSystem
         {
             try
             {
-                if (screen.screenType == ScreenType.modal)
+                if (screen.ScreenType == ScreenType.Modal)
                 {
                     navigationStack.ShowModalScreen(screenId);
                     return true;
@@ -349,7 +349,7 @@ namespace ScreenSystem
 
             if (layers == null || layers.Count == 0)
             {
-                Debug.Log($"[ScreenNav] IsScreenCurrentlyVisible: {screenId} has no layers, NOT visible");
+                ScreenSystemLog.Info($"[ScreenNav] IsScreenCurrentlyVisible: {screenId} has no layers, NOT visible");
                 return false;
             }
 

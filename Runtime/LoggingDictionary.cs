@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace ScreenSystem
 {
-    public class LoggingDictionary<TKey, TValue>
+    internal class LoggingDictionary<TKey, TValue>
     {
         private readonly Dictionary<TKey, TValue> _innerDict = new();
         private readonly string _contextName;

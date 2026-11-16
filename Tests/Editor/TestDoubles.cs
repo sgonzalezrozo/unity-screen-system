@@ -73,13 +73,13 @@ namespace ScreenSystem.Tests
     {
         public readonly ScreenRegistry Registry = ScriptableObject.CreateInstance<ScreenRegistry>();
 
-        public TestRegistry Add(string name, ScreenType type = ScreenType.fullscreen, bool persist = false, bool ignoreRules = false)
+        public TestRegistry Add(string name, ScreenType type = ScreenType.Fullscreen, bool persist = false, bool ignoreRules = false)
         {
             ScreenDefinition definition = ScriptableObject.CreateInstance<ScreenDefinition>();
             definition.ScreenName = name;
             definition.ScreenId = name;
             definition.AssetPath = name;
-            definition.screenType = type;
+            definition.ScreenType = type;
             definition.PersistOverScenes = persist;
             definition.IgnoreNavigationRules = ignoreRules;
             Registry.Screens.Add(definition);

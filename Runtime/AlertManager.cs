@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-    public class AlertManager : IAlertService
+    internal class AlertManager : IAlertService
     {
         private string? currentAlertId;
         private TaskCompletionSource<bool>? dismissalSource;

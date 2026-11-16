@@ -99,12 +99,12 @@ namespace ScreenSystem.Tests
             string prefabGuid = null;
             try
             {
-                ScreenDefinition definition = FeatureCreatorWizard.CreateScreen(feature, "Quest", "QuestMain", ScreenType.modal, UIFramework.uGUI);
+                ScreenDefinition definition = FeatureCreatorWizard.CreateScreen(feature, "Quest", "QuestMain", ScreenType.Modal, UIFramework.uGUI);
 
                 Assert.IsNotNull(definition);
                 Assert.AreEqual($"{feature}/Services/QuestMain.asset", AssetDatabase.GetAssetPath(definition));
                 Assert.AreEqual("Quest_QuestMain", definition.ScreenId);
-                Assert.AreEqual(ScreenType.modal, definition.screenType);
+                Assert.AreEqual(ScreenType.Modal, definition.ScreenType);
 
                 string prefabPath = $"{feature}/QuestMain/QuestMain.prefab";
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
@@ -119,7 +119,7 @@ namespace ScreenSystem.Tests
                 Assert.AreEqual("QuestMain", definition.AssetPath);
 
                 CollectionAssert.Contains(registry.Screens, definition);
-                Assert.IsNull(FeatureCreatorWizard.CreateScreen(feature, "Quest", "QuestMain", ScreenType.modal, UIFramework.uGUI), "existing screens are skipped");
+                Assert.IsNull(FeatureCreatorWizard.CreateScreen(feature, "Quest", "QuestMain", ScreenType.Modal, UIFramework.uGUI), "existing screens are skipped");
                 Assert.AreEqual(feature, FeatureCreatorWizard.FindFeatureFolder($"{feature}/QuestMain"));
                 Assert.AreEqual(feature, FeatureCreatorWizard.FindFeatureFolder($"{feature}/Services"));
             }

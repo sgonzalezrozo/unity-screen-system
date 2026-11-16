@@ -98,11 +98,11 @@ namespace ScreenSystem.Tests
         [Test]
         public void CreateScreenTwiceReturnsTheSameScreen()
         {
-            ScreenDefinition first = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain", ScreenType.modal);
+            ScreenDefinition first = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain", ScreenType.Modal);
 
             Assert.AreSame(first, ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain"));
             Assert.AreSame(first, ScreenAuthoring.FindScreen("Quest_QuestMain"));
-            Assert.AreEqual(ScreenType.modal, first.screenType);
+            Assert.AreEqual(ScreenType.Modal, first.ScreenType);
         }
     }
 }

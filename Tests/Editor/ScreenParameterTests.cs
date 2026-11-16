@@ -83,7 +83,7 @@ namespace ScreenSystem.Tests
         public void SetUp()
         {
             LogAssert.ignoreFailingMessages = true;
-            screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Modal", ScreenType.modal);
+            screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Modal", ScreenType.Modal);
             display = new FakeScreenDisplay();
             stack = new ScreenNavigationStack();
             navigator = new ScreenNavigator(screens.Registry, display, stack, new AlertManager());

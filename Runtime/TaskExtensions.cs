@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public static class TaskExtensions
+    internal static class TaskExtensions
     {
         public static async void Forget(this Task task, string context = null)
         {
@@ -14,7 +14,7 @@ namespace ScreenSystem
             }
             catch (OperationCanceledException)
             {
-                Debug.Log($"[{context ?? "Task"}] Operation cancelled (expected)");
+                ScreenSystemLog.Info($"[{context ?? "Task"}] Operation cancelled (expected)");
             }
             catch (Exception ex)
             {

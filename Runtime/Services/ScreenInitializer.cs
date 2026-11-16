@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ScreenSystem.Services
 {
-    public class ScreenInitializer : IScreenInitializer
+    internal class ScreenInitializer : IScreenInitializer
     {
         private const string SETUP_REQUIRED_MESSAGE =
             "╔════════════════════════════════════════════════════════════╗\n" +

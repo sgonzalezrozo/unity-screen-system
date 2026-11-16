@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 namespace ScreenSystem
 {
-    public class SceneLifecycleManager
+    internal class SceneLifecycleManager
     {
         private readonly ScreenDisplayService displayService;
         private readonly ScreenNavigationService navigationService;

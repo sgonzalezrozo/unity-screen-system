@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenLayerRetriever
+    internal class ScreenLayerRetriever
     {
         private readonly LayerFactory layerFactory;
         private readonly ScreenCacheManager cacheManager;
@@ -41,7 +41,7 @@ namespace ScreenSystem
 
             if (layers == null || layers.Count == 0)
             {
-                Debug.Log($"[ScreenLayerRetriever] Failed to create layers for screen: {logId}");
+                ScreenSystemLog.Info($"[ScreenLayerRetriever] Failed to create layers for screen: {logId}");
                 return null;
             }
 

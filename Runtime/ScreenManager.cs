@@ -191,7 +191,7 @@ namespace ScreenSystem
                 bool success = await nav.GoToAsync(splashScreenId, CancellationToken.None);
 
                 if (!success)
-                    Debug.Log($"[ScreenManager] Splash screen '{splashScreenId}' not found, skipping");
+                    ScreenSystemLog.Info($"[ScreenManager] Splash screen '{splashScreenId}' not found, skipping");
             }
             catch (Exception ex)
             {
@@ -402,7 +402,7 @@ namespace ScreenSystem
         public ScreenRegistry GetRegistryForEditor()
             => serviceInitializer?.Registry;
 
-        public ScreenCacheManager GetCacheManagerForEditor()
+        internal ScreenCacheManager GetCacheManagerForEditor()
             => serviceInitializer?.DisplayService?.GetCacheManager();
 
         public List<string> GetNavigationHistoryForEditor()

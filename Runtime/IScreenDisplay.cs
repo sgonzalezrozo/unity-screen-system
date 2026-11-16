@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-    public interface IScreenDisplay
+    internal interface IScreenDisplay
     {
         /// <summary>
         /// Shows a screen. Returns false when it couldn't be shown: not in the registry, its prefab didn't load, or

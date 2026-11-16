@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace ScreenSystem
 {
-    public class LayerContentLoader_UIToolkit : ILayerContentLoader
+    internal class LayerContentLoader_UIToolkit : ILayerContentLoader
     {
         public event Action<GameObject> OnContentLoaded;
         public event Action OnContentUnloaded;
@@ -74,7 +74,7 @@ namespace ScreenSystem
                 // For bare shells: use layerTransform (no UIDocument yet)
                 // For non-bare shells: use UIDocument.transform
 
-                Debug.Log($"[LayerContentLoader_UIToolkit] Loading content: uiDocument={uiDocument}, layerTransform={layerTransform}");
+                ScreenSystemLog.Info($"[LayerContentLoader_UIToolkit] Loading content: uiDocument={uiDocument}, layerTransform={layerTransform}");
 
                 Transform parentTransform = uiDocument != null ? uiDocument.transform : layerTransform;
 
@@ -84,7 +84,7 @@ namespace ScreenSystem
                     return;
                 }
 
-                Debug.Log($"[LayerContentLoader_UIToolkit] Parent transform found: {parentTransform.gameObject.name}, instantiating {contentName}...");
+                ScreenSystemLog.Info($"[LayerContentLoader_UIToolkit] Parent transform found: {parentTransform.gameObject.name}, instantiating {contentName}...");
 
                 // Instantiate as inactive to prevent Awake() from running before injection
                 loadedContentGameObject = Object.Instantiate(prefab, parentTransform, false);
@@ -92,10 +92,10 @@ namespace ScreenSystem
                 loadedContentGameObject.name = contentName;
 
                 MonoBehaviour[] components = loadedContentGameObject.GetComponentsInChildren<MonoBehaviour>(true);
-                Debug.Log($"[LayerContentLoader_UIToolkit] Found {components.Length} MonoBehaviour components to inject");
+                ScreenSystemLog.Info($"[LayerContentLoader_UIToolkit] Found {components.Length} MonoBehaviour components to inject");
                 foreach (MonoBehaviour component in components)
                 {
-                    Debug.Log($"[LayerContentLoader_UIToolkit] Injecting {component.GetType().Name}");
+                    ScreenSystemLog.Info($"[LayerContentLoader_UIToolkit] Injecting {component.GetType().Name}");
                     ToolInjectionServices.MonoBehaviourInjector.InjectIfNeeded(component);
                 }
 
@@ -104,7 +104,7 @@ namespace ScreenSystem
             }
             catch (OperationCanceledException)
             {
-                Debug.Log($"[LayerContentLoader_UIToolkit] Loading cancelled: {contentName}");
+                ScreenSystemLog.Info($"[LayerContentLoader_UIToolkit] Loading cancelled: {contentName}");
             }
             finally
             {

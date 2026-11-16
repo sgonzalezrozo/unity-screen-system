@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-    public interface IScreenHideService
+    internal interface IScreenHideService
     {
         Task HideScreenAsync(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default);
         void HideOtherScreensForType(string currentScreenId, ScreenType screenType);

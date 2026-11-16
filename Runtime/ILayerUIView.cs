@@ -1,6 +1,6 @@
 namespace ScreenSystem
 {
-    public interface ILayerUIView
+    internal interface ILayerUIView
     {
         void SetAlpha(float alpha);
         float GetAlpha();

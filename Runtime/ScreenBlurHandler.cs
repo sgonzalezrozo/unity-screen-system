@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace ScreenSystem
 {
 	/// <summary>Connects showing a modal or alert to its backdrop. Fullscreen screens get none.</summary>
-	public class ScreenBlurHandler
+	internal class ScreenBlurHandler
 	{
 		private readonly BlurBackgroundService blurService;
 
@@ -15,17 +15,17 @@ namespace ScreenSystem
 		}
 
 		private static bool IsOverlay(ScreenDefinition screen)
-			=> screen != null && (screen.screenType == ScreenType.modal || screen.screenType == ScreenType.alert);
+			=> screen != null && (screen.ScreenType == ScreenType.Modal || screen.ScreenType == ScreenType.Alert);
 
 		/// <summary>Before the overlay's layers become visible: captures the screen underneath when needed.</summary>
 		public Task PrepareAsync(string screenId, ScreenDefinition screen, CancellationToken ct)
-			=> blurService != null && IsOverlay(screen) ? blurService.PrepareAsync(screenId, screen.screenType, ct) : Task.CompletedTask;
+			=> blurService != null && IsOverlay(screen) ? blurService.PrepareAsync(screenId, screen.ScreenType, ct) : Task.CompletedTask;
 
 		/// <summary>Once the overlay's layers are visible: places the snapshot or the dim below them.</summary>
 		public void Apply(string screenId, ScreenDefinition screen, List<LayerComponent> layers)
 		{
 			if (blurService != null && IsOverlay(screen))
-				blurService.Apply(screenId, screen.screenType, layers);
+				blurService.Apply(screenId, screen.ScreenType, layers);
 		}
 	}
 }

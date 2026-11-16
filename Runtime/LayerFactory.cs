@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class LayerFactory : ILayerFactory
+    internal class LayerFactory : ILayerFactory
     {
         private const int INITIAL_LAYER_CAPACITY = 8;
         private const int INITIAL_PREWARM_CAPACITY = 16;
@@ -40,7 +40,7 @@ namespace ScreenSystem
             int estimatedCapacity = layerDef != null && layerDef.LayerCount > 0 ? layerDef.LayerCount + 1 : INITIAL_LAYER_CAPACITY;
             List<LayerComponent> screenLayers = new(estimatedCapacity);
 
-            int baseZ = zOrderManager.CalculateBaseZOrder(screen.screenType, screenId);
+            int baseZ = zOrderManager.CalculateBaseZOrder(screen.ScreenType, screenId);
 
             // Start the loads of this screen's layers that aren't instantiated yet, all at once. Shared layers
             // already in the scene start nothing. The loop below then finds each prefab loaded.
@@ -131,7 +131,7 @@ namespace ScreenSystem
             if (layers == null || layers.Count == 0)
                 return;
 
-            int baseZ = zOrderManager.CalculateBaseZOrder(screen.screenType, screenId);
+            int baseZ = zOrderManager.CalculateBaseZOrder(screen.ScreenType, screenId);
             GameObject loadedPrefab = LayerPrefabLoader.GetLoadedScreenPrefab(screen);
             int[] zOffsets = zOrderManager.GetLayerZOffsetsFromScreen(screen, layers.Count, loadedPrefab);
             string logId = readableId ?? screenId;

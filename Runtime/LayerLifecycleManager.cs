@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class LayerLifecycleManager : ILayerLifecycle
+    internal class LayerLifecycleManager : ILayerLifecycle
     {
         private readonly ILayerUIView uiView;
         private readonly SharedLayerManager sharedManager;

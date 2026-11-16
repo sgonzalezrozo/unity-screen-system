@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class LayerZOrderManager
+    internal class LayerZOrderManager
     {
         private const int MIN_BASE_Z_ORDER = 10;
         private const int NAVIGATION_DEPTH_OFFSET = 20;

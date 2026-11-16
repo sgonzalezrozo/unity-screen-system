@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace ScreenSystem
 {
-    public class SharedLayerManager
+    internal class SharedLayerManager
     {
         private class ScreenAssignment
         {

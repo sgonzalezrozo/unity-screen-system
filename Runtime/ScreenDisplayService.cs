@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace ScreenSystem
 {
-    public class ScreenDisplayService : IScreenDisplay
+    internal class ScreenDisplayService : IScreenDisplay
     {
         private const string LOG_PREFIX = "[ScreenDisplay]";
 

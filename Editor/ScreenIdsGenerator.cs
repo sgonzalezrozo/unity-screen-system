@@ -91,7 +91,7 @@ namespace ScreenSystem.Editor
                 string name = UniqueIdentifier(Identifier(string.IsNullOrEmpty(screen.ScreenName) ? screen.ScreenId : screen.ScreenName), used);
                 string path = AssetDatabase.GetAssetPath(screen);
                 string where = string.IsNullOrEmpty(path) ? "" : $", {path}";
-                code.AppendLine($"        /// <summary>{screen.screenType}{where}</summary>");
+                code.AppendLine($"        /// <summary>{screen.ScreenType}{where}</summary>");
                 code.AppendLine($"        public const string {name} = \"{Escape(screen.ScreenId)}\";");
                 code.AppendLine();
             }

@@ -9,7 +9,7 @@ namespace ScreenSystem
     /// Loads screen and layer prefabs from Resources or Addressables. Addressables handles are held, one per address,
     /// until a scene change releases those of non-persistent screens, or until ScreenManager is destroyed.
     /// </summary>
-    public static class LayerPrefabLoader
+    internal static class LayerPrefabLoader
     {
         private static PrefabHandleCache cache = CreateCache();
 

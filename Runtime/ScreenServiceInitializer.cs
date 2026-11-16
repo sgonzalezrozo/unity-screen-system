@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenServiceInitializer
+    internal class ScreenServiceInitializer
     {
         private readonly Transform managerTransform;
         private IScreenInitializer screenInitializer;

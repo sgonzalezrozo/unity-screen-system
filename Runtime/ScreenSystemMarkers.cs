@@ -7,7 +7,7 @@ namespace ScreenSystem
     /// cost in the Unity Profiler and can be read with ProfilerRecorder. They compile out of Release builds.
     /// Markers wrap only code that runs within one frame, never across an await.
     /// </summary>
-    public static class ScreenSystemMarkers
+    internal static class ScreenSystemMarkers
     {
         public const string LoadPrefabName = "ScreenSystem.LoadPrefab";
         public const string InstantiateLayerName = "ScreenSystem.InstantiateLayer";

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenAnimatedHider
+    internal class ScreenAnimatedHider
     {
         private const string LOG_PREFIX = "[ScreenHide]";
 
@@ -42,7 +42,7 @@ namespace ScreenSystem
                 if (screen != null)
                 {
                     // The screen the overlay's snapshot replaced renders again.
-                    if ((screen.screenType == ScreenType.modal || screen.screenType == ScreenType.alert) && blurService != null)
+                    if ((screen.ScreenType == ScreenType.Modal || screen.ScreenType == ScreenType.Alert) && blurService != null)
                         blurService.Remove(screenId);
 
                     cacheManager.UnregisterActiveScreen(screenId);

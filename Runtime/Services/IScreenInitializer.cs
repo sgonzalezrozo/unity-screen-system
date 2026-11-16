@@ -4,7 +4,7 @@ using ScreenSystem.ScriptableObjects;
 
 namespace ScreenSystem.Services
 {
-    public interface IScreenInitializer
+    internal interface IScreenInitializer
     {
         Task<bool> InitializeAsync(CancellationToken ct = default);
         bool IsInitialized { get; }

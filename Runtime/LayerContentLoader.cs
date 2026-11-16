@@ -9,7 +9,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace ScreenSystem
 {
-    public class LayerContentLoader : ILayerContentLoader
+    internal class LayerContentLoader : ILayerContentLoader
     {
         private const float COROUTINE_TIMEOUT_SECONDS = 10f;
 

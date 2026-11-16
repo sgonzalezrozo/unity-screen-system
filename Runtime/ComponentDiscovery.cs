@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ComponentDiscovery
+    internal class ComponentDiscovery
     {
         private const float UI_CAMERA_ORTHOGRAPHIC_SIZE = 5f;
         private const int UI_CAMERA_DEPTH = 10;

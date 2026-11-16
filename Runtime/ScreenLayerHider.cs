@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace ScreenSystem
 {
-    public class ScreenLayerHider
+    internal class ScreenLayerHider
     {
         private readonly ScreenCacheManager cacheManager;
 

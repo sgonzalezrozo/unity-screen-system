@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ScreenSystem
 {
 
-    public class ScreenIndex
+    internal class ScreenIndex
     {
         private readonly Dictionary<string, ScreenDefinition> screenDefinitions;
 

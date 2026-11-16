@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace ScreenSystem
 {
-    public class UIDocumentController
+    internal class UIDocumentController
     {
         private readonly UIDocument uiDocument;
         private readonly string documentName;

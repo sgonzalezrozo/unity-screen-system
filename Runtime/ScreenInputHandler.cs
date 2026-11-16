@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 namespace ScreenSystem
 {
-	public class ScreenInputHandler
+	internal class ScreenInputHandler
 	{
 		private readonly IScreenNavigationService screenNavigation;
 		private bool isHandling;

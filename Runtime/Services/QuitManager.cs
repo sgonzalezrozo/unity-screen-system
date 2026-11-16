@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem.Services
 {
-    public class QuitManager : IQuitManager
+    internal class QuitManager : IQuitManager
     {
         private readonly IScreenNavigation navigationService;
         private readonly string quitConfirmationModalId;

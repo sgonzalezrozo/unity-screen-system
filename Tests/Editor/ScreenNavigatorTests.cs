@@ -21,9 +21,9 @@ namespace ScreenSystem.Tests
                 .Add("Shop")
                 .Add("Detail")
                 .Add("Store")
-                .Add("Modal", ScreenType.modal)
-                .Add("OtherModal", ScreenType.modal)
-                .Add("Alert", ScreenType.alert)
+                .Add("Modal", ScreenType.Modal)
+                .Add("OtherModal", ScreenType.Modal)
+                .Add("Alert", ScreenType.Alert)
                 .Add("Splash", ignoreRules: true);
 
             display = new FakeScreenDisplay();

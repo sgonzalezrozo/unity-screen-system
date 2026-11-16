@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace ScreenSystem
 {
-    public class LayerInitializer
+    internal class LayerInitializer
     {
         private readonly Transform screenContainer;
         private readonly IPrefabInstantiator instantiator;
@@ -115,7 +115,7 @@ namespace ScreenSystem
              }
              catch (System.OperationCanceledException)
              {
-                 Debug.Log($"[LayerInitializer] Load cancelled for layer '{layerName}'");
+                 ScreenSystemLog.Info($"[LayerInitializer] Load cancelled for layer '{layerName}'");
                  return null;
              }
              catch (System.Exception ex)

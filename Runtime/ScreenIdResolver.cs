@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenIdResolver
+    internal class ScreenIdResolver
     {
         private const string LOG_PREFIX = "[ScreenIdResolver]";
 

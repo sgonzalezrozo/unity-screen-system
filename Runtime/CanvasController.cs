@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace ScreenSystem
 {
-    public class CanvasController
+    internal class CanvasController
     {
         private const float BASE_PLANE_DISTANCE = 100f;
         private const float DEPTH_PER_ZORDER = 0.01f;

@@ -11,17 +11,20 @@ namespace ScreenSystem.Benchmark
     {
         private const BindingFlags PublicStatic = BindingFlags.Public | BindingFlags.Static;
 
+        // Internal in the package, so it's found by name; older versions without it return null.
+        private static readonly System.Type LayerPrefabLoaderType = System.Type.GetType("ScreenSystem.LayerPrefabLoader, ScreenSystem");
+
         private static readonly PropertyInfo isTransitioning =
             typeof(ScreenManager).GetProperty("IsTransitioning", BindingFlags.Public | BindingFlags.Instance);
 
         private static readonly PropertyInfo heldHandleCount =
-            typeof(LayerPrefabLoader).GetProperty("HeldHandleCount", PublicStatic);
+            LayerPrefabLoaderType?.GetProperty("HeldHandleCount", PublicStatic);
 
         private static readonly PropertyInfo heldAddresses =
-            typeof(LayerPrefabLoader).GetProperty("HeldAddresses", PublicStatic);
+            LayerPrefabLoaderType?.GetProperty("HeldAddresses", PublicStatic);
 
         private static readonly PropertyInfo heldBundleCount =
-            typeof(LayerPrefabLoader).GetProperty("HeldBundleCount", PublicStatic);
+            LayerPrefabLoaderType?.GetProperty("HeldBundleCount", PublicStatic);
 
         public static bool HasBundleTracking
             => heldBundleCount != null;

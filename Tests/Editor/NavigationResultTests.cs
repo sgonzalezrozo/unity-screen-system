@@ -16,7 +16,7 @@ namespace ScreenSystem.Tests
         public void SetUp()
         {
             LogAssert.ignoreFailingMessages = true;
-            screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Modal", ScreenType.modal).Add("Alert", ScreenType.alert);
+            screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Modal", ScreenType.Modal).Add("Alert", ScreenType.Alert);
             display = new FakeScreenDisplay();
             stack = new ScreenNavigationStack();
             alerts = new AlertManager();

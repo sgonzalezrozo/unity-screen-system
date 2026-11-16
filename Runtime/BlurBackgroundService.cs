@@ -11,7 +11,7 @@ namespace ScreenSystem
     /// - An alert over a modal: a flat dim between them. The modal stays visible.
     /// Without a backdrop in the ScreenSystem prefab, overlays open over the screen as before.
     /// </summary>
-    public class BlurBackgroundService
+    internal class BlurBackgroundService
     {
         private sealed class Overlay
         {
@@ -92,7 +92,7 @@ namespace ScreenSystem
             if (backdrop == null || overlays.ContainsKey(screenId))
                 return;
 
-            if (type == ScreenType.alert && HasModalOverlay(screenId))
+            if (type == ScreenType.Alert && HasModalOverlay(screenId))
                 return;
 
             await backdrop.CaptureAsync(ct);
@@ -108,7 +108,7 @@ namespace ScreenSystem
             Overlay overlay = new();
             overlays[screenId] = overlay;
 
-            if (type == ScreenType.alert && HasModalOverlay(screenId))
+            if (type == ScreenType.Alert && HasModalOverlay(screenId))
             {
                 overlay.IsDim = true;
                 backdrop.ShowDim(sortingOrder);

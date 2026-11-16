@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenLayerPreparer
+    internal class ScreenLayerPreparer
     {
         private readonly ScreenCacheManager cacheManager;
 

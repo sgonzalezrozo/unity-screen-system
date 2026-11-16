@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ScreenSystem.Services
 {
-    public class BackButtonNavigationHandler : IBackButtonHandler
+    internal class BackButtonNavigationHandler : IBackButtonHandler
     {
         private readonly IScreenNavigation navigationService;
         private readonly ScreenDisplayService displayService;
@@ -67,7 +67,7 @@ namespace ScreenSystem.Services
 
             ScreenDefinition screen = screenRegistry.GetScreen(screenId);
             if (screen != null)
-                return screen.screenType != ScreenType.fullscreen;
+                return screen.ScreenType != ScreenType.Fullscreen;
 
             Debug.LogWarning($"[BackButtonHandler] Screen not found in registry: {screenId}");
             return true;

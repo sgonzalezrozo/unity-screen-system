@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-	public class ScreenVisibilityManager
+	internal class ScreenVisibilityManager
 	{
         private readonly ScreenCacheManager cacheManager;
 

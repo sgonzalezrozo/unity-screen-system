@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-    public interface IAlertService
+    internal interface IAlertService
     {
         bool IsAlertActive { get; }
         string? CurrentAlertId { get; }

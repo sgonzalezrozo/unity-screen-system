@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public static class ScreenManagerBootstrapper
+    internal static class ScreenManagerBootstrapper
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()

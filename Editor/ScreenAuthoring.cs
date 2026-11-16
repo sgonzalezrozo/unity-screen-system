@@ -44,7 +44,7 @@ namespace ScreenSystem.Editor
         /// <c>Feature/Services/Screen.asset</c>, loadable and registered. Returns the existing definition if the
         /// screen already exists.
         /// </summary>
-        public static ScreenDefinition CreateScreen(string featureDir, string screenName, ScreenType type = ScreenType.fullscreen, UIFramework framework = UIFramework.uGUI, bool persistOverScenes = false)
+        public static ScreenDefinition CreateScreen(string featureDir, string screenName, ScreenType type = ScreenType.Fullscreen, UIFramework framework = UIFramework.uGUI, bool persistOverScenes = false)
         {
             featureDir = featureDir?.TrimEnd('/');
             string feature = Path.GetFileName(featureDir);
@@ -239,7 +239,7 @@ namespace ScreenSystem.Editor
         //   ... ScreenSystem.Editor.ScreenAuthoring.AddLayerFromCommandLine -screen ShopMain -layer Assets/Client/Shared/TopBar.prefab [-placement Front]
         public static void CreateScreenFromCommandLine()
         {
-            ScreenType type = ParseEnum(Argument("-type"), ScreenType.fullscreen);
+            ScreenType type = ParseEnum(Argument("-type"), ScreenType.Fullscreen);
             UIFramework framework = ParseEnum(Argument("-framework"), UIFramework.uGUI);
             ExitWith(CreateScreen(Argument("-feature"), Argument("-screen"), type, framework) != null);
         }

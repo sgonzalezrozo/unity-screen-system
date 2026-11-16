@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenContentLoader
+    internal class ScreenContentLoader
     {
         private const string LOG_PREFIX = "[ScreenShow]";
 

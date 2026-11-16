@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem
 {
-    public static class CollectionPool
+    internal static class CollectionPool
     {
         private static readonly Stack<List<Task>> TaskListPool = new();
 

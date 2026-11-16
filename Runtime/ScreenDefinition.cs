@@ -22,7 +22,15 @@ namespace ScreenSystem
         public string ScreenId;
 
         [Tooltip("Screen display type: fullscreen, modal, or alert")]
-        public ScreenType screenType = ScreenType.fullscreen;
+        [UnityEngine.Serialization.FormerlySerializedAs("screenType")]
+        public ScreenType ScreenType = ScreenType.Fullscreen;
+
+        [System.Obsolete("Use ScreenType.")]
+        public ScreenType screenType
+        {
+            get => ScreenType;
+            set => ScreenType = value;
+        }
 
         [Tooltip("UI framework for this screen: uGUI or UIToolkit")]
         public UIFramework Framework = UIFramework.uGUI;

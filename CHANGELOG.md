@@ -41,6 +41,9 @@ All notable changes to this package are documented in this file.
 
 ### Changed
 
+- **Breaking:** `ScreenType` values are `Fullscreen`, `Modal` and `Alert`, and the field is `ScreenDefinition.ScreenType`. Assets keep their values (they store the number, and the field reads its old name). The old `screenType` property still works, marked obsolete.
+- **Breaking:** the internal services are `internal`: navigator, navigation and display services, caches, loaders, factories, hiders and their interfaces. The public API is `ScreenManager`, the assets and components (`ScreenDefinition`, `ScreenRegistry`, `ScreenSystemSettings`, `LayerDefinition`, `LayerComponent`, `BlurBackgroundLayer`), the lifecycle and parameter interfaces, `NavigationEvents`, `NavigationResult`, `NavigationHistory`, `ScreenType`, `ScreenVisibility` and `ScreenMetrics`.
+- Metrics calls are compiled out of release builds, with their arguments, unless `SCREEN_SYSTEM_METRICS` is defined; they stay in the Editor and Development builds. Informational logs are compiled out unless `SCREEN_SYSTEM_VERBOSE` is defined. Warnings and errors are unchanged.
 - Requires Tools Core 0.4.0.
 - **Breaking:** unused types and services are removed: `LayerPrefabInstantiator`, `LayerPrefabInstantiatorFromAddressable`, the old glass effect (`ModalGlassEffect`, `GlassmorphismPanel`, `BlurEffectRenderer`), `IScreenContent`, `IScreenContentEvents`, `ScreenContentEvents`, `IShellTemplateProvider`, `NavigationTracker`, `ScreenIndexEntry`, `SerializableDictionary`, and `HideAllScreensAsync`, `RestoreAllScreensAsync` and `NavigateFromModalToScreenAsync` with their classes. With Fast IoC, regenerate its code after updating.
 - **Breaking:** navigation calls return `NavigationResult` instead of `bool`. It converts to `bool`, so `if (await GoTo(...))` and `bool ok = await GoTo(...)` still compile; code that types the task as `Task<bool>` needs `Task<NavigationResult>`. `Status` says why a call didn't happen.

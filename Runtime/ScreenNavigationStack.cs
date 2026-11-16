@@ -3,7 +3,7 @@ using ScreenSystem.ScriptableObjects;
 
 namespace ScreenSystem
 {
-    public class ScreenNavigationStack
+    internal class ScreenNavigationStack
     {
         private readonly Stack<string> mainHistory = new();
         private readonly HashSet<string> mainHistorySet = new();  // O(1) membership testing

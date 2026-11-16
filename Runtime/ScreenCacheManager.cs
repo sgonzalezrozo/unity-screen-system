@@ -5,7 +5,7 @@ using Object = UnityEngine.Object;
 
 namespace ScreenSystem
 {
-    public class ScreenCacheManager
+    internal class ScreenCacheManager
     {
         private readonly LoggingDictionary<string, List<LayerComponent>> instantiatedScreenLayers = new("ScreenCache");
         private readonly List<string> activeScreenIds = new();
@@ -151,7 +151,7 @@ namespace ScreenSystem
 
                         if (layersUsedByStayingScreens.Contains(layerName))
                         {
-                            Debug.Log($"[ScreenCacheManager] Preserving layer used by staying screen: {layerName} (removing from: {screenId})");
+                            ScreenSystemLog.Info($"[ScreenCacheManager] Preserving layer used by staying screen: {layerName} (removing from: {screenId})");
                             continue;
                         }
 

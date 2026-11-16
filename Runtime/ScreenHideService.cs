@@ -5,7 +5,7 @@ using ScreenSystem.ScriptableObjects;
 
 namespace ScreenSystem
 {
-    public class ScreenHideService : IScreenHideService
+    internal class ScreenHideService : IScreenHideService
     {
         private readonly ScreenAnimatedHider animatedHider;
         private readonly ScreenLayerHider layerHider;

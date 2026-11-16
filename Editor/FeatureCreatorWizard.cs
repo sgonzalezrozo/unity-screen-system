@@ -23,7 +23,7 @@ namespace ScreenSystem.Editor
         private class ScreenItem
         {
             public string Name;
-            public ScreenType Type = ScreenType.fullscreen;
+            public ScreenType Type = ScreenType.Fullscreen;
             public bool PersistOverScenes;
         }
 
@@ -229,7 +229,7 @@ namespace ScreenSystem.Editor
             ScreenDefinition definition = CreateInstance<ScreenDefinition>();
             definition.ScreenName = screenName;
             definition.ScreenId = ScreenDefinition.MakeScreenId(feature, screenName);
-            definition.screenType = type;
+            definition.ScreenType = type;
             definition.Framework = framework;
             definition.PersistOverScenes = persistOverScenes;
             definition.AssetPath = ScreenSystemAssets.EnsureLoadable(prefab);

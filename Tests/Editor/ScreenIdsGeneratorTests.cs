@@ -17,12 +17,12 @@ namespace ScreenSystem.Tests
             created.Clear();
         }
 
-        private ScreenDefinition Screen(string name, string id, ScreenType type = ScreenType.fullscreen)
+        private ScreenDefinition Screen(string name, string id, ScreenType type = ScreenType.Fullscreen)
         {
             ScreenDefinition screen = ScriptableObject.CreateInstance<ScreenDefinition>();
             screen.ScreenName = name;
             screen.ScreenId = id;
-            screen.screenType = type;
+            screen.ScreenType = type;
             created.Add(screen);
             return screen;
         }
@@ -30,12 +30,12 @@ namespace ScreenSystem.Tests
         [Test]
         public void EachScreenBecomesAConstantNamedAfterItWithItsId()
         {
-            string code = ScreenIdsGenerator.Generate(new[] { Screen("ShopMain", "Shop_ShopMain"), Screen("ShopModal", "Shop_ShopModal", ScreenType.modal) });
+            string code = ScreenIdsGenerator.Generate(new[] { Screen("ShopMain", "Shop_ShopMain"), Screen("ShopModal", "Shop_ShopModal", ScreenType.Modal) });
 
             StringAssert.Contains("public static class ScreenIds", code);
             StringAssert.Contains("public const string ShopMain = \"Shop_ShopMain\";", code);
             StringAssert.Contains("public const string ShopModal = \"Shop_ShopModal\";", code);
-            StringAssert.Contains("/// <summary>modal</summary>", code);
+            StringAssert.Contains("/// <summary>Modal</summary>", code);
         }
 
         [Test]

@@ -5,7 +5,7 @@ using ScreenSystem.ScriptableObjects;
 
 namespace ScreenSystem
 {
-    public class ScreenRelationshipHider
+    internal class ScreenRelationshipHider
     {
         private readonly ScreenRegistry screenRegistry;
         private readonly ScreenCacheManager cacheManager;
@@ -26,17 +26,17 @@ namespace ScreenSystem
 
         public void HideOtherScreensForType(string currentScreenId, ScreenType screenType)
         {
-            if (screenType == ScreenType.fullscreen)
+            if (screenType == ScreenType.Fullscreen)
                 HideAllScreensExcept(currentScreenId);
-            else if (screenType == ScreenType.modal)
+            else if (screenType == ScreenType.Modal)
                 HideOtherModalsExcept(currentScreenId);
         }
 
         public async Task HideOtherScreensAsync(string currentScreenId, ScreenType screenType, CancellationToken ct, List<LayerComponent> preserveLayers = null)
         {
-            if (screenType == ScreenType.fullscreen)
+            if (screenType == ScreenType.Fullscreen)
                 await HideAllOtherScreens(currentScreenId, preserveLayers);
-            else if (screenType == ScreenType.modal)
+            else if (screenType == ScreenType.Modal)
                 await HideOtherModals(currentScreenId, ct, preserveLayers);
         }
 
@@ -72,7 +72,7 @@ namespace ScreenSystem
 
                 ScreenDefinition activeScreen = screenRegistry.GetScreen(activeScreenId);
 
-                if (activeScreen is not { screenType: ScreenType.modal })
+                if (activeScreen is not { ScreenType: ScreenType.Modal })
                     continue;
 
                 cacheManager.UnregisterActiveScreen(activeScreenId);
@@ -115,7 +115,7 @@ namespace ScreenSystem
 
                 ScreenDefinition activeScreen = screenRegistry.GetScreen(activeScreenId);
 
-                if (activeScreen == null || activeScreen.screenType != ScreenType.modal)
+                if (activeScreen == null || activeScreen.ScreenType != ScreenType.Modal)
                     continue;
 
                 if (hideService != null)

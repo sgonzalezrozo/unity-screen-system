@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ScreenSystem.Services
 {
-    public interface IQuitManager
+    internal interface IQuitManager
     {
         Task HandleQuitRequestAsync(CancellationToken ct = default);
     }

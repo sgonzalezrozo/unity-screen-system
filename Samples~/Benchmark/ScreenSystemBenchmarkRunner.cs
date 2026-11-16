@@ -588,15 +588,15 @@ namespace ScreenSystem.Benchmark
                 if (screen == null || string.IsNullOrEmpty(screen.ScreenName))
                     continue;
 
-                screenTypes[screen.ScreenName] = screen.screenType;
+                screenTypes[screen.ScreenName] = screen.ScreenType;
 
                 if (screen.PersistOverScenes)
                     result.persistentScreens.Add(screen.ScreenName);
-                else if (screen.screenType == ScreenType.modal)
+                else if (screen.ScreenType == ScreenType.Modal)
                     result.modalScreens.Add(screen.ScreenName);
-                else if (screen.screenType == ScreenType.alert)
+                else if (screen.ScreenType == ScreenType.Alert)
                     result.alertScreens.Add(screen.ScreenName);
-                else if (screen.screenType == ScreenType.fullscreen && !screen.IgnoreNavigationRules)
+                else if (screen.ScreenType == ScreenType.Fullscreen && !screen.IgnoreNavigationRules)
                     result.fullscreenScreens.Add(screen.ScreenName);
             }
 
@@ -993,9 +993,9 @@ namespace ScreenSystem.Benchmark
                 if (layers.Count == 0 || !IsRendering(layers[0]))
                     continue;
 
-                if (pair.Value == ScreenType.modal)
+                if (pair.Value == ScreenType.Modal)
                     modals++;
-                else if (pair.Value == ScreenType.alert)
+                else if (pair.Value == ScreenType.Alert)
                     alerts++;
                 else
                     fullscreens++;

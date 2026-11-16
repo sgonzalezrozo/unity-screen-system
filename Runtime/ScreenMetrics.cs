@@ -70,6 +70,7 @@ namespace ScreenSystem
             loadTimeHistory = new Dictionary<string, List<float>>();
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
         public void BeginOperation(string operationId)
         {
             currentOperationId = operationId;
@@ -100,10 +101,11 @@ namespace ScreenSystem
             return durationMs;
         }
 
-        public float EndOperationSilent(string screenId = null)
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
+        public void EndOperationSilent(string screenId = null)
         {
             if (currentOperation == null)
-                return 0f;
+                return;
 
             currentOperation.Stop();
             float durationMs = (float)currentOperation.Elapsed.TotalMilliseconds;
@@ -115,10 +117,9 @@ namespace ScreenSystem
 
             currentOperation = null;
             currentOperationId = null;
-
-            return durationMs;
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
         public void RecordScreenLoad(string screenId, string screenName, float loadTimeMs, int layerCount, bool fromCache)
         {
             if (!screenMetrics.ContainsKey(screenId))
@@ -157,6 +158,7 @@ namespace ScreenSystem
             }
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
         public void UpdateScreenStatus(string screenId, ScreenStatus status)
         {
             if (screenMetrics.TryGetValue(screenId, out ScreenMetricEntry entry))
@@ -166,6 +168,7 @@ namespace ScreenSystem
             }
         }
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
         public void RecordMemoryUsage(string screenId, long memoryBytes)
         {
             if (screenMetrics.TryGetValue(screenId, out ScreenMetricEntry entry))

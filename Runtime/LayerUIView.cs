@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace ScreenSystem
 {
-    public class LayerUIView : ILayerUIView
+    internal class LayerUIView : ILayerUIView
     {
         private Canvas canvas;
         private GraphicRaycaster raycaster;

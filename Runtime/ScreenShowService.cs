@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    public class ScreenShowService
+    internal class ScreenShowService
     {
         private readonly ScreenRegistry screenRegistry;
         private readonly IScreenHideService hideService;
@@ -114,13 +114,13 @@ namespace ScreenSystem
                 using (ScreenSystemMarkers.ActivateLayers.Auto())
                     layerPreparer.ActivateLayers(layers, screenId);
 
-                if (autoHideParents && screen.screenType == ScreenType.fullscreen)
+                if (autoHideParents && screen.ScreenType == ScreenType.Fullscreen)
                 {
-                    await hideService.HideOtherScreensAsync(screenId, screen.screenType, ct, layers);
+                    await hideService.HideOtherScreensAsync(screenId, screen.ScreenType, ct, layers);
                 }
-                else if (autoHideParents && screen.screenType == ScreenType.modal)
+                else if (autoHideParents && screen.ScreenType == ScreenType.Modal)
                 {
-                    await hideService.HideOtherScreensAsync(screenId, screen.screenType, ct, layers);
+                    await hideService.HideOtherScreensAsync(screenId, screen.ScreenType, ct, layers);
                 }
 
                 using (ScreenSystemMarkers.Metrics.Auto())
@@ -157,6 +157,8 @@ namespace ScreenSystem
             return screen;
         }
 
+        // Compiled out of release builds, with its arguments, unless SCREEN_SYSTEM_METRICS is defined.
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
         private void RecordMetrics(string screenId, ScreenDefinition screen, List<LayerComponent> layers)
         {
             float loadTimeMs = ScreenMetrics.Instance.EndOperation(screenId);

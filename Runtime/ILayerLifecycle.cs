@@ -1,6 +1,6 @@
 namespace ScreenSystem
 {
-    public interface ILayerLifecycle
+    internal interface ILayerLifecycle
     {
         string CurrentScreenId { get; }
         int CurrentZOrder { get; }

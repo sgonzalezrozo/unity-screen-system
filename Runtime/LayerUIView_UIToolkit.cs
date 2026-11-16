@@ -2,7 +2,7 @@ using UnityEngine.UIElements;
 
 namespace ScreenSystem
 {
-    public class LayerUIView_UIToolkit : ILayerUIView
+    internal class LayerUIView_UIToolkit : ILayerUIView
     {
         private readonly UIDocument uiDocument;
 

@@ -166,13 +166,13 @@ namespace ScreenSystem
             cachedHideComponents = gameObject.GetComponentsInChildren<IScreenHide>(includeInactive: true);
 
 #if DEBUG_LAYER_COMPONENT
-            Debug.Log($"[LayerComponent] '{gameObject.name}' cached {cachedShowComponents.Length} IScreenShow components and {cachedHideComponents.Length} IScreenHide components");
+            ScreenSystemLog.Info($"[LayerComponent] '{gameObject.name}' cached {cachedShowComponents.Length} IScreenShow components and {cachedHideComponents.Length} IScreenHide components");
 
             for (int i = 0; i < cachedShowComponents.Length; i++)
-                Debug.Log($"[LayerComponent]   - Show[{i}]: {cachedShowComponents[i]?.GetType().Name ?? "NULL"}");
+                ScreenSystemLog.Info($"[LayerComponent]   - Show[{i}]: {cachedShowComponents[i]?.GetType().Name ?? "NULL"}");
 
             for (int i = 0; i < cachedHideComponents.Length; i++)
-                Debug.Log($"[LayerComponent]   - Hide[{i}]: {cachedHideComponents[i]?.GetType().Name ?? "NULL"}");
+                ScreenSystemLog.Info($"[LayerComponent]   - Hide[{i}]: {cachedHideComponents[i]?.GetType().Name ?? "NULL"}");
 #endif
 
             EnsureComponents();
@@ -216,7 +216,7 @@ namespace ScreenSystem
             }
             else
             {
-                Debug.Log($"[LayerComponent] Bare shell '{gameObject.name}' - UIDocument will be provided by content");
+                ScreenSystemLog.Info($"[LayerComponent] Bare shell '{gameObject.name}' - UIDocument will be provided by content");
                 uiDocumentController = null;
                 uiView = null;
             }

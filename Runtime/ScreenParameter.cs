@@ -7,7 +7,7 @@ namespace ScreenSystem
     /// A value passed with GoTo, carried to the screen's layers without boxing. Created by ScreenManager.GoTo;
     /// it can't be subclassed outside Screen System.
     /// </summary>
-    public abstract class ScreenParameter
+    internal abstract class ScreenParameter
     {
         internal ScreenParameter()
         {
