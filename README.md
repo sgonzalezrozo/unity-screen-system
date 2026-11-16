@@ -205,6 +205,51 @@ Running Setup again repairs a project: it keeps your settings and prefab, and ad
 
 The prefab is created automatically before the first scene loads, so you don't need to add it to a scene.
 
+## The two special screens
+
+Screen System handles two screens by name but doesn't ship them, because every game designs its own. Create them right after Setup:
+
+| Screen | Default name | What Screen System does with it |
+|---|---|---|
+| Splash | `SplashMain` (**Splash Screen Id** on the `ScreenManager`) | Shows it as soon as it starts, before your first `SetRoot`, and keeps it across scene changes. It stays up until the new scene opens its first screen. |
+| Quit confirmation | `QuitConfirmation` (**Quit Confirmation Modal Id** on the `ScreenManager`) | Opens it when back is pressed at the root, and keeps it across scene changes. Without it, back at the root quits the app straight away, and stops Play Mode in the Editor. |
+
+1. Select **Assets > Screen System > New Screen Feature**, name the feature `Boot`, and add two screens: `SplashMain` as `fullscreen` and `QuitConfirmation` as `modal`.
+2. On `SplashMain`'s `ScreenDefinition`, turn on **Ignore Navigation Rules**, so it can show over anything while the game boots.
+3. Give `QuitConfirmation` two buttons:
+
+```csharp
+using System;
+using ScreenSystem;
+using UnityEngine;
+
+public class QuitConfirmation : MonoBehaviour
+{
+    public void Quit()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    public async void Cancel()
+    {
+        try
+        {
+            await ScreenManager.Instance.GoBack(); // closes the modal
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+        }
+    }
+}
+```
+
+On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation there and turn off **Quit On Back At Root** in `ScreenSystemSettings`.
+
 ## Create your first screen
 
 Two steps, about a minute:
