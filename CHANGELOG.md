@@ -16,6 +16,7 @@ All notable changes to this package are documented in this file.
 
 ### Fixed
 
+- The package didn't compile in a project without the Screen Capture and UI Elements built-in modules. They're now declared as dependencies.
 - The back key with no Screen System screen open quit the app, so a project with its own UI closed on Escape or Android back. It now does nothing.
 - Addressables handles leaked: layers loaded through Addressables were never released, so their assets stayed in memory for the whole session. Each address now has one handle, released on a single scene load unless a kept screen uses it. Cancelled and failed loads release their handle.
 - Content loaders released their handle while the instance was alive, or never released it.
