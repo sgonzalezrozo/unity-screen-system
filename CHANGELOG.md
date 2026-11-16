@@ -18,6 +18,7 @@ All notable changes to this package are documented in this file.
 
 ### Fixed
 
+- A layer could draw behind layers with a lower sorting order, such as a menu hidden under a full-screen background on the first screen after boot. Its order was assigned while its canvas was disabled, and Unity didn't always re-sort it when it was enabled. Showing a layer now re-applies its order so Unity re-sorts it. The benchmark checks it as `render.draw-order-mismatches`.
 - A screen that couldn't be shown (its prefab didn't load, or an exception was thrown) made `GoTo` return `true` and stay in the stack. It now returns `Failed` and the stack is undone, so a failed modal isn't left open and a failed alert doesn't block navigation. `GoTo` for a screen already in the stack that pops back to it returns success.
 - Layer components ran `Awake` and `OnEnable` before their dependencies were injected, and layers that already existed were injected again every time another screen used them. New layers are now created inactive, injected once, then activated. An instantiator marked `IInjectingPrefabInstantiator` (Tools Core 0.4.0, such as its VContainer and Zenject adapters) owns injection and isn't followed by a second pass; any other instantiator creates the copy and Screen System injects it. In the Editor benchmark, injection per cold show went from 10.4 ms to 0.01 ms (median).
 - On WebGL, local Addressables loads tried to finish in the same frame with `WaitForCompletion`, which WebGL doesn't support for bundles. They stay asynchronous there.

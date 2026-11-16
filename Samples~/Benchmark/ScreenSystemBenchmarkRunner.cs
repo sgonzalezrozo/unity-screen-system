@@ -67,6 +67,10 @@ namespace ScreenSystem.Benchmark
         private readonly List<NavSample> renderedLayerSamples = new();
         private int windowRuleChecks;
         private int windowRuleViolations;
+        private int drawOrderChecks;
+        private int drawOrderMismatches;
+        private string firstDrawOrderMismatch;
+        private readonly List<Canvas> drawnCanvases = new();
         private int maxFullscreens;
         private int maxModals;
         private int maxAlerts;
@@ -1104,8 +1108,42 @@ namespace ScreenSystem.Benchmark
             firstViolation ??= $"After navigating to '{ScreenManager.Instance.GetCurrentScreen()}': {fullscreens} fullscreen, {modals} modal, {alerts} alert, {covered} covered layers rendering.";
         }
 
+        // Unity draws root canvases by sortingOrder, but a canvas whose order changed while it was disabled could keep a
+        // stale place in the draw list and draw behind layers with a lower order. Counts navigations where it happened.
+        private void CheckDrawOrder()
+        {
+            drawnCanvases.Clear();
+            foreach (KeyValuePair<string, ScreenType> pair in screenTypes)
+            {
+                foreach (LayerComponent layer in ScreenManager.Instance.GetScreenLayers(pair.Key))
+                {
+                    Canvas canvas = layer != null ? layer.Canvas : null;
+                    if (canvas != null && canvas.enabled && canvas.isRootCanvas && canvas.gameObject.activeInHierarchy && !drawnCanvases.Contains(canvas))
+                        drawnCanvases.Add(canvas);
+                }
+            }
+
+            drawOrderChecks++;
+            for (int a = 0; a < drawnCanvases.Count; a++)
+            {
+                for (int b = 0; b < drawnCanvases.Count; b++)
+                {
+                    Canvas low = drawnCanvases[a], high = drawnCanvases[b];
+                    if (low.sortingOrder < high.sortingOrder && low.renderOrder > high.renderOrder)
+                    {
+                        drawOrderMismatches++;
+                        firstDrawOrderMismatch ??= $"After navigating to '{ScreenManager.Instance.GetCurrentScreen()}': '{high.name}' (order {high.sortingOrder}) drew before '{low.name}' (order {low.sortingOrder}).";
+                        return;
+                    }
+                }
+            }
+        }
+
         private void AddWindowRuleMetrics()
         {
+            AddMetric("render.draw-order-mismatches", drawOrderMismatches, "count", "total", drawOrderChecks);
+            if (firstDrawOrderMismatch != null && !result.notes.Contains(firstDrawOrderMismatch))
+                result.notes.Add(firstDrawOrderMismatch);
             AddMetric("render.window-rule-violations", windowRuleViolations, "count", "total", windowRuleChecks);
             AddMetric("render.max-fullscreens", maxFullscreens, "count", "max", windowRuleChecks);
             AddMetric("render.max-modals", maxModals, "count", "max", windowRuleChecks);
@@ -1258,6 +1296,9 @@ namespace ScreenSystem.Benchmark
             double maxFrame = 0;
             for (int f = startFrame + 1; f <= endFrame + 1; f++)
                 maxFrame = Math.Max(maxFrame, frameDurations[f % FRAME_RING]);
+
+            // After the measured frames, and after a render, when Unity has sorted the canvases.
+            CheckDrawOrder();
 
             // Whole-frame allocations, minus what an idle frame allocates.
             int frameSpan = endFrame - startFrame + 1;

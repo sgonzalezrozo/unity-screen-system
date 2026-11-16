@@ -26,6 +26,7 @@ The [Benchmark sample](../../Samples~/Benchmark/README.md) measures these metric
 | `persistent.layers-alive-ratio` | Layers of a persistent screen still alive after a scene change | 1 |
 | `persistent.visible-after-scene-start` | 1 when a persistent screen shown before the load is still visible after the new scene opens its root | 0 |
 | `render.window-rule-violations` | Navigations that left more than one fullscreen, modal or alert rendering, or a covered layer rendering | 0 |
+| `render.draw-order-mismatches` | Navigations after which a canvas with a higher sorting order drew behind one with a lower order | 0 |
 | `render.fullscreens-under-modal` | Fullscreen screens still rendering while a modal is open. With the backdrop, the modal's blurred snapshot replaces the screen. | 0 |
 | `blur.last-snapshot-ms`, `*.step.Snapshot.ms` | Main thread cost of capturing and blurring the snapshot when a modal opens | Lower |
 | `alert.snapshot-over-fullscreen` | 1 when an alert over a fullscreen screen gets the blurred snapshot | 1 |

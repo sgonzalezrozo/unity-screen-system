@@ -72,9 +72,20 @@ namespace ScreenSystem
 			}
 
 			canvas.enabled = true;
+			ResortCanvas();
 
 			if (graphicRaycaster != null)
 				graphicRaycaster.enabled = true;
+		}
+
+		// The sorting order is assigned while the canvas is still disabled, and Unity doesn't always move a disabled
+		// root canvas in its draw list when the order changes. Enabled, it could keep a stale position and draw behind
+		// layers with a lower order until something else re-sorted the canvases. Setting the order again re-sorts it.
+		private void ResortCanvas()
+		{
+			int order = canvas.sortingOrder;
+			canvas.sortingOrder = order == int.MaxValue ? order - 1 : order + 1;
+			canvas.sortingOrder = order;
 		}
 
 		public void Hide()
