@@ -53,17 +53,22 @@ Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screen
 
 | Measure | Pixel 5 (Android 14) | Galaxy A02s (Android 12) |
 |---|---|---|
-| Show a cached screen | 2.6 ms, no frame waited | 3.9 ms |
-| Show a screen that isn't loaded | 15 ms median | 30 ms median |
-| Go back | 2.4 ms | 3.1 ms |
+| Show a cached screen | 3.0 ms, no frame waited | 5.0 ms, no frame waited |
+| Show a screen that isn't loaded | 12 ms median | 22 ms median |
+| Inject a new layer's components | 0.05 ms | 0.08 ms |
+| Go back | 2.8 ms | 4.0 ms |
 | Open a modal, with its blurred snapshot | 36 ms (one frame) | 38 ms (one frame) |
-| Capture and blur the snapshot (main thread) | 0.2 ms | 0.4 ms |
-| Scene change until the new scene's first screen is visible | 133 ms, of which 76 ms is Unity's scene activation | 224 ms, of which 96 ms is Unity's |
-| Allocations per cached show, uGUI and UI Toolkit | 33 to 40 KB | 26 to 30 KB |
-| Memory after 12 scene changes | flat (207.3 MB to 208.1 MB) | flat (190.0 MB to 190.4 MB) |
+| Capture and blur the snapshot (main thread) | 0.2 ms | 0.3 ms |
+| Scene change until the new scene's first screen is visible | 134 ms, of which 76 ms is Unity's scene activation | 215 ms, of which 96 ms is Unity's |
+| Allocations per cached show, uGUI and UI Toolkit | 12 to 21 KB | 6 to 12 KB |
+| Allocations when opening a modal / an alert | 15 KB / 20 KB | 8 KB / 10 KB |
+| Memory after 12 scene changes | flat (207.0 MB to 207.4 MB) | flat (190.0 MB to 190.2 MB) |
 | Addressables handles left behind | 0 | 0 |
 | Fullscreen screens rendering under an open modal | 0 | 0 |
-| Navigations that broke the three-window rule | 0 of 264 | 0 of 264 |
+| Navigations that broke the three-window rule | 0 of 284 | 0 of 284 |
+| `GoToForResult`: answer returned, back dismissed, next `GoTo` right after | all pass | all pass |
+
+Measured on commit `b0a9a6c`, one run per device. Take the numbers as a guide: run the benchmark on your own screens.
 
 Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mode**, or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
 
@@ -159,7 +164,7 @@ Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** bac
 |---|---|
 | Unity | Tested on Unity 6 (`6000.3.6f1`, `6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
 | Scripting backend | Mono and IL2CPP |
-| Platforms | Targets mobile and WebGL. Tested in the Editor (macOS) and on Android: a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). iOS and WebGL aren't verified yet; on WebGL, layers always load asynchronously, because WebGL fetches every bundle with a web request. |
+| Platforms | Targets mobile and WebGL. Tested in the Editor (macOS) and on Android: a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). A WebGL Development build was run in a browser; there, layers always load asynchronously, because WebGL fetches every bundle with a web request. iOS isn't verified yet. |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
 | Enter Play Mode with domain reload disabled | Supported. Verified across repeated Play sessions with domain and scene reload off: static state, events and the registry reset at the start of each session. |
 | Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System. No DI container is required. |
@@ -839,7 +844,7 @@ Yes on Android with IL2CPP, tested on a Pixel 5 and a Samsung Galaxy A02s. iOS a
 
 ### How fast is it?
 
-A cached screen shows in 2.6 ms on a Pixel 5 and 3.9 ms on a Galaxy A02s, and memory stays flat across scene changes on both. See [Performance](#performance), and run the benchmark on your own screens.
+A cached screen shows in 3.0 ms on a Pixel 5 and 5.0 ms on a Galaxy A02s, and memory stays flat across scene changes on both. See [Performance](#performance), and run the benchmark on your own screens.
 
 ### Can I pass parameters to a screen?
 
@@ -891,7 +896,7 @@ Make the bar a layer shared by the tab screens, and call `GoTo(tab, NavigationHi
 
 ### What does a navigation cost?
 
-On a Pixel 5, a screen whose prefabs are already loaded shows in about 3 ms, and one loaded for the first time in about 15 ms, plus your own components' work. Opening a modal adds a blurred snapshot of the screen below, about 0.3 ms of main-thread work, and the modal appears one frame later. Metrics and informational logs are compiled out of release builds. Measure your own screens with the [Benchmark sample](Samples~/Benchmark/README.md); numbers from someone else's screens are only a guide. See [Performance](#performance).
+On a Pixel 5, a screen whose prefabs are already loaded shows in about 3 ms, and one loaded for the first time in about 12 ms, plus your own components' work. Opening a modal adds a blurred snapshot of the screen below, about 0.3 ms of main-thread work, and the modal appears one frame later. Metrics and informational logs are compiled out of release builds. Measure your own screens with the [Benchmark sample](Samples~/Benchmark/README.md); numbers from someone else's screens are only a guide. See [Performance](#performance).
 
 ### What happens to memory and AssetBundles?
 
