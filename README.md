@@ -161,7 +161,7 @@ Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** bac
 | Scripting backend | Mono and IL2CPP |
 | Platforms | Editor (macOS) and Android, tested on a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). Other platforms aren't verified yet. |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
-| Enter Play Mode with domain reload disabled | Not verified yet. Keep domain reload on until you've tested it. |
+| Enter Play Mode with domain reload disabled | Supported. Verified across repeated Play sessions with domain and scene reload off: static state, events and the registry reset at the start of each session. |
 | Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System. No DI container is required. |
 
 ## Installation
@@ -384,35 +384,66 @@ await ScreenManager.Instance.GoBack(); // Closes the modal.
 
 ### Pass a value to a screen
 
-Pass any type with `GoTo`. Every component on the screen's layers that implements `IScreenParameter<T>` for that type gets it, so a list on a background layer and a title on the top bar can both read it:
+`GoTo(screen, value)` passes any type to the screen. Every component on any of its layers that implements `IScreenParameter<T>` for that type receives it.
+
+**1. Define the value.** A small struct or class with what this navigation is about:
 
 ```csharp
-public readonly struct EnemyListRequest
+public readonly struct ProductRequest
 {
-    public readonly int FirstEnemy;
-    public EnemyListRequest(int firstEnemy) => FirstEnemy = firstEnemy;
-}
-
-await ScreenManager.Instance.GoTo("ShopMain", new EnemyListRequest(60));
-```
-
-```csharp
-public class EnemyList : MonoBehaviour, IScreenParameter<EnemyListRequest>, IScreenShow
-{
-    private int firstEnemy;
-
-    public void OnScreenParameter(EnemyListRequest request) => firstEnemy = request.FirstEnemy;
-    public void OnScreenShown() => Fill(firstEnemy);
+    public readonly string ProductId;
+    public ProductRequest(string productId) => ProductId = productId;
 }
 ```
 
-- **Once per `GoTo`:** each receiver gets the value once, before the layers are shown, so `OnScreenShown` and the first frame already have it. Shared layers that are already visible get it too, although their `OnScreenShown` doesn't run again.
-- **Already open:** `GoTo` with a value for the screen that's already showing on top delivers it right away instead of ignoring the call.
-- **Not kept:** `GoBack` and `PopTo` don't deliver it again, and Screen System drops it after the call, so it never holds your objects in memory. Store what the screen needs. A blocked or cancelled `GoTo` drops it too.
-- **Typed:** there's no casting. If no component on the screen takes that type, the console warns, naming the screen and the type.
-- **Values or state:** use a value for what this navigation is about, such as which item to show. Keep state that several screens share in a Model.
+**2. Receive it on any layer.** Store it, then use it when the screen shows. Here the product list lives on the screen prefab and the title on a shared top bar layer; both get the same value:
 
-`GoTo(screen, value, NavigationHistory.ClearToRoot)` combines it with clearing the stack.
+```csharp
+// On the ShopDetail screen prefab
+public class ProductDetails : MonoBehaviour, IScreenParameter<ProductRequest>, IScreenShow
+{
+    private string productId;
+
+    public void OnScreenParameter(ProductRequest request) => productId = request.ProductId;
+    public void OnScreenShown() => Render(productId);
+}
+
+// On the shared TopBar layer
+public class TopBarTitle : MonoBehaviour, IScreenParameter<ProductRequest>
+{
+    [SerializeField] private TMP_Text title;
+
+    public void OnScreenParameter(ProductRequest request) => title.text = request.ProductId;
+}
+```
+
+**3. Open the screen with it:**
+
+```csharp
+await ScreenManager.Instance.GoTo("ShopDetail", new ProductRequest("sword_01"));
+
+// Also with modals, and combined with clearing the stack
+await ScreenManager.Instance.GoTo("ConfirmPurchase", new ProductRequest("sword_01"));
+await ScreenManager.Instance.GoTo("Store", new StoreTab("offers"), NavigationHistory.ClearToRoot);
+```
+
+**When it arrives:**
+
+| Situation | What the receivers get |
+|---|---|
+| `GoTo` opens the screen | The value, once, before the layers are shown. `OnScreenParameter` runs before `OnScreenShown`, so the first frame already uses it. |
+| A shared layer is already visible | The value too, although its `OnScreenShown` doesn't run again. |
+| The screen is already showing on top | The value right away. The screen isn't shown again; update what depends on it in `OnScreenParameter`. |
+| `GoBack` or `PopTo` returns to the screen | Nothing. The screen still has what it stored. |
+| `GoTo` without a value | Nothing. Receivers keep their last value. |
+| `GoTo` is blocked or cancelled | Nothing, and the value is dropped. |
+
+**Rules of thumb:**
+
+- **Store what you need.** Screen System drops the value after the call, so it never keeps your objects in memory.
+- **Typed, no casting.** If no component on the screen takes that type, the console warns, naming the screen and the type.
+- **Values or state.** Pass what this navigation is about, such as which product to show. Keep state that several screens share, such as the inventory, in a Model.
+- **Keep it small.** Pass an ID or a small struct rather than a large object graph, and load the rest from your Model or backend.
 
 ### Switch tabs from a bottom bar
 
