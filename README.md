@@ -51,24 +51,24 @@ Setup in one command, a wizard that creates screens ready to open, a registry th
 
 Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screens of a test project: 8 screens mixing uGUI and UI Toolkit, two scenes, Addressables. IL2CPP Development builds at 30 fps.
 
-| Measure | Pixel 5 (Android 14) | Galaxy A02s (Android 12) |
-|---|---|---|
-| Show a cached screen | 3.0 ms, no frame waited | 5.0 ms, no frame waited |
-| Show a screen that isn't loaded | 12 ms median | 22 ms median |
-| Inject a new layer's components | 0.05 ms | 0.08 ms |
-| Go back | 2.8 ms | 4.0 ms |
-| Open a modal, with its blurred snapshot | 36 ms (one frame) | 38 ms (one frame) |
-| Capture and blur the snapshot (main thread) | 0.2 ms | 0.3 ms |
-| Scene change until the new scene's first screen is visible | 134 ms, of which 76 ms is Unity's scene activation | 215 ms, of which 96 ms is Unity's |
-| Allocations per cached show, uGUI and UI Toolkit | 12 to 21 KB | 6 to 12 KB |
-| Allocations when opening a modal / an alert | 15 KB / 20 KB | 8 KB / 10 KB |
-| Memory after 12 scene changes | flat (207.0 MB to 207.4 MB) | flat (190.0 MB to 190.2 MB) |
-| Addressables handles left behind | 0 | 0 |
-| Fullscreen screens rendering under an open modal | 0 | 0 |
-| Navigations that broke the three-window rule | 0 of 284 | 0 of 284 |
-| `GoToForResult`: answer returned, back dismissed, next `GoTo` right after | all pass | all pass |
+| Measure | iPhone Air (iOS 27) | iPhone 13 mini (iOS 26.5) | Pixel 5 (Android 14) | Galaxy A02s (Android 12) |
+|---|---|---|---|---|
+| Show a cached screen | 0.95 ms | 1.1 ms | 3.0 ms | 5.0 ms |
+| Show a screen that isn't loaded | 5.5 ms median | 7.1 ms median | 12 ms median | 22 ms median |
+| Inject a new layer's components | 0.02 ms | 0.02 ms | 0.05 ms | 0.08 ms |
+| Go back | 0.9 ms | 1.0 ms | 2.8 ms | 4.0 ms |
+| Open a modal, with its blurred snapshot | 34 ms (one frame) | 34 ms (one frame) | 36 ms (one frame) | 38 ms (one frame) |
+| Capture and blur the snapshot (main thread) | 0.09 ms | 0.12 ms | 0.2 ms | 0.3 ms |
+| Scene change until the new scene's first screen is visible | 85 ms, of which 67 ms is Unity's scene activation | 85 ms, of which 67 ms is Unity's | 134 ms, of which 76 ms is Unity's | 215 ms, of which 96 ms is Unity's |
+| Allocations per cached show, uGUI and UI Toolkit | 12 to 21 KB | 12 to 21 KB | 12 to 21 KB | 6 to 12 KB |
+| Allocations when opening a modal / an alert | 15 KB / 20 KB | 15 KB / 20 KB | 15 KB / 20 KB | 8 KB / 10 KB |
+| Memory after 12 scene changes | flat (170.7 MB to 171.0 MB) | flat (170.6 MB to 171.1 MB) | flat (207.0 MB to 207.4 MB) | flat (190.0 MB to 190.2 MB) |
+| Addressables handles left behind | 0 | 0 | 0 | 0 |
+| Fullscreen screens rendering under an open modal | 0 | 0 | 0 | 0 |
+| Navigations that broke the three-window rule | 0 of 284 | 0 of 284 | 0 of 284 | 0 of 284 |
+| `GoToForResult`: answer returned, back dismissed, next `GoTo` right after | all pass | all pass | all pass | all pass |
 
-Measured on commit `b0a9a6c`, one run per device. Take the numbers as a guide: run the benchmark on your own screens.
+Measured one run per device, iOS on commit `035b7bd` and Android on `b0a9a6c` (the only runtime change between them re-sorts canvases on show). Take the numbers as a guide: run the benchmark on your own screens.
 
 Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mode**, or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
 
@@ -164,7 +164,7 @@ Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** bac
 |---|---|
 | Unity | Tested on Unity 6 (`6000.3.6f1`, `6000.3.16f1`). The package declares `2022.3` as its minimum, but older versions aren't tested yet. |
 | Scripting backend | Mono and IL2CPP |
-| Platforms | Targets mobile and WebGL. Tested in the Editor (macOS) and on Android: a Pixel 5 (Android 14) and a Samsung Galaxy A02s (Android 12). A WebGL Development build was run in a browser; there, layers always load asynchronously, because WebGL fetches every bundle with a web request. iOS isn't verified yet. |
+| Platforms | Targets mobile and WebGL. Tested in the Editor (macOS), on iOS (iPhone Air with iOS 27, iPhone 13 mini with iOS 26.5) and on Android (Pixel 5 with Android 14, Samsung Galaxy A02s with Android 12). A WebGL Development build was run in a browser; there, layers always load asynchronously, because WebGL fetches every bundle with a web request. |
 | UI frameworks | uGUI, UI Toolkit, or both at once when the canvas uses Screen Space - Overlay, which is the default |
 | Enter Play Mode with domain reload disabled | Supported. Verified across repeated Play sessions with domain and scene reload off: static state, events and the registry reset at the start of each session. |
 | Dependencies | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), uGUI, Addressables, Input System. No DI container is required. |
@@ -840,11 +840,11 @@ Yes. It's tested on Unity `6000.3`. The package declares `2022.3` as its minimum
 
 ### Does it work with IL2CPP and mobile?
 
-Yes on Android with IL2CPP, tested on a Pixel 5 and a Samsung Galaxy A02s. iOS and other platforms aren't verified yet. See [Compatibility](#compatibility).
+Yes, with IL2CPP on iOS (iPhone Air, iPhone 13 mini) and Android (Pixel 5, Samsung Galaxy A02s). See [Compatibility](#compatibility).
 
 ### How fast is it?
 
-A cached screen shows in 3.0 ms on a Pixel 5 and 5.0 ms on a Galaxy A02s, and memory stays flat across scene changes on both. See [Performance](#performance), and run the benchmark on your own screens.
+A cached screen shows in about 1 ms on an iPhone Air or iPhone 13 mini, 3.0 ms on a Pixel 5 and 5.0 ms on a Galaxy A02s, and memory stays flat across scene changes on all four. See [Performance](#performance), and run the benchmark on your own screens.
 
 ### Can I pass parameters to a screen?
 
@@ -912,7 +912,7 @@ Yes, one menu at a time. Screen System stays out of the way until you open one o
 
 ### Does it work on WebGL and iOS?
 
-Both are targets. A WebGL Development build was run in a browser: screens load from Addressables and navigation works, with layers always loading asynchronously there. iOS isn't verified yet. On both, apps don't quit themselves, so leave out the quit confirmation and turn off **Quit On Back At Root**.
+Yes. The benchmark runs clean on an iPhone Air and an iPhone 13 mini, and a WebGL Development build was run in a browser: screens load from Addressables and navigation works, with layers always loading asynchronously there. On both, apps don't quit themselves, so leave out the quit confirmation and turn off **Quit On Back At Root**.
 
 ### Does it work with Screen Space - Camera or World Space canvases?
 
@@ -924,7 +924,7 @@ In Play Mode, open **Tools > Screen System > Screen Manager Window**. It shows w
 
 ### What's verified, and what isn't?
 
-Verified: the navigation rules, back stack, parameters, modal answers, results and injection order, covered by Edit Mode tests (a GitHub Actions workflow runs them once a Unity license is added to the repository); memory, handles, render budget and timings on a Pixel 5 and a Samsung Galaxy A02s with IL2CPP; a WebGL build in a browser; and Enter Play Mode with domain reload off. Not verified yet: iOS, Screen Space - Camera canvases, Unity versions before 6, a shipped game, and the VContainer and Zenject adapters in a running game (they're compiled against those containers).
+Verified: the navigation rules, back stack, parameters, modal answers, results and injection order, covered by Edit Mode tests (a GitHub Actions workflow runs them once a Unity license is added to the repository); memory, handles, render budget, draw order and timings on an iPhone Air, an iPhone 13 mini, a Pixel 5 and a Samsung Galaxy A02s with IL2CPP; a WebGL build in a browser; and Enter Play Mode with domain reload off. Not verified yet: Screen Space - Camera canvases, Unity versions before 6, a shipped game, and the VContainer and Zenject adapters in a running game (they're compiled against those containers).
 
 ### Is it production-ready? Does anyone use it?
 
@@ -968,7 +968,7 @@ A new layer is created under an inactive holder, injected, then moved into place
 
 - AssetBundles stay open for the session once a screen needs them, so in a game with a lot of UI content the open bundles grow with the screens visited. There's no limit or eviction policy yet.
 - Only Screen Space - Overlay canvases are verified; the blurred snapshot behind modals assumes them.
-- iOS isn't verified yet, and the package declares Unity `2022.3` as its minimum but is only tested on Unity 6.
+- The package declares Unity `2022.3` as its minimum but is only tested on Unity 6.
 - Each tab of a bottom bar doesn't keep its own back stack; `ClearToRoot` returns to the root.
 
 ## By design
