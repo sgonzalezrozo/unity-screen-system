@@ -1167,7 +1167,7 @@ namespace ScreenSystem.Benchmark
             AddMetric($"{name}.layer-instances", CountLayers(), "count", "last", 1);
         }
 
-        private async Task<NavSample> MeasureAsync(Func<Task<bool>> navigation)
+        private async Task<NavSample> MeasureAsync(Func<Task<NavigationResult>> navigation)
         {
             int startFrame = Time.frameCount;
             int startLogs = logCount;

@@ -6,7 +6,11 @@ namespace ScreenSystem
 {
     public interface IScreenDisplay
     {
-        Task ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default);
+        /// <summary>
+        /// Shows a screen. Returns false when it couldn't be shown: not in the registry, its prefab didn't load, or
+        /// an exception was thrown. A show cancelled by a newer operation or a scene change isn't a failure.
+        /// </summary>
+        Task<bool> ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default);
         Task HideScreen(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default);
         string GetTopScreen();
         List<string> GetActiveScreenIds();

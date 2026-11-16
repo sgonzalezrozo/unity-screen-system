@@ -324,11 +324,13 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
             EditorGUIUtility.PingObject(layer.gameObject);
         }
 
-        private static async void Run(Func<System.Threading.Tasks.Task<bool>> navigation)
+        private static async void Run(Func<System.Threading.Tasks.Task<NavigationResult>> navigation)
         {
             try
             {
-                await navigation();
+                NavigationResult result = await navigation();
+                if (!result)
+                    Debug.LogWarning($"[Screen Manager] {result}");
             }
             catch (Exception ex)
             {

@@ -143,7 +143,7 @@ Open your first screen with `SetRoot` at boot, turn **Quit On Back At Root** bac
 - Fullscreen, modal and alert screen types
 - Screens kept loaded and reused until their scene ends, and unloaded automatically after it
 - Optional screens that persist across scene changes
-- Guarded async navigation: a call made while another is running is ignored, logged and returns `false`
+- Guarded async navigation: a call made while another is running is ignored, logged and returns `Transitioning`
 - uGUI and UI Toolkit screens, alone or together
 - Loading from Resources or Addressables
 - Back handling with Escape through the Input System
@@ -533,7 +533,26 @@ Bind `IInventoryService` in an installer. Fast IoC regenerates after your script
 
 ## Navigation reference
 
-All navigation methods return `Task<bool>` and take an optional `CancellationToken`.
+All navigation methods return a `NavigationResult` and take an optional `CancellationToken`. It converts to `bool`, and its `Status` says why a call didn't happen:
+
+```csharp
+NavigationResult result = await screens.GoTo(ScreenIds.ShopMain);
+if (!result)
+    Debug.Log(result.Status); // BlockedByModal, BlockedByAlert, Transitioning, NotFound, Failed...
+```
+
+| `Status` | Meaning |
+|---|---|
+| `Succeeded` | The call did what it asked |
+| `NotReady` | Screen System isn't initialized yet; await `ScreenManager.WhenReadyAsync()` |
+| `NotFound` | No screen with that name or ID, or, for `PopTo`, it isn't in the stack |
+| `Transitioning` | Another navigation call is running; calls are ignored, never queued |
+| `BlockedByModal` | A modal is open |
+| `BlockedByAlert` | An alert is open; call `DismissAlert()` |
+| `AlreadyShowing` | The screen is already showing on top |
+| `NothingToClose` | Back at the root, or `DismissAlert()` with no alert |
+| `InvalidRequest` | An empty name, or `ClearToRoot` with a modal or alert |
+| `Failed` | The screen couldn't be shown: its prefab didn't load or an exception was thrown. The stack is left as it was. |
 
 ```csharp
 ScreenManager screens = ScreenManager.Instance;
@@ -574,15 +593,16 @@ Each `screen` argument can be the screen's name or its ID. The name comes from t
 
 - **Going to a screen already in the stack:** `GoTo` works like `PopTo`. It removes every screen above that one from the stack, hides them, and shows it again. This is by design: the stack never holds the same screen twice.
 - **Clearing to the root:** `GoTo(screen, NavigationHistory.ClearToRoot)` closes the open modal, hides every screen above the root and opens the screen over the root, without drawing the root on the way. Back then returns to the root. It works only for fullscreen screens, and fails while an alert is open.
-- **While a navigation call is running:** another one is ignored, logs which call is running, and returns `false`. Calls are never queued, by design.
-- **Unknown screen ID:** an error or warning is logged, and the call returns `false`.
+- **While a navigation call is running:** another one is ignored, logs which call is running, and returns `Transitioning`. Calls are never queued, by design.
+- **Unknown screen ID:** a warning is logged, and the call returns `NotFound`.
+- **A screen that can't be shown:** its prefab didn't load or an exception was thrown. The call returns `Failed` and the stack is left as it was, so a failed modal isn't left open and a failed alert doesn't block navigation.
 - **Active modal:** `GoTo` for a new screen fails until the modal closes. An alert or a screen with **Ignore Navigation Rules** can still open.
 - **Active alert:** navigation fails until `DismissAlert()`, except for screens with **Ignore Navigation Rules**.
 - **Back at the root:** `GoBack()` starts the [quit flow](#handle-back-at-the-root).
 - **Escape key:** runs back navigation through the Input System.
 - **Scene changes:** a single scene load cancels a navigation still loading, so the new scene can open its first screen right away.
 - **Cancellation:** cancelling the token passed to a navigation call stops it before the screen shows and leaves the stack as it was. The call throws `OperationCanceledException`.
-- **Before initialization:** a navigation call logs an error and returns `false`. Await `ScreenManager.WhenReadyAsync()` first.
+- **Before initialization:** a navigation call logs an error and returns `NotReady`. Await `ScreenManager.WhenReadyAsync()` first.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
 
 ## Events
@@ -805,7 +825,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 ## By design
 
-- **Calls during a transition are ignored, never queued.** A navigation call made while another is running returns `false` and logs which call is running. It either goes now or it doesn't; check `IsTransitioning` if you need to know.
+- **Calls during a transition are ignored, never queued.** A navigation call made while another is running returns `Transitioning` and logs which call is running. It either goes now or it doesn't; check `IsTransitioning` if you need to know.
 - **One modal and one alert at a time.** See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
 - **No screen transitions or animations.** Animate inside layers from `OnScreenShown()` and `OnScreenHidden()`.
 

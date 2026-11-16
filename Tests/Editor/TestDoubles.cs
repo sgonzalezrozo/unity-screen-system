@@ -13,11 +13,18 @@ namespace ScreenSystem.Tests
         public readonly HashSet<string> Instantiated = new();
         public TaskCompletionSource<bool> PendingShow;
         public bool ThrowIfCancelled;
+        public readonly HashSet<string> FailShow = new();
         public string PendingParameterScreenId;
         public ScreenParameter PendingParameter;
 
-        public async Task ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
+        public async Task<bool> ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
         {
+            if (FailShow.Contains(screenId))
+            {
+                Calls.Add($"fail:{screenId}");
+                return false;
+            }
+
             if (ThrowIfCancelled)
                 ct.ThrowIfCancellationRequested();
 
@@ -32,6 +39,8 @@ namespace ScreenSystem.Tests
             Instantiated.Add(screenId);
             if (PendingShow != null)
                 await PendingShow.Task;
+
+            return true;
         }
 
         public Task HideScreen(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default)

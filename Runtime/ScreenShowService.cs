@@ -55,12 +55,11 @@ namespace ScreenSystem
             return parameter;
         }
 
-        public async Task ShowScreenAsync(string screenId, bool autoHideParents = true, CancellationToken ct = default)
-        {
-            await ShowScreenAsyncInternal(screenId, autoHideParents, ct);
-        }
+        /// <summary>Shows a screen. Returns false if it isn't registered, has no layers, or an exception was thrown.</summary>
+        public Task<bool> ShowScreenAsync(string screenId, bool autoHideParents = true, CancellationToken ct = default)
+            => ShowScreenAsyncInternal(screenId, autoHideParents, ct);
 
-        private async Task ShowScreenAsyncInternal(string screenId, bool autoHideParents, CancellationToken ct)
+        private async Task<bool> ShowScreenAsyncInternal(string screenId, bool autoHideParents, CancellationToken ct)
         {
             using (ScreenSystemMarkers.Metrics.Auto())
             {
@@ -76,7 +75,7 @@ namespace ScreenSystem
                 if (screen == null)
                 {
                     Debug.LogWarning($"[ScreenShowService] Screen '{screenId}' was not found.");
-                    return;
+                    return false;
                 }
 
                 ct.ThrowIfCancellationRequested();
@@ -94,8 +93,8 @@ namespace ScreenSystem
 
                 if (layers == null || layers.Count == 0)
                 {
-                    Debug.LogWarning($"[ScreenShowService] No layers retrieved for screen: {screenId}");
-                    return;
+                    Debug.LogError($"[ScreenShowService] Screen '{screenId}' has no layers: its prefab didn't load. Check its ScreenDefinition's asset path.");
+                    return false;
                 }
 
                 // for (int i = 0; i < layers.Count; i++)
@@ -129,6 +128,7 @@ namespace ScreenSystem
                 blurHandler.Apply(screenId, screen, layers);
 
                 NavigationEvents.NotifyTransitionInCompleted(screenId);
+                return true;
             }
             catch (OperationCanceledException)
             {
@@ -140,6 +140,7 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenShowService] Error showing screen '{screenId}': {ex.Message}\n{ex.StackTrace}");
                 ScreenMetrics.Instance.UpdateScreenStatus(screenId, ScreenMetrics.ScreenStatus.Unloaded);
+                return false;
             }
             finally
             {

@@ -19,6 +19,21 @@ namespace ScreenSystem
         // A screen with Ignore Navigation Rules that opened over a modal or alert.
         private string? screenShownOverOverlay;
 
+        /// <summary>Why the last call returned false, or Succeeded.</summary>
+        public NavigationStatus LastStatus { get; private set; } = NavigationStatus.Succeeded;
+
+        private bool Fail(NavigationStatus status)
+        {
+            LastStatus = status;
+            return false;
+        }
+
+        private bool Succeed()
+        {
+            LastStatus = NavigationStatus.Succeeded;
+            return true;
+        }
+
         public ScreenNavigator(ScreenRegistry screenRegistry, IScreenDisplay displayService, ScreenNavigationStack navigationStack, IAlertService? alertService = null)
         {
             this.screenRegistry = screenRegistry;
@@ -56,10 +71,11 @@ namespace ScreenSystem
 
         private async Task<bool> GoToCoreAsync(string screenId, NavigationHistory history, ScreenParameter? parameter, CancellationToken ct)
         {
+            LastStatus = NavigationStatus.Succeeded;
             if (string.IsNullOrEmpty(screenId))
             {
                 Debug.LogError("[ScreenNav] GoToAsync failed: screenId is null or empty");
-                return false;
+                return Fail(NavigationStatus.InvalidRequest);
             }
 
             ScreenDefinition screen = screenRegistry.GetScreen(screenId);
@@ -68,7 +84,7 @@ namespace ScreenSystem
             {
                 Debug.LogWarning($"[ScreenNav] GoTo skipped: screen not found: {screenId}");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Screen not found");
-                return false;
+                return Fail(NavigationStatus.NotFound);
             }
 
             bool ignoreRules = screen.IgnoreNavigationRules;
@@ -77,7 +93,7 @@ namespace ScreenSystem
             {
                 Debug.LogWarning($"[ScreenNav] GoToAsync blocked: alert '{alertService.CurrentAlertId}' is active. Dismiss alert first.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
-                return false;
+                return Fail(NavigationStatus.BlockedByAlert);
             }
 
             if (history == NavigationHistory.ClearToRoot)
@@ -90,7 +106,7 @@ namespace ScreenSystem
             if (parameter != null && IsShowingOnTop(screenId, screen))
             {
                 displayService.DeliverParameter(screenId, parameter);
-                return true;
+                return Succeed();
             }
 
             bool isAlreadyShown = navigationStack.MainHistoryContains(screenId);
@@ -99,7 +115,7 @@ namespace ScreenSystem
             {
                 Debug.LogWarning($"[ScreenNav] GoToAsync blocked: modal '{navigationStack.GetCurrentModal()}' is active and target screen is new. Dismiss modal first.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Modal active - cannot navigate to new screen");
-                return false;
+                return Fail(NavigationStatus.BlockedByModal);
             }
 
             if (navigationStack.HasModal && isAlreadyShown)
@@ -120,29 +136,42 @@ namespace ScreenSystem
             string modalBefore = navigationStack.GetCurrentModal();
             bool shouldShowScreen = await TryPushToNavigationStackAsync(screenId, screen, ct);
 
+            // TryPush returns false when it didn't push: blocked, already showing, or it popped back instead.
             if (!shouldShowScreen)
-                return false;
+                return LastStatus == NavigationStatus.Succeeded;
 
             if (opensOverOverlay && screen.screenType == ScreenType.fullscreen)
                 screenShownOverOverlay = screenId;
 
-            try
+            // Undo the push so the stack matches what's visible.
+            void UndoPush()
             {
-                await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: !opensOverOverlay);
-            }
-            catch (OperationCanceledException)
-            {
-                // The caller cancelled before the screen showed. Undo the push so the stack matches what's visible.
                 if (navigationStack.MainHistoryCount > historyBefore && navigationStack.PeekMainScreen() == screenId)
                     navigationStack.PopMainScreen();
                 if (modalBefore == null && navigationStack.GetCurrentModal() == screenId)
                     navigationStack.ClearModal();
                 if (screenShownOverOverlay == screenId)
                     screenShownOverOverlay = null;
+            }
+
+            bool shown;
+            try
+            {
+                shown = await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: !opensOverOverlay);
+            }
+            catch (OperationCanceledException)
+            {
+                UndoPush();
                 throw;
             }
 
-            return true;
+            if (!shown)
+            {
+                UndoPush();
+                return Fail(NavigationStatus.Failed);
+            }
+
+            return Succeed();
         }
 
         // Pops every screen above the root and opens the target over it, without showing the root on the way.
@@ -160,14 +189,14 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenNav] GoTo({screenId}, ClearToRoot) failed: only fullscreen screens can clear the stack. Use GoTo without it for modals and alerts.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "ClearToRoot needs a fullscreen screen");
-                return false;
+                return Fail(NavigationStatus.InvalidRequest);
             }
 
             if (alertService != null && alertService.IsAlertActive)
             {
                 Debug.LogWarning($"[ScreenNav] GoTo({screenId}, ClearToRoot) blocked: alert '{alertService.CurrentAlertId}' is active.");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Alert active - navigation blocked");
-                return false;
+                return Fail(NavigationStatus.BlockedByAlert);
             }
 
             string root = navigationStack.GetRootScreen();
@@ -201,12 +230,13 @@ namespace ScreenSystem
                 if (parameter != null)
                     displayService.DeliverParameter(screenId, parameter);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
-                return true;
+                return Succeed();
             }
 
+            bool shown;
             try
             {
-                await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: true);
+                shown = await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: true);
             }
             catch (OperationCanceledException)
             {
@@ -216,7 +246,14 @@ namespace ScreenSystem
                 throw;
             }
 
-            return true;
+            if (!shown)
+            {
+                if (navigationStack.PeekMainScreen() == screenId)
+                    navigationStack.PopMainScreen();
+                return Fail(NavigationStatus.Failed);
+            }
+
+            return Succeed();
         }
 
         private async Task<bool> ShowAlertScreenAsync(string screenId, CancellationToken ct)
@@ -224,14 +261,21 @@ namespace ScreenSystem
             if (alertService == null)
             {
                 Debug.LogError("[ScreenNav] AlertService not available");
-                return false;
+                return Fail(NavigationStatus.Failed);
             }
 
             navigationStack.ShowAlertScreen(screenId);
             _ = alertService.ShowAlertAsync(screenId);
 
-            await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: false);
-            return true;
+            if (!await ShowScreenAndNotifyAsync(screenId, ct, autoHideParents: false))
+            {
+                // An alert that didn't show must not keep blocking navigation.
+                navigationStack.DismissAlertScreen();
+                alertService.Clear();
+                return Fail(NavigationStatus.Failed);
+            }
+
+            return Succeed();
         }
 
         private async Task<bool> GoToWithModalDismissal(string screenId, CancellationToken ct)
@@ -240,14 +284,14 @@ namespace ScreenSystem
             navigationStack.ClearModal();
 
             if (!await PopScreensUntilTargetAsync(screenId, ct))
-                return false;
+                return Fail(NavigationStatus.Failed);
 
-            await ShowTargetScreenAsync(screenId, ct);
+            bool shown = await ShowTargetScreenAsync(screenId, ct);
 
             if (displayService.IsScreenInstantiated(modalId))
                 await displayService.HideScreen(modalId, screenId, ct);
 
-            return true;
+            return shown ? Succeed() : Fail(NavigationStatus.Failed);
         }
 
         private async Task<bool> TryPushToNavigationStackAsync(string screenId, ScreenDefinition screen, CancellationToken ct)
@@ -264,7 +308,7 @@ namespace ScreenSystem
                 {
                     Debug.LogError($"[ScreenNav] Cannot show fullscreen ({screenId}) while modal is active. Dismiss modal first.");
                     NavigationEvents.NotifyNavigationFailed(screenId, "Modal active - fullscreen blocked");
-                    return false;
+                    return Fail(NavigationStatus.BlockedByModal);
                 }
 
                 if (navigationStack.MainHistoryContains(screenId))
@@ -277,12 +321,13 @@ namespace ScreenSystem
                         if (isScreenVisible)
                         {
                             Debug.LogWarning($"[ScreenNav] Screen {screenId} is already at top of stack and visible, skipping navigation");
-                            return false;
+                            return Fail(NavigationStatus.AlreadyShowing);
                         }
 
                         return true;
                     }
 
+                    // Popped back to it instead of pushing: the call succeeded if the pop did.
                     await PopToAsync(screenId, ct);
                     return false;
                 }
@@ -294,7 +339,7 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenNav] GoTo failed: {ex.Message}\n{ex.StackTrace}");
                 NavigationEvents.NotifyNavigationFailed(screenId, ex.Message);
-                return false;
+                return Fail(NavigationStatus.Failed);
             }
         }
 
@@ -333,7 +378,8 @@ namespace ScreenSystem
             return true;
         }
 
-        private async Task ShowScreenAndNotifyAsync(string screenId, CancellationToken ct, bool autoHideParents = true)
+        // Returns false when the screen couldn't be shown.
+        private async Task<bool> ShowScreenAndNotifyAsync(string screenId, CancellationToken ct, bool autoHideParents = true)
         {
             try
             {
@@ -341,10 +387,15 @@ namespace ScreenSystem
 
                 NavigationEvents.NotifyNavigationStarted(screenId);
 
-                await displayService.ShowScreen(screenId, autoHideParents, ct);
+                if (!await displayService.ShowScreen(screenId, autoHideParents, ct))
+                {
+                    NavigationEvents.NotifyNavigationFailed(screenId, "The screen couldn't be shown");
+                    return false;
+                }
 
                 NavigationEvents.NotifyScreenPushed(screenId);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
+                return true;
             }
             catch (OperationCanceledException)
             {
@@ -355,47 +406,47 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenNav] GoTo show failed: {ex.Message}\n{ex.StackTrace}");
                 NavigationEvents.NotifyNavigationFailed(screenId, ex.Message);
+                return false;
             }
         }
 
         public async Task<bool> GoBackAsync(CancellationToken ct = default)
         {
+            LastStatus = NavigationStatus.Succeeded;
             try
             {
                 if (IsCurrentScreenOverOverlay())
                 {
                     await GoBackFromScreenOverOverlayAsync(ct);
-                    return true;
+                    return Succeed();
                 }
 
                 if (alertService != null && alertService.IsAlertActive)
                 {
                     Debug.LogWarning($"[ScreenNav] GoBackAsync blocked: alert '{alertService.CurrentAlertId}' is active");
-                    return false;
+                    return Fail(NavigationStatus.BlockedByAlert);
                 }
 
                 if (navigationStack.HasModal)
                 {
                     await TryGoBackFromModalAsync(ct);
-                    return true;
+                    return Succeed();
                 }
 
                 if (!navigationStack.CanGoBack)
                 {
                     NavigationEvents.NotifyBackAtRoot();
-                    return false;
+                    return Fail(NavigationStatus.NothingToClose);
                 }
 
                 string currentScreen = navigationStack.GetCurrentScreen();
                 if (navigationStack.IsScreenTheRoot(currentScreen))
                 {
-                    Debug.Log("[ScreenNav] At root screen, showing quit alert");
                     NavigationEvents.NotifyBackAtRoot();
-                    return false;
+                    return Fail(NavigationStatus.NothingToClose);
                 }
 
-                await GoBackFromMainScreenAsync(ct);
-                return true;
+                return await GoBackFromMainScreenAsync(ct) ? Succeed() : Fail(NavigationStatus.Failed);
             }
             catch (OperationCanceledException)
             {
@@ -405,22 +456,23 @@ namespace ScreenSystem
             catch (Exception ex)
             {
                 Debug.LogError($"[ScreenNav] GoBack failed: {ex.Message}\n{ex.StackTrace}");
-                return false;
+                return Fail(NavigationStatus.Failed);
             }
         }
 
         public async Task<bool> SetRootAsync(string screenId, CancellationToken ct = default)
         {
+            LastStatus = NavigationStatus.Succeeded;
             if (string.IsNullOrEmpty(screenId))
             {
                 Debug.LogError("[ScreenNav] SetRootAsync failed: screenId is null or empty");
-                return false;
+                return Fail(NavigationStatus.InvalidRequest);
             }
 
             if (alertService != null && alertService.IsAlertActive)
             {
                 Debug.LogWarning($"[ScreenNav] SetRootAsync blocked: alert '{alertService.CurrentAlertId}' is active");
-                return false;
+                return Fail(NavigationStatus.BlockedByAlert);
             }
 
             ScreenDefinition screen = screenRegistry.GetScreen(screenId);
@@ -429,7 +481,7 @@ namespace ScreenSystem
             {
                 Debug.LogWarning($"[ScreenNav] SetRootAsync failed: screen not found: {screenId}");
                 NavigationEvents.NotifyNavigationFailed(screenId, "Screen not found");
-                return false;
+                return Fail(NavigationStatus.NotFound);
             }
 
             try
@@ -445,11 +497,15 @@ namespace ScreenSystem
                 }
 
                 NavigationEvents.NotifyNavigationStarted(screenId);
-                await displayService.ShowScreen(screenId, true, ct);
+                if (!await displayService.ShowScreen(screenId, true, ct))
+                {
+                    NavigationEvents.NotifyNavigationFailed(screenId, "The screen couldn't be shown");
+                    return Fail(NavigationStatus.Failed);
+                }
+
                 NavigationEvents.NotifyScreenPushed(screenId);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
-
-                return true;
+                return Succeed();
             }
             catch (OperationCanceledException)
             {
@@ -460,7 +516,7 @@ namespace ScreenSystem
             {
                 Debug.LogError($"[ScreenNav] SetRootAsync failed: {ex.Message}\n{ex.StackTrace}");
                 NavigationEvents.NotifyNavigationFailed(screenId, ex.Message);
-                return false;
+                return Fail(NavigationStatus.Failed);
             }
         }
 
@@ -488,7 +544,7 @@ namespace ScreenSystem
             await displayService.HideScreen(topModal, null, ct);
         }
 
-        private async Task GoBackFromMainScreenAsync(CancellationToken ct)
+        private async Task<bool> GoBackFromMainScreenAsync(CancellationToken ct)
         {
             string leavingId = navigationStack.PopMainScreen();
 
@@ -498,19 +554,25 @@ namespace ScreenSystem
             await displayService.HideScreen(leavingId, returnToScreen, ct);
 
             if (returnToScreen != null)
-                await ShowReturnScreenAsync(returnToScreen, ct);
-            else
-                NavigationEvents.NotifyBackAtRoot();
+                return await ShowReturnScreenAsync(returnToScreen, ct);
+
+            NavigationEvents.NotifyBackAtRoot();
+            return true;
         }
 
-        private async Task ShowReturnScreenAsync(string screenId, CancellationToken ct)
+        private async Task<bool> ShowReturnScreenAsync(string screenId, CancellationToken ct)
         {
             try
             {
-                await displayService.ShowScreen(screenId, false, ct);
+                if (!await displayService.ShowScreen(screenId, false, ct))
+                {
+                    NavigationEvents.NotifyNavigationFailed(screenId, "The screen couldn't be shown");
+                    return false;
+                }
 
                 NavigationEvents.NotifyScreenPopped(screenId);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
+                return true;
             }
             catch (OperationCanceledException)
             {
@@ -536,31 +598,31 @@ namespace ScreenSystem
 
         public async Task<bool> PopToAsync(string screenId, CancellationToken ct = default)
         {
+            LastStatus = NavigationStatus.Succeeded;
             if (string.IsNullOrEmpty(screenId))
             {
                 Debug.LogError("[ScreenNav] PopToAsync failed: screenId is null or empty");
-                return false;
+                return Fail(NavigationStatus.InvalidRequest);
             }
 
             if (alertService != null && alertService.IsAlertActive)
             {
                 Debug.LogWarning($"[ScreenNav] PopToAsync blocked: alert '{alertService.CurrentAlertId}' is active");
-                return false;
+                return Fail(NavigationStatus.BlockedByAlert);
             }
 
             if (!navigationStack.MainHistoryContains(screenId))
             {
                 Debug.LogWarning($"[ScreenNav] PopToAsync screen not in history: {screenId}");
-                return false;
+                return Fail(NavigationStatus.NotFound);
             }
 
             NavigationEvents.NotifyNavigationStarted(screenId);
 
             if (!await PopScreensUntilTargetAsync(screenId, ct))
-                return false;
+                return Fail(NavigationStatus.Failed);
 
-            await ShowTargetScreenAsync(screenId, ct);
-            return true;
+            return await ShowTargetScreenAsync(screenId, ct) ? Succeed() : Fail(NavigationStatus.Failed);
         }
 
         private async Task<bool> PopScreensUntilTargetAsync(string targetScreenId, CancellationToken ct)
@@ -591,22 +653,30 @@ namespace ScreenSystem
             }
         }
 
-        private async Task ShowTargetScreenAsync(string screenId, CancellationToken ct)
+        // Returns false when the screen couldn't be shown. A cancelled show isn't a failure.
+        private async Task<bool> ShowTargetScreenAsync(string screenId, CancellationToken ct)
         {
             try
             {
-                await displayService.ShowScreen(screenId, false, ct);
+                if (!await displayService.ShowScreen(screenId, false, ct))
+                {
+                    NavigationEvents.NotifyNavigationFailed(screenId, "The screen couldn't be shown");
+                    return false;
+                }
 
                 NavigationEvents.NotifyScreenPopped(screenId);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
+                return true;
             }
             catch (OperationCanceledException)
             {
                 Debug.LogWarning($"[ScreenNav] PopTo show cancelled: {screenId}");
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[ScreenNav] PopTo show failed: {ex.Message}\n{ex.StackTrace}");
+                return false;
             }
         }
 
@@ -634,7 +704,7 @@ namespace ScreenSystem
             }
 
             NavigationEvents.NotifyStackCleared();
-            return true;
+            return Succeed();
         }
 
         public async Task<bool> DismissAlertAsync(CancellationToken ct = default)
@@ -642,11 +712,11 @@ namespace ScreenSystem
             string alertId = navigationStack.DismissAlertScreen();
 
             if (string.IsNullOrEmpty(alertId))
-                return false;
+                return Fail(NavigationStatus.NothingToClose);
 
             alertService?.Clear();
             await displayService.HideScreen(alertId, null, ct);
-            return true;
+            return Succeed();
         }
 
         public void ClearAlert()

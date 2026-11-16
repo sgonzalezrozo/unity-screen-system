@@ -162,11 +162,15 @@ namespace ScreenSystem
             }
         }
 
+        /// <summary>Why the last call returned false: Transitioning when it was ignored, otherwise the navigator's reason.</summary>
+        public NavigationStatus LastStatus { get; private set; } = NavigationStatus.Succeeded;
+
         private async Task<T> WithNavigationGuardAsync<T>(string operationName, Func<Task<T>> operation)
         {
             if (isNavigating)
             {
                 Debug.LogWarning($"[ScreenNav] {operationName} ignored: {currentOperation} is still running.");
+                LastStatus = NavigationStatus.Transitioning;
                 return default;
             }
 
@@ -175,7 +179,9 @@ namespace ScreenSystem
             int generation = ++operationGeneration;
             try
             {
-                return await operation();
+                T result = await operation();
+                LastStatus = navigator.LastStatus;
+                return result;
             }
             catch (OperationCanceledException) when (generation != operationGeneration)
             {

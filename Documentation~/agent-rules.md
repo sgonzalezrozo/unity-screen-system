@@ -18,7 +18,7 @@ Copy this file into your project's agent rules (for example `AGENTS.md`, `CLAUDE
 
 ## Navigate
 
-All methods return `Task<bool>` (`false` when blocked or unknown) and take an optional `CancellationToken`:
+All methods return a `NavigationResult`, which converts to `bool` (`if (await screens.GoTo(...))`) and has a `Status` saying why a call didn't happen (`BlockedByModal`, `BlockedByAlert`, `Transitioning`, `NotFound`, `Failed`...). They take an optional `CancellationToken`. Prefer the generated `ScreenIds` constants over strings:
 
 ```csharp
 ScreenManager screens = ScreenManager.Instance;
@@ -45,7 +45,7 @@ Static events live on `NavigationEvents`, such as `OnNavigationCompleted` and `O
 
 ## Don't
 
-- Don't call `GoTo` while another navigation call is running and expect it to run: it returns `false`. Check `IsTransitioning`.
+- Don't call `GoTo` while another navigation call is running and expect it to run: it returns `Transitioning`. Check `IsTransitioning`.
 - Screen System has no screen transitions or animations. Animate inside layers from `OnScreenShown()`/`OnScreenHidden()`; a layer shared with the previous screen doesn't get them again.
 - Don't expect `GoBack()` to close an alert. Call `DismissAlert()`.
 - Don't invent methods. If a member isn't listed here or in the README, read the package source.

@@ -34,20 +34,22 @@ namespace ScreenSystem
              showService = new ScreenShowService(screenRegistry, layerFactory, cacheManager, hideService, blurService);
          }
 
-        public async Task ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
+        public async Task<bool> ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(screenId))
             {
                 Debug.LogError($"{LOG_PREFIX} ShowScreen failed: screenId is null or empty");
-                return;
+                return false;
             }
 
+            bool shown = true;
             Func<CancellationToken, int, CancellationTokenSource, Task> operation = async (operationCt, opId, linkedCts) =>
             {
-                await ContinueWithShow(screenId, autoHideParents, operationCt, opId, linkedCts);
+                shown = await ContinueWithShow(screenId, autoHideParents, operationCt, opId, linkedCts);
             };
 
-            await ExecuteNavigationOperation(operation, screenId, "show", ct);
+            bool completed = await ExecuteNavigationOperation(operation, screenId, "show", ct);
+            return shown && completed;
         }
 
         public async Task HideScreen(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default)
@@ -66,7 +68,8 @@ namespace ScreenSystem
             await ExecuteNavigationOperation(operation, screenId, "hide", ct);
         }
 
-        private async Task ExecuteNavigationOperation(Func<CancellationToken, int, CancellationTokenSource, Task> operation, string screenId, string operationName, CancellationToken callerToken)
+        // Returns false only when the operation threw. A cancellation by a newer operation or a scene change returns true.
+        private async Task<bool> ExecuteNavigationOperation(Func<CancellationToken, int, CancellationTokenSource, Task> operation, string screenId, string operationName, CancellationToken callerToken)
         {
             Task currentTask;
             CancellationToken operationCt;
@@ -102,6 +105,7 @@ namespace ScreenSystem
             try
             {
                 await currentTask;
+                return true;
             }
             catch (OperationCanceledException) when (callerToken.IsCancellationRequested)
             {
@@ -111,26 +115,28 @@ namespace ScreenSystem
             catch (OperationCanceledException)
             {
                 Debug.LogWarning($"{LOG_PREFIX} ExecuteNavigationOperation operation cancelled. op:{opId}");
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"{LOG_PREFIX} ExecuteNavigationOperation operation failed: {ex.Message}\n{ex.StackTrace}");
+                return false;
             }
         }
 
-        private async Task ContinueWithShow(string screenId, bool autoHideParents, CancellationToken ct, int opId, CancellationTokenSource linkedCts)
+        private async Task<bool> ContinueWithShow(string screenId, bool autoHideParents, CancellationToken ct, int opId, CancellationTokenSource linkedCts)
         {
             bool isStaleAtStart = opId != navigationOperationId;
 
             if (ct.IsCancellationRequested || isStaleAtStart)
             {
                 linkedCts.Dispose();
-                return;
+                return true;
             }
 
             try
             {
-                await showService.ShowScreenAsync(screenId, autoHideParents, ct);
+                return await showService.ShowScreenAsync(screenId, autoHideParents, ct);
             }
             catch (OperationCanceledException)
             {

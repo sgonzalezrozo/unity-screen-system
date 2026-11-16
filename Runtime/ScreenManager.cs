@@ -220,20 +220,20 @@ namespace ScreenSystem
             if (isInitialized && navigationService != null && idResolver != null)
                 return true;
 
-            string reason = initializationError != null ? $"initialization failed: {initializationError}" : "it isn't initialized yet. Await WaitForInitializationAsync() first";
+            string reason = initializationError != null ? $"initialization failed: {initializationError}" : "it isn't initialized yet. Await ScreenManager.WhenReadyAsync() first";
             Debug.LogError($"[ScreenManager] {call} ignored: {reason}.");
             return false;
         }
 
-        /// <summary>Opens a screen by name or ID. Returns false if the call is ignored or blocked.</summary>
-        public Task<bool> GoTo(string screenId, CancellationToken ct = default)
+        /// <summary>Opens a screen by name or ID. The result converts to bool; its Status says why a call didn't happen.</summary>
+        public Task<NavigationResult> GoTo(string screenId, CancellationToken ct = default)
             => GoTo(screenId, NavigationHistory.Push, ct);
 
         /// <summary>
         /// Opens a screen by name or ID. With <see cref="NavigationHistory.ClearToRoot"/>, every screen above the
-        /// root is removed first, as a tab bar does. Returns false if the call is ignored or blocked.
+        /// root is removed first, as a tab bar does.
         /// </summary>
-        public Task<bool> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default)
+        public Task<NavigationResult> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default)
             => GoToWithParameter(screenId, history, null, ct);
 
         /// <summary>
@@ -241,49 +241,45 @@ namespace ScreenSystem
         /// <see cref="IScreenParameter{T}"/> gets it once, before the layers are shown. GoBack and PopTo don't pass
         /// it again, and Screen System doesn't keep it.
         /// </summary>
-        public Task<bool> GoTo<T>(string screenId, T parameter, CancellationToken ct = default)
+        public Task<NavigationResult> GoTo<T>(string screenId, T parameter, CancellationToken ct = default)
             => GoToWithParameter(screenId, NavigationHistory.Push, ScreenParameter.Create(parameter), ct);
 
         /// <summary>Opens a screen, passes it a value, and with ClearToRoot removes every screen above the root first.</summary>
-        public Task<bool> GoTo<T>(string screenId, T parameter, NavigationHistory history, CancellationToken ct = default)
+        public Task<NavigationResult> GoTo<T>(string screenId, T parameter, NavigationHistory history, CancellationToken ct = default)
             => GoToWithParameter(screenId, history, ScreenParameter.Create(parameter), ct);
 
-        private async Task<bool> GoToWithParameter(string screenId, NavigationHistory history, ScreenParameter parameter, CancellationToken ct)
+        private async Task<NavigationResult> GoToWithParameter(string screenId, NavigationHistory history, ScreenParameter parameter, CancellationToken ct)
         {
             if (!IsReady(nameof(GoTo)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady, screenId);
 
             if (!idResolver.TryResolveScreenId(screenId, nameof(GoTo), out string resolvedId))
-            {
-                Debug.LogError($"[ScreenManager] TryResolveScreenId FAILED for: {screenId}");
-                return false;
-            }
+                return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            bool result = await navigationService.GoToAsync(resolvedId, history, parameter, ct);
-            return result;
+            return Result(await navigationService.GoToAsync(resolvedId, history, parameter, ct), screenId);
         }
 
         /// <summary>
         /// Closes the open modal or returns to the previous screen. At the root, starts the quit flow unless
         /// Quit On Back At Root is off. With no screen open, does nothing, so your own UI keeps the back key.
         /// </summary>
-        public async Task<bool> GoBack(CancellationToken ct = default)
+        public async Task<NavigationResult> GoBack(CancellationToken ct = default)
         {
             if (!IsReady(nameof(GoBack)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady);
 
             // A call ignored during a transition also returns false at the root. That must not start the quit flow.
             if (navigationService.IsNavigating)
             {
                 Debug.LogWarning("[ScreenManager] GoBack ignored: a navigation call is still running.");
-                return false;
+                return new NavigationResult(NavigationStatus.Transitioning);
             }
 
             // Nothing open: the back key belongs to UI outside Screen System, as in a project still migrating.
             if (string.IsNullOrEmpty(navigationService.GetCurrentScreen()) && !navigationService.CanGoBack)
-                return false;
+                return new NavigationResult(NavigationStatus.NothingToClose);
 
-            bool result = await navigationService.GoBackAsync(ct);
+            NavigationResult result = Result(await navigationService.GoBackAsync(ct), null);
 
             if (!result && !navigationService.CanGoBack && QuitsOnBackAtRoot)
                 await serviceInitializer?.QuitManager?.HandleQuitRequestAsync(ct);
@@ -292,30 +288,27 @@ namespace ScreenSystem
         }
 
         /// <summary>Returns to a screen that is already in the stack.</summary>
-        public async Task<bool> PopTo(string screenId, CancellationToken ct = default)
+        public async Task<NavigationResult> PopTo(string screenId, CancellationToken ct = default)
         {
             if (!IsReady(nameof(PopTo)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady, screenId);
 
             if (!idResolver.TryResolveScreenId(screenId, nameof(PopTo), out string resolvedId))
-                return false;
+                return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            return await navigationService.PopToAsync(resolvedId, ct);
+            return Result(await navigationService.PopToAsync(resolvedId, ct), screenId);
         }
 
         /// <summary>Replaces the root screen.</summary>
-        public async Task<bool> SetRoot(string screenId, CancellationToken ct = default)
+        public async Task<NavigationResult> SetRoot(string screenId, CancellationToken ct = default)
         {
             if (!IsReady(nameof(SetRoot)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady, screenId);
 
             if (!idResolver.TryResolveScreenId(screenId, nameof(SetRoot), out string resolvedId))
-            {
-                Debug.LogError($"[ScreenManager] TryResolveScreenId FAILED for SetRoot: {screenId}");
-                return false;
-            }
+                return new NavigationResult(NavigationStatus.NotFound, screenId);
 
-            return await navigationService.SetRootAsync(resolvedId, ct);
+            return Result(await navigationService.SetRootAsync(resolvedId, ct), screenId);
         }
 
         /// <summary>
@@ -323,12 +316,22 @@ namespace ScreenSystem
         /// Screen System, for example from NavigationEvents.OnBackAtRoot while migrating. Screens stay loaded until
         /// the next scene change, so opening them again is fast.
         /// </summary>
-        public async Task<bool> CloseAll(CancellationToken ct = default)
+        public async Task<NavigationResult> CloseAll(CancellationToken ct = default)
         {
             if (!IsReady(nameof(CloseAll)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady);
 
-            return await navigationService.CloseAllAsync(ct);
+            return Result(await navigationService.CloseAllAsync(ct), null);
+        }
+
+        private NavigationResult Result(bool succeeded, string screen)
+            => new(succeeded ? NavigationStatus.Succeeded : FailureStatus(), screen);
+
+        // The guard reports Transitioning; otherwise the navigator's reason. Never Succeeded for a false result.
+        private NavigationStatus FailureStatus()
+        {
+            NavigationStatus status = navigationService.LastStatus;
+            return status == NavigationStatus.Succeeded ? NavigationStatus.Failed : status;
         }
 
         private static bool QuitsOnBackAtRoot
@@ -340,13 +343,13 @@ namespace ScreenSystem
             }
         }
 
-        /// <summary>Closes the open alert. Returns false if there's none, or during a transition.</summary>
-        public async Task<bool> DismissAlert(CancellationToken ct = default)
+        /// <summary>Closes the open alert. NothingToClose if there's none; Transitioning during another call.</summary>
+        public async Task<NavigationResult> DismissAlert(CancellationToken ct = default)
         {
             if (!IsReady(nameof(DismissAlert)))
-                return false;
+                return new NavigationResult(NavigationStatus.NotReady);
 
-            return await navigationService.DismissAlertAsync(ct);
+            return Result(await navigationService.DismissAlertAsync(ct), null);
         }
 
         /// <summary>True while an alert is open. Navigation is blocked until it's dismissed.</summary>
