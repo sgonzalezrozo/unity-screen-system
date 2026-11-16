@@ -256,7 +256,7 @@ namespace ScreenSystem.Editor
             return prefab;
         }
 
-        private static void SetUpCanvas(GameObject root)
+        internal static void SetUpCanvas(GameObject root)
         {
             Canvas canvas = root.AddComponent<Canvas>();
             canvas.overrideSorting = false;
@@ -271,7 +271,7 @@ namespace ScreenSystem.Editor
             rect.localScale = Vector3.one;
         }
 
-        private static void SetUpUIDocument(GameObject root, string screenDir, string screenName)
+        internal static void SetUpUIDocument(GameObject root, string screenDir, string screenName)
         {
             UIDocument document = root.AddComponent<UIDocument>();
             document.panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(ScreenSystemAssets.PanelSettingsPath);
@@ -309,7 +309,7 @@ namespace ScreenSystem.Editor
             return path;
         }
 
-        private static void EnsureFolder(string path)
+        internal static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path))
                 return;
