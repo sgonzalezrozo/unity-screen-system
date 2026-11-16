@@ -301,11 +301,10 @@ Implement only `IScreenShow` or `IScreenHide` if you need just one callback. The
 
 ## Open the first screen
 
-`ScreenManager.Instance` is set in `Start()`, so wait for it before navigating:
+Wait for Screen System to be ready, then open your first screen:
 
 ```csharp
 using System;
-using System.Threading.Tasks;
 using ScreenSystem;
 using UnityEngine;
 
@@ -315,11 +314,9 @@ public class GameBoot : MonoBehaviour
     {
         try
         {
-            while (ScreenManager.Instance == null)
-                await Task.Yield();
-
-            await ScreenManager.Instance.WaitForInitializationAsync();
-            await ScreenManager.Instance.SetRoot("ShopMain");
+            ScreenManager screens = await ScreenManager.WhenReadyAsync();
+            if (screens != null)
+                await screens.SetRoot("ShopMain");
         }
         catch (Exception exception)
         {
@@ -328,6 +325,10 @@ public class GameBoot : MonoBehaviour
     }
 }
 ```
+
+`WhenReadyAsync()` returns once the manager exists and has finished initializing, so there's nothing to poll. It returns `null` if initialization failed or Screen System isn't set up, and logs why. You can call it from any `Awake` or `Start`, as many times as you need.
+
+`ScreenManager.Instance` is already set when your scene's objects run `Awake`, because the `ScreenSystem` prefab is created before the first scene loads. It may still be initializing, so navigate after `WhenReadyAsync()`.
 
 `async void` is used because `Start()` can't return a `Task` to a caller, so keep the `try`/`catch`.
 
@@ -564,7 +565,7 @@ Each `screen` argument can be the screen's name or its ID. The name comes from t
 - **Escape key:** runs back navigation through the Input System.
 - **Scene changes:** a single scene load cancels a navigation still loading, so the new scene can open its first screen right away.
 - **Cancellation:** cancelling the token passed to a navigation call stops it before the screen shows and leaves the stack as it was. The call throws `OperationCanceledException`.
-- **Before initialization:** a navigation call logs an error and returns `false`. Await `WaitForInitializationAsync()` first.
+- **Before initialization:** a navigation call logs an error and returns `false`. Await `ScreenManager.WhenReadyAsync()` first.
 - **Asset loading:** a screen's asset path is tried in Resources first, then Addressables.
 
 ## Events
@@ -750,7 +751,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 | `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
 | Escape quits the app | Create a `QuitConfirmation` modal, as shown in [Handle back at the root](#handle-back-at-the-root), or turn off **Quit On Back At Root** while migrating |
 | An `alert` screen won't close | Call `DismissAlert()`, because back navigation doesn't close alerts |
-| `ScreenManager.Instance` is `null` | Wait for it as shown in [Open the first screen](#open-the-first-screen) |
+| `ScreenManager.Instance` is `null` or a navigation call says it isn't initialized | Await `ScreenManager.WhenReadyAsync()` first, as shown in [Open the first screen](#open-the-first-screen). If it returns `null`, run **Tools > Screen System > Setup** and check the console. |
 | A layer doesn't appear | Check that its prefab is in `Resources` or Addressable under the name listed in the `LayerDefinition` |
 
 ## Limitations

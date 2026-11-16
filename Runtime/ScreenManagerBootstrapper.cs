@@ -23,7 +23,10 @@ namespace ScreenSystem
                 screenSystemInstance.name = "ScreenSystem";
             }
             else
-                Debug.LogWarning("[ScreenSystem] ScreenSystem prefab not found at Resources/Tools/Screen System/Prefabs/ScreenSystem.prefab");
+            {
+                Debug.LogWarning("[ScreenSystem] ScreenSystem prefab not found at Resources/Tools/Screen System/Prefabs/ScreenSystem.prefab. Run Tools > Screen System > Setup.");
+                ScreenManager.ReportNotAvailable();
+            }
         }
     }
 }

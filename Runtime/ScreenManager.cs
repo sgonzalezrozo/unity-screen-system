@@ -14,10 +14,49 @@ namespace ScreenSystem
     {
         private static ScreenManager instance;
 
+        // Completed with the manager once it's initialized, or with null if it failed or isn't set up.
+        private static TaskCompletionSource<ScreenManager> readySource = new();
+
         // With Enter Play Mode Options and domain reload off, statics survive between Play sessions. Start each one clean.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
-            => instance = null;
+        internal static void ResetStatics()
+        {
+            instance = null;
+            readySource = new TaskCompletionSource<ScreenManager>();
+        }
+
+        /// <summary>
+        /// Waits until Screen System is ready to navigate and returns the manager. Returns null if initialization
+        /// failed or Screen System isn't set up (the error is logged). Safe to call from any Awake or Start, and
+        /// any number of times:
+        /// <code>
+        /// ScreenManager screens = await ScreenManager.WhenReadyAsync();
+        /// if (screens != null)
+        ///     await screens.SetRoot("MainMenu");
+        /// </code>
+        /// </summary>
+        public static async Task<ScreenManager> WhenReadyAsync(CancellationToken ct = default)
+        {
+            Task<ScreenManager> ready = readySource.Task;
+            if (ready.IsCompleted || !ct.CanBeCanceled)
+                return await ready;
+
+            TaskCompletionSource<bool> cancelled = new();
+            using (ct.Register(() => cancelled.TrySetResult(true)))
+            {
+                if (await Task.WhenAny(ready, cancelled.Task) != ready)
+                    throw new OperationCanceledException(ct);
+            }
+
+            return await ready;
+        }
+
+        internal static void ReportReady(ScreenManager manager)
+            => readySource.TrySetResult(manager);
+
+        /// <summary>Called when Screen System can't start, so WhenReadyAsync returns null instead of waiting forever.</summary>
+        internal static void ReportNotAvailable()
+            => readySource.TrySetResult(null);
 
         [Header("Quit")] [SerializeField] private string quitConfirmationModalId = "QuitConfirmation";
 
@@ -34,7 +73,11 @@ namespace ScreenSystem
         private TaskCompletionSource<bool> initializationCompletionSource = new();
         private CancellationTokenSource initializationCts;
 
-        /// <summary>The active manager. It is null until Start() has run, so wait for it before navigating.</summary>
+        /// <summary>
+        /// The active manager. Set in Awake: the ScreenSystem prefab is created before the first scene loads, so it's
+        /// already set when scene objects run their Awake. It may not be initialized yet; use
+        /// <see cref="WhenReadyAsync"/> to wait for both.
+        /// </summary>
         public static ScreenManager Instance
             => instance;
 
@@ -46,24 +89,30 @@ namespace ScreenSystem
         public Task<bool> WaitForInitializationAsync()
             => initializationCompletionSource.Task;
 
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            instance = this;
+        }
+
         private async void Start()
         {
+            if (instance != this)
+                return;
+
             try
             {
-                if (instance != null && instance != this)
-                {
-                    Destroy(gameObject);
-                    return;
-                }
-
-                instance = this;
-
-
                 await InitializeScreenSystemAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Debug.LogException(ex);
+                ReportNotAvailable();
             }
         }
 
@@ -85,6 +134,7 @@ namespace ScreenSystem
                     if (Debug.isDebugBuild)
                         Debug.LogError($"[ScreenManager] Initialization failed: {initializationError}");
                     initializationCompletionSource.TrySetResult(false);
+                    ReportNotAvailable();
                     return;
                 }
 
@@ -111,6 +161,7 @@ namespace ScreenSystem
                 SceneManager.sceneLoaded += OnSceneLoaded;
                 isInitialized = true;
                 initializationCompletionSource.TrySetResult(true);
+                ReportReady(this);
             }
             catch (Exception ex)
             {
@@ -121,6 +172,7 @@ namespace ScreenSystem
                     Debug.LogError($"[ScreenManager] Initialization exception: {ex.Message}\n{ex.StackTrace}");
 
                 initializationCompletionSource.TrySetResult(false);
+                ReportNotAvailable();
             }
         }
 

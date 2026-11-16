@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using ScreenSystem;
 using UnityEngine;
 
@@ -11,11 +10,9 @@ public class SampleBoot : MonoBehaviour
     {
         try
         {
-            while (ScreenManager.Instance == null)
-                await Task.Yield();
-
-            await ScreenManager.Instance.WaitForInitializationAsync();
-            await ScreenManager.Instance.SetRoot(firstScreen);
+            ScreenManager screens = await ScreenManager.WhenReadyAsync();
+            if (screens != null)
+                await screens.SetRoot(firstScreen);
         }
         catch (Exception exception)
         {

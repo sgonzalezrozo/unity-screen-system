@@ -6,6 +6,7 @@ All notable changes to this package are documented in this file.
 
 ### Added
 
+- `ScreenManager.WhenReadyAsync()` waits until Screen System is ready and returns the manager, or `null` if it failed or isn't set up. It replaces polling `ScreenManager.Instance` and then awaiting `WaitForInitializationAsync()`.
 - `GoTo(screen, value)` passes a typed value to the screen. Every component on its layers that implements `IScreenParameter<T>` gets it once, before the layers are shown, including shared layers that are already visible. Back doesn't deliver it again, and Screen System doesn't keep it.
 - `CloseAll()` hides every screen, modal and alert and empties the stack, to return to UI that Screen System doesn't manage.
 - **Quit On Back At Root** in `ScreenSystemSettings`. Off, back at the root only raises `NavigationEvents.OnBackAtRoot`, for projects migrating one menu at a time.
@@ -34,6 +35,7 @@ All notable changes to this package are documented in this file.
 
 ### Changed
 
+- `ScreenManager.Instance` is set in `Awake` instead of `Start`, so it's available when the first scene's objects run `Awake`.
 - **Breaking:** the unused `ScreenParameters` component, `IScreenParameters` and the key/value `ScreenParameter` class are removed. Use `GoTo(screen, value)` and `IScreenParameter<T>`.
 - The screen wizard creates `Feature/Screen/Screen.prefab` and `Feature/Services/Screen.asset` instead of `Screens/` and `Prefabs/` folders, sets each screen's type, marks the prefab Addressable, fills in its asset path and registers it. For UI Toolkit it creates the UXML and assigns it and the `GlobalPanelSettings`.
 - The registry updates itself when a `ScreenDefinition` is created, deleted, moved or renamed, and warns about duplicate names and IDs. **Rebuild Registry Cache** is now a repair tool.
