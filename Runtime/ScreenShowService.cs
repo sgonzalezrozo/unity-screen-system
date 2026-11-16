@@ -17,6 +17,10 @@ namespace ScreenSystem
         private readonly ScreenLayerRetriever layerRetriever;
         private readonly ScreenCacheManager cacheManager;
 
+        // Set by the navigator for the GoTo that carries a value; taken by the first show of that screen.
+        private string pendingParameterScreenId;
+        private ScreenParameter pendingParameter;
+
         public ScreenShowService(
             ScreenRegistry screenRegistry,
             LayerFactory layerFactory,
@@ -32,6 +36,23 @@ namespace ScreenSystem
             contentLoader = new ScreenContentLoader();
             blurHandler = new ScreenBlurHandler(blurService);
             layerRetriever = new ScreenLayerRetriever(layerFactory, cacheManager);
+        }
+
+        public void SetPendingParameter(string screenId, ScreenParameter parameter)
+        {
+            pendingParameterScreenId = parameter != null ? screenId : null;
+            pendingParameter = parameter;
+        }
+
+        private ScreenParameter TakePendingParameter(string screenId)
+        {
+            if (pendingParameter == null || pendingParameterScreenId != screenId)
+                return null;
+
+            ScreenParameter parameter = pendingParameter;
+            pendingParameter = null;
+            pendingParameterScreenId = null;
+            return parameter;
         }
 
         public async Task ShowScreenAsync(string screenId, bool autoHideParents = true, CancellationToken ct = default)
@@ -87,6 +108,9 @@ namespace ScreenSystem
                 await contentLoader.WaitForAllLayersContentLoadedAsync(layers, ct);
 
                 ct.ThrowIfCancellationRequested();
+
+                // Before activation, so OnScreenShown and the first drawn frame already have the value.
+                TakePendingParameter(screenId)?.DeliverAndReport(screenId, layers);
 
                 using (ScreenSystemMarkers.ActivateLayers.Auto())
                     layerPreparer.ActivateLayers(layers, screenId);

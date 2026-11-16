@@ -28,9 +28,33 @@ namespace ScreenSystem
         }
 
         public Task<bool> GoToAsync(string screenId, CancellationToken ct = default)
-            => GoToAsync(screenId, NavigationHistory.Push, ct);
+            => GoToAsync(screenId, NavigationHistory.Push, null, ct);
 
-        public async Task<bool> GoToAsync(string screenId, NavigationHistory history, CancellationToken ct = default)
+        public Task<bool> GoToAsync(string screenId, NavigationHistory history, CancellationToken ct = default)
+            => GoToAsync(screenId, history, null, ct);
+
+        /// <summary>
+        /// Opens a screen. A non-null <paramref name="parameter"/> is delivered once to the screen's layers when it
+        /// shows, or right away when it's already showing on top. It's never kept after this call.
+        /// </summary>
+        public async Task<bool> GoToAsync(string screenId, NavigationHistory history, ScreenParameter? parameter, CancellationToken ct = default)
+        {
+            if (parameter == null)
+                return await GoToCoreAsync(screenId, history, null, ct);
+
+            displayService.SetPendingParameter(screenId, parameter);
+            try
+            {
+                return await GoToCoreAsync(screenId, history, parameter, ct);
+            }
+            finally
+            {
+                // Delivered or not (blocked, failed, cancelled), the value isn't kept for a later show.
+                displayService.SetPendingParameter(screenId, null);
+            }
+        }
+
+        private async Task<bool> GoToCoreAsync(string screenId, NavigationHistory history, ScreenParameter? parameter, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(screenId))
             {
@@ -57,10 +81,17 @@ namespace ScreenSystem
             }
 
             if (history == NavigationHistory.ClearToRoot)
-                return await GoToClearingToRootAsync(screenId, screen, ct);
+                return await GoToClearingToRootAsync(screenId, screen, parameter, ct);
 
             if (screen.screenType == ScreenType.alert)
                 return await ShowAlertScreenAsync(screenId, ct);
+
+            // Already showing on top: there's nothing to show again, but a value passed with GoTo still arrives.
+            if (parameter != null && IsShowingOnTop(screenId, screen))
+            {
+                displayService.DeliverParameter(screenId, parameter);
+                return true;
+            }
 
             bool isAlreadyShown = navigationStack.MainHistoryContains(screenId);
 
@@ -115,7 +146,15 @@ namespace ScreenSystem
         }
 
         // Pops every screen above the root and opens the target over it, without showing the root on the way.
-        private async Task<bool> GoToClearingToRootAsync(string screenId, ScreenDefinition screen, CancellationToken ct)
+        private bool IsShowingOnTop(string screenId, ScreenDefinition screen)
+        {
+            bool onTop = screen.screenType == ScreenType.modal
+                ? navigationStack.GetCurrentModal() == screenId
+                : navigationStack.PeekMainScreen() == screenId && !navigationStack.HasModal;
+            return onTop && IsScreenCurrentlyVisible(screenId);
+        }
+
+        private async Task<bool> GoToClearingToRootAsync(string screenId, ScreenDefinition screen, ScreenParameter? parameter, CancellationToken ct)
         {
             if (screen.screenType != ScreenType.fullscreen)
             {
@@ -133,7 +172,7 @@ namespace ScreenSystem
 
             string root = navigationStack.GetRootScreen();
             if (navigationStack.MainHistoryCount == 0 || string.IsNullOrEmpty(root))
-                return await GoToAsync(screenId, NavigationHistory.Push, ct);
+                return await GoToCoreAsync(screenId, NavigationHistory.Push, parameter, ct);
 
             if (root == screenId)
                 return await PopToAsync(screenId, ct);
@@ -159,6 +198,8 @@ namespace ScreenSystem
 
             if (alreadyVisibleOnTop)
             {
+                if (parameter != null)
+                    displayService.DeliverParameter(screenId, parameter);
                 NavigationEvents.NotifyNavigationCompleted(screenId);
                 return true;
             }

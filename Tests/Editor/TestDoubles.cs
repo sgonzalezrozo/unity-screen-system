@@ -13,11 +13,20 @@ namespace ScreenSystem.Tests
         public readonly HashSet<string> Instantiated = new();
         public TaskCompletionSource<bool> PendingShow;
         public bool ThrowIfCancelled;
+        public string PendingParameterScreenId;
+        public ScreenParameter PendingParameter;
 
         public async Task ShowScreen(string screenId, bool autoHideParents = true, CancellationToken ct = default)
         {
             if (ThrowIfCancelled)
                 ct.ThrowIfCancellationRequested();
+
+            if (PendingParameter != null && PendingParameterScreenId == screenId)
+            {
+                Calls.Add($"param:{screenId}");
+                PendingParameter = null;
+                PendingParameterScreenId = null;
+            }
 
             Calls.Add($"show:{screenId}");
             Instantiated.Add(screenId);
@@ -39,6 +48,15 @@ namespace ScreenSystem.Tests
         public bool IsScreenInstantiated(string screenId) => Instantiated.Contains(screenId);
         public Dictionary<string, List<LayerComponent>> GetCachedScreens() => new();
         public void ClearCachedScreens() => Instantiated.Clear();
+
+        public void SetPendingParameter(string screenId, ScreenParameter parameter)
+        {
+            PendingParameterScreenId = parameter != null ? screenId : null;
+            PendingParameter = parameter;
+        }
+
+        public void DeliverParameter(string screenId, ScreenParameter parameter)
+            => Calls.Add($"param-now:{screenId}");
     }
 
     /// <summary>Builds an in-memory registry. Dispose destroys the created assets.</summary>

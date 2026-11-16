@@ -16,6 +16,12 @@ namespace ScreenSystem
         bool IsScreenInstantiated(string screenId);
         Dictionary<string, List<LayerComponent>> GetCachedScreens();
         void ClearCachedScreens();
+
+        /// <summary>The next show of <paramref name="screenId"/> delivers <paramref name="parameter"/> to its layers. Null clears it.</summary>
+        void SetPendingParameter(string screenId, ScreenParameter parameter);
+
+        /// <summary>Delivers <paramref name="parameter"/> now to the layers of a screen that's already showing.</summary>
+        void DeliverParameter(string screenId, ScreenParameter parameter);
     }
 }
 

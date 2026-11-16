@@ -81,7 +81,6 @@ Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mo
 **Consider something else if you:**
 
 - Have only a few screens and simple scene changes
-- Need to pass data through navigation calls. `GoTo` takes only a screen ID for now.
 
 ## Adopt it in a project that already has UI
 
@@ -383,6 +382,38 @@ await ScreenManager.Instance.GoBack(); // Closes the modal.
 - One modal is open at a time. Calling `GoTo` for another new screen fails until the modal closes.
 - Calling `GoTo` for a screen already in the stack closes the modal and returns to that screen.
 
+### Pass a value to a screen
+
+Pass any type with `GoTo`. Every component on the screen's layers that implements `IScreenParameter<T>` for that type gets it, so a list on a background layer and a title on the top bar can both read it:
+
+```csharp
+public readonly struct EnemyListRequest
+{
+    public readonly int FirstEnemy;
+    public EnemyListRequest(int firstEnemy) => FirstEnemy = firstEnemy;
+}
+
+await ScreenManager.Instance.GoTo("ShopMain", new EnemyListRequest(60));
+```
+
+```csharp
+public class EnemyList : MonoBehaviour, IScreenParameter<EnemyListRequest>, IScreenShow
+{
+    private int firstEnemy;
+
+    public void OnScreenParameter(EnemyListRequest request) => firstEnemy = request.FirstEnemy;
+    public void OnScreenShown() => Fill(firstEnemy);
+}
+```
+
+- **Once per `GoTo`:** each receiver gets the value once, before the layers are shown, so `OnScreenShown` and the first frame already have it. Shared layers that are already visible get it too, although their `OnScreenShown` doesn't run again.
+- **Already open:** `GoTo` with a value for the screen that's already showing on top delivers it right away instead of ignoring the call.
+- **Not kept:** `GoBack` and `PopTo` don't deliver it again, and Screen System drops it after the call, so it never holds your objects in memory. Store what the screen needs. A blocked or cancelled `GoTo` drops it too.
+- **Typed:** there's no casting. If no component on the screen takes that type, the console warns, naming the screen and the type.
+- **Values or state:** use a value for what this navigation is about, such as which item to show. Keep state that several screens share in a Model.
+
+`GoTo(screen, value, NavigationHistory.ClearToRoot)` combines it with clearing the stack.
+
 ### Switch tabs from a bottom bar
 
 Make the bottom bar a layer that each tab screen lists, so it's shared and stays on screen. Its buttons clear the history above the root, so back from any tab returns home instead of walking through the tabs:
@@ -476,6 +507,7 @@ await screens.SetRoot("Lobby");
 | Member | Purpose |
 |---|---|
 | `GoTo(screen)` | Open a screen. For a screen already in the stack, return to it like `PopTo`. |
+| `GoTo(screen, value)` | Open a screen and pass a value to every `IScreenParameter<T>` on its layers |
 | `GoTo(screen, NavigationHistory.ClearToRoot)` | Remove every screen above the root, then open a fullscreen screen over it. For tab bars. |
 | `GoBack()` | Return to the previous screen |
 | `PopTo(screen)` | Return to a screen already in the stack |
@@ -634,7 +666,7 @@ A cached screen shows in 2.6 ms on a Pixel 5 and 3.9 ms on a Galaxy A02s, and me
 
 ### Can I pass parameters to a screen?
 
-Not through navigation calls yet. Put shared data in a model the screen reads. See [Limitations](#limitations).
+Yes. Pass any type with `GoTo(screen, value)`, and implement `IScreenParameter<T>` on the components that need it, on any layer of the screen. See [Pass a value to a screen](#pass-a-value-to-a-screen).
 
 ### Does it work with dependency injection? Do I need Fast IoC?
 
@@ -692,7 +724,7 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 ## Limitations
 
-- Navigation calls can't pass parameters to a screen, and modals can't return a result through `GoTo`.
+- Modals can't return a result through `GoTo`. Write the result to a Model.
 - Screens are requested by string, so typos are only caught at runtime.
 - Navigation calls made while another is running are ignored, not queued.
 

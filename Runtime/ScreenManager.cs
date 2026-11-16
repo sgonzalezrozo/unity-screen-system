@@ -181,7 +181,22 @@ namespace ScreenSystem
         /// Opens a screen by name or ID. With <see cref="NavigationHistory.ClearToRoot"/>, every screen above the
         /// root is removed first, as a tab bar does. Returns false if the call is ignored or blocked.
         /// </summary>
-        public async Task<bool> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default)
+        public Task<bool> GoTo(string screenId, NavigationHistory history, CancellationToken ct = default)
+            => GoToWithParameter(screenId, history, null, ct);
+
+        /// <summary>
+        /// Opens a screen and passes it a value. Every component on the screen's layers that implements
+        /// <see cref="IScreenParameter{T}"/> gets it once, before the layers are shown. GoBack and PopTo don't pass
+        /// it again, and Screen System doesn't keep it.
+        /// </summary>
+        public Task<bool> GoTo<T>(string screenId, T parameter, CancellationToken ct = default)
+            => GoToWithParameter(screenId, NavigationHistory.Push, ScreenParameter.Create(parameter), ct);
+
+        /// <summary>Opens a screen, passes it a value, and with ClearToRoot removes every screen above the root first.</summary>
+        public Task<bool> GoTo<T>(string screenId, T parameter, NavigationHistory history, CancellationToken ct = default)
+            => GoToWithParameter(screenId, history, ScreenParameter.Create(parameter), ct);
+
+        private async Task<bool> GoToWithParameter(string screenId, NavigationHistory history, ScreenParameter parameter, CancellationToken ct)
         {
             if (!IsReady(nameof(GoTo)))
                 return false;
@@ -192,7 +207,7 @@ namespace ScreenSystem
                 return false;
             }
 
-            bool result = await navigationService.GoToAsync(resolvedId, history, ct);
+            bool result = await navigationService.GoToAsync(resolvedId, history, parameter, ct);
             return result;
         }
 

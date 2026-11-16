@@ -35,7 +35,7 @@ Also: `CanGoBack`, `GetCurrentScreen()`, `DismissAlert()`, `IsAlertActive`, `IsT
 - `ScreenManager.Instance` is set in `Start()`. At boot, wait until it's not `null`, then `await ScreenManager.Instance.WaitForInitializationAsync()` before the first `SetRoot`.
 - Wrap `async void` Unity methods in `try`/`catch` and log the exception.
 - A tab bar is a layer shared by the tab screens. Its buttons call `GoTo(tab, NavigationHistory.ClearToRoot)`, so back returns to the root instead of walking through tabs. It works for fullscreen screens only.
-- Navigation can't pass parameters to a screen. Put shared data in a Model the screen reads.
+- Pass what a navigation is about with `GoTo(screen, value)`; components on any of the screen's layers receive it by implementing `IScreenParameter<T>` (`OnScreenParameter(T value)`), once, before `OnScreenShown`. It isn't delivered again on back and Screen System doesn't keep it, so the component stores what it needs. Keep state shared by several screens in a Model.
 
 ## React to a screen
 

@@ -203,6 +203,12 @@ namespace ScreenSystem
         public List<LayerComponent> GetScreenLayers(string screenId)
             => cacheManager.GetScreenLayers(screenId);
 
+        public void SetPendingParameter(string screenId, ScreenParameter parameter)
+            => showService.SetPendingParameter(screenId, parameter);
+
+        public void DeliverParameter(string screenId, ScreenParameter parameter)
+            => parameter?.DeliverAndReport(screenId, cacheManager.GetScreenLayers(screenId));
+
         public void DestroyScreen(string screenId)
         {
             ScreenDefinition screen = screenRegistry.GetScreen(screenId);

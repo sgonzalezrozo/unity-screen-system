@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ToolsCore;
@@ -43,6 +44,9 @@ namespace ScreenSystem
         private ILayerContentLoader contentLoader;
 
         private IScreenShow[] cachedShowComponents;
+
+        // IScreenParameter<T>[] per T, found the first time a value of that type arrives.
+        private Dictionary<Type, Array> parameterReceivers;
         private IScreenHide[] cachedHideComponents;
 
         public string LayerName
@@ -322,6 +326,36 @@ namespace ScreenSystem
                 canvasController?.Show();
             else
                 uiDocumentController?.Show();
+        }
+
+        /// <summary>Gives the value to every IScreenParameter&lt;T&gt; on this layer. Returns how many got it.</summary>
+        internal int DeliverParameter<T>(T value)
+        {
+            parameterReceivers ??= new Dictionary<Type, Array>();
+            if (!parameterReceivers.TryGetValue(typeof(T), out Array cached))
+            {
+                cached = gameObject.GetComponentsInChildren<IScreenParameter<T>>(includeInactive: true);
+                parameterReceivers[typeof(T)] = cached;
+            }
+
+            IScreenParameter<T>[] receivers = (IScreenParameter<T>[])cached;
+            using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.LifecycleCallbacks.Auto();
+            for (int i = 0; i < receivers.Length; i++)
+            {
+                if (receivers[i] == null)
+                    continue;
+
+                try
+                {
+                    receivers[i].OnScreenParameter(value);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[LayerComponent] {receivers[i].GetType().Name}.OnScreenParameter() failed: {ex.Message}\n{ex.StackTrace}", gameObject);
+                }
+            }
+
+            return receivers.Length;
         }
 
         public void Show()

@@ -1,0 +1,18 @@
+{
+    "name": "ScreenSystem.Tests.Runtime",
+    "rootNamespace": "ScreenSystem.Tests",
+    "references": [
+        "ScreenSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
