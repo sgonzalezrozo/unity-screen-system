@@ -958,8 +958,7 @@ Bug reports and pull requests are welcome. Please open an issue before starting 
 | Package | Purpose |
 |---|---|
 | [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) | Code-generated dependency injection |
-| [UI Tweens](https://github.com/sgonzalezrozo/unity-ui-tweens) | ECS-based UI animation |
-| [Recyclable Scroller](https://github.com/sgonzalezrozo/unity-recyclable-scroller) | Virtualized lists |
+| [Slot List](https://github.com/sgonzalezrozo/unity-recyclable-scroller) | Virtualized lists |
 | [Enhanced Console](https://github.com/sgonzalezrozo/unity-enhanced-console) | Unity Editor log triage |
 | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) | Shared injection code, required by this package |
 
