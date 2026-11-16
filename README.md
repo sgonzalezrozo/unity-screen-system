@@ -496,14 +496,12 @@ await ScreenManager.Instance.DismissAlert();
 
 ### One modal and one alert at a time
 
-This is a design decision for now:
+Screen System is designed this way:
 
 - **One modal:** while a modal is open, `GoTo` for another new screen or modal fails. Close it first, or show the next step inside the same modal. Your code decides what happens to the previous modal; Screen System doesn't stack them.
 - **One alert:** an alert opens over everything, including the modal, and blocks navigation until `DismissAlert()`. A second alert can't open over it.
 - **Why:** at most one fullscreen, one modal and one alert render at once, which keeps overdraw low, and back always has one obvious thing to close.
 - **A full-screen overlay outside the stack** is a modal whose prefab covers the screen. It still counts as the one modal.
-
-Opening several modals at once may be supported in a later version.
 
 ### Show a screen over a modal or alert
 
@@ -795,7 +793,6 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 
 ## Limitations
 
-- One modal and one alert at a time, by design for now. See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
 - Modals can't return a result through `GoTo`. Write the result to a Model.
 - Screens are requested by string, so typos are only caught at runtime.
 - Navigation calls made while another is running are ignored, not queued.
