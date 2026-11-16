@@ -34,6 +34,14 @@ namespace ScreenSystem
         public bool HasBackdrop
             => backdrop != null;
 
+        /// <summary>True while the blurred snapshot replaces the screen behind a modal or alert.</summary>
+        public bool IsSnapshotVisible
+            => backdrop != null && backdrop.IsSnapshotVisible;
+
+        /// <summary>True while the dim sits between a modal and the alert over it.</summary>
+        public bool IsDimVisible
+            => backdrop != null && backdrop.IsDimVisible;
+
         /// <summary>Number of open overlays (modals and alerts) with a backdrop.</summary>
         public int OverlayCount
             => overlays.Count;

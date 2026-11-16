@@ -274,6 +274,11 @@ namespace ScreenSystem
         public LayerFactory GetLayerFactory()
             => layerFactory;
 
+#if UNITY_EDITOR
+        public BlurBackgroundService GetBlurServiceForEditor()
+            => blurService;
+#endif
+
         public ScreenCacheManager GetCacheManager()
             => cacheManager;
 

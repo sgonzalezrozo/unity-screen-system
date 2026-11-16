@@ -407,6 +407,30 @@ namespace ScreenSystem
 
         public List<string> GetModalHistoryForEditor()
             => serviceInitializer?.NavigationService?.GetModalHistoryForEditor() ?? new List<string>();
+
+        public string GetAlertForEditor()
+        {
+            List<string> alerts = serviceInitializer?.NavigationService?.GetAlertHistoryForEditor();
+            return alerts != null && alerts.Count > 0 ? alerts[0] : null;
+        }
+
+        public string GetRunningOperationForEditor()
+            => serviceInitializer?.NavigationService?.CurrentOperationForEditor;
+
+        public bool IsSnapshotBackdropVisibleForEditor
+            => serviceInitializer?.DisplayService?.GetBlurServiceForEditor()?.IsSnapshotVisible ?? false;
+
+        public bool IsDimBackdropVisibleForEditor
+            => serviceInitializer?.DisplayService?.GetBlurServiceForEditor()?.IsDimVisible ?? false;
+
+        public bool QuitsOnBackAtRootForEditor
+            => QuitsOnBackAtRoot;
+
+        /// <summary>The quit confirmation modal's name, when the registry has it; otherwise null and back at the root quits.</summary>
+        public string GetQuitConfirmationForEditor()
+            => !string.IsNullOrEmpty(quitConfirmationModalId) && serviceInitializer?.Registry?.GetScreen(quitConfirmationModalId) != null
+                ? quitConfirmationModalId
+                : null;
 #endif
 
         private void OnDestroy()

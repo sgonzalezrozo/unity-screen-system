@@ -12,7 +12,7 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
         private Vector2 windowScrollPosition;
         private double lastRepaintTime;
 
-        private ScreenHierarchyPanel hierarchyPanel;
+        private ScreenMonitorPanel monitorPanel;
         private ScreenMetricsPanel metricsPanel;
         private GUIStyle headerStyle;
 
@@ -27,7 +27,7 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
         private void OnEnable()
         {
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
-            hierarchyPanel = new ScreenHierarchyPanel();
+            monitorPanel = new ScreenMonitorPanel();
             metricsPanel = new ScreenMetricsPanel();
             lastRepaintTime = EditorApplication.timeSinceStartup;
         }
@@ -40,7 +40,7 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
         private void OnPlayModeChanged(PlayModeStateChange state)
         {
             screenManager = null;
-            hierarchyPanel?.Reset();
+            monitorPanel?.Reset();
             metricsPanel?.Reset();
             Repaint();
         }
@@ -62,17 +62,13 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
             if (screenManager == null)
             {
                 EditorGUILayout.Space(20);
-                EditorGUILayout.HelpBox("No ScreenManager instance found in the scene.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No ScreenManager yet. Run Tools > Screen System > Setup if it doesn't appear.", MessageType.Warning);
                 return;
             }
 
             windowScrollPosition = EditorGUILayout.BeginScrollView(windowScrollPosition);
 
-            metricsPanel.DrawDebugToolsSection(screenManager);
-            EditorGUILayout.Space(5);
-            metricsPanel.DrawLegend();
-            EditorGUILayout.Space(5);
-            hierarchyPanel.DrawScreenStackSection(screenManager, screenManager.GetRegistryForEditor());
+            monitorPanel.Draw(screenManager);
             EditorGUILayout.Space(10);
             DrawMetricsFoldout();
 
@@ -92,13 +88,15 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
                 normal = { textColor = new Color(0.8f, 0.9f, 1f) }
             };
 
-            hierarchyPanel.Initialize(headerStyle);
+            monitorPanel.Initialize(headerStyle);
             metricsPanel.Initialize();
         }
 
+        private bool metricsFoldout;
+
         private void DrawMetricsFoldout()
         {
-            bool metricsFoldout = EditorGUILayout.Foldout(true, "PERFORMANCE METRICS", true, headerStyle);
+            metricsFoldout = EditorGUILayout.Foldout(metricsFoldout, "PERFORMANCE METRICS", true, headerStyle);
             if (metricsFoldout)
                 metricsPanel.DrawMetricsSection();
         }

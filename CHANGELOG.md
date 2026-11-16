@@ -36,6 +36,7 @@ All notable changes to this package are documented in this file.
 
 ### Changed
 
+- The Screen Manager window shows what the next back does, what's rendering from front to back (including the blurred snapshot and the dim), and the back stack down to the root with what back does at each step. Layers show whether they render, are hidden or are suspended behind the blur, and which are shared. Buttons for Back, Dismiss Alert, Close All and Pop To.
 - `ScreenManager.Instance` is set in `Awake` instead of `Start`, so it's available when the first scene's objects run `Awake`.
 - **Breaking:** the unused `ScreenParameters` component, `IScreenParameters` and the key/value `ScreenParameter` class are removed. Use `GoTo(screen, value)` and `IScreenParameter<T>`.
 - The screen wizard creates `Feature/Screen/Screen.prefab` and `Feature/Services/Screen.asset` instead of `Screens/` and `Prefabs/` folders, sets each screen's type, marks the prefab Addressable, fills in its asset path and registers it. For UI Toolkit it creates the UXML and assigns it and the `GlobalPanelSettings`.

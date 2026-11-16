@@ -209,6 +209,10 @@ namespace ScreenSystem
         }
 
 #if UNITY_EDITOR
+        /// <summary>The navigation call running now, such as "GoTo(Shop)", or null.</summary>
+        public string CurrentOperationForEditor
+            => isNavigating ? currentOperation : null;
+
         public List<string> GetHistoryForEditor()
             => navigationStack.GetMainHistorySnapshot();
 

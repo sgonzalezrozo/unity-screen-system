@@ -4,3 +4,4 @@ using System.Runtime.CompilerServices;
 // of this assembly directly, without reflection.
 [assembly: InternalsVisibleTo("Assembly-CSharp")]
 [assembly: InternalsVisibleTo("ScreenSystem.Tests.Editor")]
+[assembly: InternalsVisibleTo("ScreenSystem.Editor")]

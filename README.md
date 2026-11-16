@@ -634,7 +634,7 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 |---|---|
 | `Tools/Screen System/Setup` | Create the required project assets |
 | `Tools/Screen System/Rebuild Registry Cache` | Repair the registry. It already updates when `ScreenDefinition` assets change. |
-| `Tools/Screen System/Screen Manager Window` | Inspect the live stack, screens and metrics |
+| `Tools/Screen System/Screen Manager Window` | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
 | `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
 | `Assets/Screen System/New Screen Feature` | Create a feature with its screens, ready for `GoTo` |
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |

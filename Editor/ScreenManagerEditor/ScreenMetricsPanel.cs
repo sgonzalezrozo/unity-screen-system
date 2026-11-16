@@ -27,39 +27,6 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
             metricsInitialized = true;
         }
 
-        public void DrawDebugToolsSection(ScreenManager screenManager)
-        {
-            EditorGUILayout.BeginVertical("box");
-
-            DrawSectionHeader("DEBUG TOOLS");
-            EditorGUILayout.Space(3);
-
-            EditorGUILayout.EndVertical();
-        }
-
-        public void DrawLegend()
-        {
-            EditorGUILayout.BeginVertical("box");
-
-            GUIStyle legendTitleStyle = new(EditorStyles.miniLabel)
-            {
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = new Color(0.8f, 0.8f, 0.8f) }
-            };
-            EditorGUILayout.LabelField("Legend", legendTitleStyle);
-
-            EditorGUILayout.BeginHorizontal();
-
-            DrawLegendItem(new Color(1f, 0.8f, 0f), "\u25CF Active");
-            DrawLegendItem(new Color(0.4f, 0.9f, 0.4f), "\u25CF Visible");
-            DrawLegendItem(new Color(0.5f, 0.5f, 0.5f), "\u25CB Hidden");
-
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.EndVertical();
-        }
-
         public void DrawMetricsSection()
         {
             EditorGUILayout.BeginVertical("box");
@@ -111,16 +78,6 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
         public void Reset()
         {
             metricsInitialized = false;
-        }
-
-        private void DrawLegendItem(Color color, string label)
-        {
-            GUIStyle style = new(EditorStyles.miniLabel)
-            {
-                normal = { textColor = color },
-                margin = new RectOffset(4, 8, 0, 0)
-            };
-            EditorGUILayout.LabelField(label, style, GUILayout.Width(90));
         }
 
         private void DrawSectionHeader(string label)
