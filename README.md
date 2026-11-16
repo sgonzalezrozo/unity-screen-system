@@ -560,6 +560,14 @@ await screens.SetRoot("Lobby");
 | `IsTransitioning` | Check whether a navigation call is running |
 | `GetCurrentScreen()` | Get the current screen ID |
 
+Prefer the generated constants, which are checked at compile time:
+
+```csharp
+await screens.GoTo(ScreenIds.ShopDetail);
+```
+
+`ScreenIds` has one constant per screen, named after it and holding its ID. It's regenerated when a `ScreenDefinition` is created, renamed or deleted, so a renamed or deleted screen breaks the code that uses it at compile time instead of failing at runtime. **Generate Screen IDs** and **Screen IDs Path** in `ScreenSystemSettings` turn it off or move it; put it inside your assembly definition's folder if your code is in one.
+
 Each `screen` argument can be the screen's name or its ID. The name comes from the prefab, such as `ShopMain`. The ID survives renames, and the wizard creates it from the feature and screen names, such as `Shop_ShopMain`. Names must be unique, because the first match wins.
 
 ## Navigation behavior
@@ -794,7 +802,6 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 ## Limitations
 
 - Modals can't return a result through `GoTo`. Write the result to a Model.
-- Screens are requested by string, so typos are only caught at runtime.
 
 ## By design
 

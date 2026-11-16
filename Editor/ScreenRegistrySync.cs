@@ -28,6 +28,7 @@ namespace ScreenSystem.Editor
             {
                 syncQueued = false;
                 Sync(logChanges: true);
+                ScreenIdsGenerator.WriteIfChanged();
             };
         }
 

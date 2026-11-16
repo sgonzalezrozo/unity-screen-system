@@ -6,6 +6,7 @@ All notable changes to this package are documented in this file.
 
 ### Added
 
+- `ScreenIds`: a generated class with one constant per screen (`GoTo(ScreenIds.ShopMain)`), so typos and renamed or deleted screens are caught at compile time. It's regenerated when `ScreenDefinition`s change; turn it off or move it in `ScreenSystemSettings`, or run **Tools > Screen System > Generate Screen IDs**.
 - `ScreenAuthoring` (Editor) builds screens from code, for editor scripts and AI agents with editor tools: `CreateScreen`, `CreateLayer`, `AddLayer` with a placement, `RemoveLayer`, `GetLayers`, and `-executeMethod` entry points.
 - `ScreenManager.WhenReadyAsync()` waits until Screen System is ready and returns the manager, or `null` if it failed or isn't set up. It replaces polling `ScreenManager.Instance` and then awaiting `WaitForInitializationAsync()`.
 - `GoTo(screen, value)` passes a typed value to the screen. Every component on its layers that implements `IScreenParameter<T>` gets it once, before the layers are shown, including shared layers that are already visible. Back doesn't deliver it again, and Screen System doesn't keep it.
@@ -16,6 +17,7 @@ All notable changes to this package are documented in this file.
 
 ### Fixed
 
+- Layer components ran `Awake` and `OnEnable` before their dependencies were injected, and layers that already existed were injected again every time another screen used them. New layers are now created inactive, injected once, then activated. A registered `IPrefabInstantiator` owns injection and isn't followed by a second pass. In the Editor benchmark, injection per cold show went from 10.4 ms to 0.01 ms (median).
 - On WebGL, local Addressables loads tried to finish in the same frame with `WaitForCompletion`, which WebGL doesn't support for bundles. They stay asynchronous there.
 - The package didn't compile in a project without the Screen Capture and UI Elements built-in modules. They're now declared as dependencies.
 - The back key with no Screen System screen open quit the app, so a project with its own UI closed on Escape or Android back. It now does nothing.

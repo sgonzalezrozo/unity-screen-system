@@ -46,6 +46,15 @@ namespace ScreenSystem.ScriptableObjects
         [Range(0f, 10f)]
         public float MobileBlurStrength = 1.5f;
 
+        [Header("Generated Screen IDs")]
+        [Tooltip("Write a ScreenIds class with one constant per screen, regenerated when ScreenDefinitions change, so GoTo(ScreenIds.ShopMain) is checked at compile time.")]
+        public bool GenerateScreenIds = true;
+
+        public const string DefaultScreenIdsPath = "Assets/ScreenSystem/ScreenIds.cs";
+
+        [Tooltip("Where ScreenIds is written. If your code is in an assembly definition, put it inside that assembly's folder so the code can see it.")]
+        public string ScreenIdsPath = DefaultScreenIdsPath;
+
         [Header("Debug")]
         [Tooltip("Log level for screen system operations")]
         public LogLevel DefaultLogLevel = LogLevel.None;
