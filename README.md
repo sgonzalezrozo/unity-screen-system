@@ -830,6 +830,62 @@ Give the screen a modal or alert type on its `ScreenDefinition`, then open it wi
 
 In Unity, open **Window > Package Manager**, select **+ > Add package from git URL** and enter `https://github.com/sgonzalezrozo/unity-screen-system.git`. Install [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) first, because Unity doesn't install Git dependencies automatically. See [Installation](#installation).
 
+### Why is there a single ScreenManager? How do I test my code without it?
+
+A game has one UI, so there's one `ScreenManager`, created before the first scene loads and kept in DontDestroyOnLoad. `ScreenManager.Instance` is the entry point, and `await ScreenManager.WhenReadyAsync()` waits for it without polling. To test your own code, depend on `IScreenNavigationService`, which `ScreenManager` implements, and pass a fake in your tests. The package's own navigation logic is tested with fakes too, without the singleton.
+
+### Why are navigation calls ignored instead of queued while another runs?
+
+A navigation either happens now or it doesn't. A queue would replay taps the player made while a screen was loading, and could open screens they no longer want. A call made during a transition returns `Transitioning`; check `IsTransitioning` or the result if you need to know. See [By design](#by-design).
+
+### Why only one modal and one alert at a time?
+
+So at most one fullscreen screen, one modal and one alert render at once, and back always has one obvious thing to close. To show a next step, change the content of the open modal or close it first. A full-screen overlay outside the stack is a modal whose prefab covers the screen. See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
+
+### Why are there no screen transitions? How do I animate a screen?
+
+Transitions depend on each game's art direction, so Screen System doesn't impose any. Animate inside layers: start an intro from `OnScreenShown()` and an outro from `OnScreenHidden()`. A layer shared with the previous screen stays visible and doesn't get those callbacks again, so a top bar doesn't replay its intro on every screen.
+
+### Can a modal return a result, like a confirmation?
+
+Not through `GoTo`. The modal writes the result to a Model, or raises an event the caller listens to, and closes with `GoBack()`. Passing data *into* a screen is supported with `GoTo(screen, value)`.
+
+### How do I switch tabs from a bottom bar?
+
+Make the bar a layer shared by the tab screens, and call `GoTo(tab, NavigationHistory.ClearToRoot)` from its buttons. Back then returns to the root instead of walking through the tabs. Each tab doesn't keep its own stack. See [Switch tabs from a bottom bar](#switch-tabs-from-a-bottom-bar).
+
+### What does a navigation cost?
+
+On a Pixel 5, a screen whose prefabs are already loaded shows in about 3 ms, and one loaded for the first time in about 15 ms, plus your own components' work. Opening a modal adds a blurred snapshot of the screen below, about 0.3 ms of main-thread work, and the modal appears one frame later. Metrics and informational logs are compiled out of release builds. Measure your own screens with the [Benchmark sample](Samples~/Benchmark/README.md); numbers from someone else's screens are only a guide. See [Performance](#performance).
+
+### What happens to memory and AssetBundles?
+
+Each Addressables address has one handle, held while a screen uses it and released on a single scene load unless a kept screen needs it. AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes, because closing and reopening a bundle on every scene change leaked native memory on Android. In a game with a lot of UI content, the open bundles grow with the screens visited.
+
+### Do I have to use Addressables?
+
+Addressables is a dependency, but screens and layers can also load from a `Resources` folder: an asset path is tried in Resources first. The wizard marks prefabs Addressable unless they're in a `Resources` folder.
+
+### Can I migrate a project that already has hand-made UI?
+
+Yes, one menu at a time. Screen System stays out of the way until you open one of its screens, ignores the back key while none is open, and `CloseAll()` hands the screen back to your own UI. See [Adopt it in a project that already has UI](#adopt-it-in-a-project-that-already-has-ui).
+
+### Does it work on WebGL and iOS?
+
+Both are targets. A WebGL Development build was run in a browser: screens load from Addressables and navigation works, with layers always loading asynchronously there. iOS isn't verified yet. On both, apps don't quit themselves, so leave out the quit confirmation and turn off **Quit On Back At Root**.
+
+### Does it work with Screen Space - Camera or World Space canvases?
+
+It's built and tested for Screen Space - Overlay, the default **Canvas Render Mode** in `ScreenSystemSettings`. Other render modes aren't verified, and the blurred snapshot behind modals assumes overlay canvases.
+
+### How do I see what's on screen and what back will do?
+
+In Play Mode, open **Tools > Screen System > Screen Manager Window**. It shows what the next back does, what's rendering from front to back, and the back stack down to the root with each screen's layers. Each step also has a `ScreenSystem.*` profiler marker.
+
+### What's verified, and what isn't?
+
+Verified: the navigation rules, back stack, parameters, results and injection order, covered by Edit Mode tests (a GitHub Actions workflow runs them once a Unity license is added to the repository); memory, handles, render budget and timings on a Pixel 5 and a Samsung Galaxy A02s with IL2CPP; a WebGL build in a browser; and Enter Play Mode with domain reload off. Not verified yet: iOS, Screen Space - Camera canvases, Unity versions before 6, a shipped game, and the VContainer and Zenject adapters in a running game (they're compiled against those containers).
+
 ### Is it production-ready? Does anyone use it?
 
 Not yet. Screen System is a pre-release package (`0.x`) by a single author. It isn't used in a shipped game, and it has no other users yet, so expect rough edges and API changes before `1.0.0`. Bug reports are very welcome. See [Project status](#project-status).
