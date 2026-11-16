@@ -15,8 +15,6 @@ namespace ScreenSystem
 
         private readonly ScreenNavigationStack navigationStack;
         private readonly ScreenNavigator navigator;
-        private readonly ScreenModalNavigator modalNavigator;
-        private readonly ScreenVisibilityController visibilityController;
         private readonly ScreenRegistry screenRegistry;
         private readonly HashSet<string> alwaysKeptScreenIds = new();
 
@@ -25,8 +23,6 @@ namespace ScreenSystem
             this.screenRegistry = screenRegistry;
             navigationStack = new ScreenNavigationStack();
             navigator = new ScreenNavigator(screenRegistry, displayService, navigationStack, new AlertManager());
-            modalNavigator = new ScreenModalNavigator(displayService, navigationStack, screenRegistry);
-            visibilityController = new ScreenVisibilityController(displayService);
         }
 
         public bool CanGoBack
@@ -94,40 +90,6 @@ namespace ScreenSystem
             {
                 return await navigator.DismissAlertAsync(ct);
             });
-        }
-
-        public async Task HideAllScreensAsync(CancellationToken ct = default)
-        {
-            await visibilityController.HideAllScreensAsync(ct);
-        }
-
-        public async Task RestoreAllScreensAsync(CancellationToken ct = default)
-        {
-            await visibilityController.RestoreAllScreensAsync(ct);
-        }
-
-        public async Task NavigateFromModalToScreenAsync(string fullscreenId, CancellationToken ct = default)
-        {
-            if (string.IsNullOrEmpty(fullscreenId))
-            {
-                Debug.LogError("[ScreenNav] NavigateFromModalToScreenAsync failed: fullscreenId is null or empty");
-                return;
-            }
-
-            if (navigationStack.HasModal)
-            {
-                string activeModal = navigationStack.DismissModalScreen();
-                try
-                {
-                    await modalNavigator.HideModalAsync(activeModal, ct);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[ScreenNav] Failed to dismiss modal during redirect: {ex.Message}");
-                }
-            }
-
-            await GoToAsync(fullscreenId, ct);
         }
 
         /// <summary>Screens kept on scene changes even without Persist Over Scenes, by ID.</summary>
