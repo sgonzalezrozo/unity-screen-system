@@ -812,7 +812,7 @@ Yes. Pass any type with `GoTo(screen, value)`, and implement `IScreenParameter<T
 
 ### Does it work with dependency injection? Do I need Fast IoC?
 
-It works with any container, or none. Screen System depends only on the injection interfaces in Tools Core. Fast IoC registers itself; for Zenject, VContainer or your own container, implement those two interfaces. See [Dependency injection](#dependency-injection).
+It works with any container, or none. Screen System depends only on the injection interfaces in Tools Core. Fast IoC registers itself, VContainer takes `builder.UseToolsCore()` and Zenject takes `ToolsCoreInstaller`, both from Tools Core 0.4.0. Layers are injected once, before their `Awake`. See [Dependency injection](#dependency-injection).
 
 ### Does it work with AI coding agents?
 
@@ -845,11 +845,15 @@ Screen System doesn't depend on any container. It only uses the two interfaces i
 | Interface | What Screen System does with it |
 |---|---|
 | `IPrefabInstantiator` | Creates each layer from its prefab |
-| `IMonoBehaviourInjector` | Injects the components of each new layer and its content |
+| `IMonoBehaviourInjector` | Injects the components of each new layer and its content, once, before their `Awake` runs |
+
+A new layer is created under an inactive holder, injected, then moved into place, so its components' `Awake` and `OnEnable` already have their dependencies. Layers that already exist aren't injected again. When the instantiator is marked `IInjectingPrefabInstantiator` (it injects as it creates, like a container's `InstantiatePrefab`), Screen System skips its own pass, so nothing is injected twice.
 
 - **No container:** the defaults use standard `Instantiate` and inject nothing.
 - **[Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc):** registers itself, so screens are injected with no setup. The package exposes its internals to `Assembly-CSharp`, so Fast IoC `0.4.0` and later assign its `internal` fields directly, without reflection.
-- **Any other container:** implement both interfaces with your container and assign them to `ToolInjectionServices` before the first scene loads. Tools Core has [a complete Zenject example](https://github.com/sgonzalezrozo/unity-tools-core#example-zenject).
+- **VContainer:** call `builder.UseToolsCore()` in your root `LifetimeScope`. See [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core#use-vcontainer).
+- **Zenject (Extenject):** add `ToolsCoreInstaller` to your `ProjectContext`. See [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core#use-zenject-extenject).
+- **Any other container:** implement both interfaces with your container and assign them to `ToolInjectionServices` before the first scene loads. Mark the instantiator `IInjectingPrefabInstantiator` if it injects what it creates.
 
 ## Troubleshooting
 
