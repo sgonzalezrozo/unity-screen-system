@@ -34,6 +34,7 @@ namespace ScreenSystem
                  return null;
              }
 
+             StartupTimeline.MarkOnce("show.first-layer-loaded");
              ct.ThrowIfCancellationRequested();
 
              // Another call may have created the layer while this one was loading.
@@ -42,6 +43,7 @@ namespace ScreenSystem
 
              GameObject layerInstance = InstantiateInjected(layerPrefab, screenContainer, GetInactiveHolder(), instantiator, ToolInjectionServices.MonoBehaviourInjector);
              layerInstance.name = layerName;
+             StartupTimeline.MarkOnce("show.first-layer-instantiated");
 
              // Cached before any cancellation check, so the instance is never left untracked.
              layerCache[layerName] = layerInstance;

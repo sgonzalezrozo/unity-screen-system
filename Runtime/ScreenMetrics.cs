@@ -33,6 +33,7 @@ namespace ScreenSystem
         {
             public string ScreenId;
             public string ScreenName;
+            // UTC: the first DateTime.Now on Android loads the time zone database, over half a second on a Galaxy A02s.
             public DateTime FirstLoadTime;
             public DateTime LastAccessTime;
             public int LoadCount;
@@ -128,7 +129,7 @@ namespace ScreenSystem
                 {
                     ScreenId = screenId,
                     ScreenName = screenName,
-                    FirstLoadTime = DateTime.Now,
+                    FirstLoadTime = DateTime.UtcNow,
                     MinLoadTimeMs = float.MaxValue,
                     MaxLoadTimeMs = 0f,
                     LoadCount = 0
@@ -136,7 +137,7 @@ namespace ScreenSystem
             }
 
             ScreenMetricEntry entry = screenMetrics[screenId];
-            entry.LastAccessTime = DateTime.Now;
+            entry.LastAccessTime = DateTime.UtcNow;
             entry.LoadCount++;
             entry.LastLoadTimeMs = loadTimeMs;
             entry.LayerCount = layerCount;
@@ -164,7 +165,7 @@ namespace ScreenSystem
             if (screenMetrics.TryGetValue(screenId, out ScreenMetricEntry entry))
             {
                 entry.Status = status;
-                entry.LastAccessTime = DateTime.Now;
+                entry.LastAccessTime = DateTime.UtcNow;
             }
         }
 

@@ -35,7 +35,12 @@ namespace ScreenSystem.Services
             this.screenSystemRoot = screenSystemRoot ?? throw new ArgumentNullException(nameof(screenSystemRoot));
         }
 
-        public async Task<bool> InitializeAsync(CancellationToken ct = default)
+        public Task<bool> InitializeAsync(CancellationToken ct = default)
+            => Task.FromResult(Initialize(ct));
+
+        // Synchronous: each await here used to wait a whole frame at startup (about 100 ms on a Galaxy A02s) for
+        // work that takes well under a millisecond.
+        private bool Initialize(CancellationToken ct)
         {
             try
             {
@@ -60,15 +65,12 @@ namespace ScreenSystem.Services
 
                 // ForceReinitialize, not Initialize: with domain reload off the index from the last session is still cached.
                 screenRegistry.ForceReinitialize();
-                await Task.Yield();
 
                 ComponentDiscovery componentDiscovery = new(screenSystemRoot);
 
                 Transform screenContainer = componentDiscovery.DiscoverOrCreateScreenContainer();
-                await Task.Yield();
 
                 BlurBackgroundLayer blurBackground = DiscoverBlurBackground();
-                await Task.Yield();
 
                 displayService = new ScreenDisplayService(screenRegistry, screenContainer, blurBackground);
 

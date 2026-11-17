@@ -99,12 +99,15 @@ namespace ScreenSystem
             }
 
             instance = this;
+            StartupTimeline.MarkOnce("manager.awake");
         }
 
         private async void Start()
         {
             if (instance != this)
                 return;
+
+            StartupTimeline.MarkOnce("manager.start");
 
             try
             {
@@ -139,6 +142,7 @@ namespace ScreenSystem
                     return;
                 }
 
+                StartupTimeline.MarkOnce("init.services-ready");
                 navigationService = serviceInitializer.NavigationService;
                 displayService = serviceInitializer.DisplayService;
                 idResolver = new ScreenIdResolver(serviceInitializer.Registry);
@@ -158,9 +162,11 @@ namespace ScreenSystem
 
                 if (!string.IsNullOrEmpty(splashScreenId))
                     await ShowInitialSplash();
+                StartupTimeline.MarkOnce("init.splash-shown");
 
                 SceneManager.sceneLoaded += OnSceneLoaded;
                 isInitialized = true;
+                StartupTimeline.MarkOnce("init.ready");
                 initializationCompletionSource.TrySetResult(true);
                 ReportReady(this);
             }

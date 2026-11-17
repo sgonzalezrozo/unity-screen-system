@@ -7,6 +7,7 @@ namespace ScreenSystem
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
+            StartupTimeline.MarkOnce("bootstrap.start");
             #if UNITY_2023_1_OR_NEWER
             ScreenManager existingScreenManager = Object.FindFirstObjectByType<ScreenManager>();
             #else
@@ -17,10 +18,12 @@ namespace ScreenSystem
                 return;
 
             GameObject screenSystemPrefab = Resources.Load<GameObject>("Tools/Screen System/Prefabs/ScreenSystem");
+            StartupTimeline.MarkOnce("bootstrap.prefab-loaded");
             if (screenSystemPrefab != null)
             {
                 GameObject screenSystemInstance = Object.Instantiate(screenSystemPrefab);
                 screenSystemInstance.name = "ScreenSystem";
+                StartupTimeline.MarkOnce("bootstrap.instantiated");
             }
             else
             {

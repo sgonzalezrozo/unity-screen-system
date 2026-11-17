@@ -33,7 +33,10 @@ namespace ScreenSystem
         private AddressablesPrefabLoad(string address)
         {
             this.address = address;
+            // The first Addressables call of the session also initializes Addressables (settings, catalog).
+            StartupTimeline.MarkOnce("addressables.first-load.start");
             handle = Addressables.LoadAssetAsync<GameObject>(address);
+            MarkFirstLoadDone(handle);
         }
 
         // An async load waits for later frames to finish, about 3 frames on device (100 ms at 30 fps) even when the
@@ -98,6 +101,16 @@ namespace ScreenSystem
 
             localAddresses[address] = local;
             return local;
+        }
+
+        // Its own conditional method, so builds without metrics don't allocate the callback.
+        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD"), System.Diagnostics.Conditional("SCREEN_SYSTEM_METRICS")]
+        private static void MarkFirstLoadDone(AsyncOperationHandle<GameObject> load)
+        {
+            if (!load.IsDone)
+                load.Completed += _ => StartupTimeline.MarkOnce("addressables.first-load.done");
+            else
+                StartupTimeline.MarkOnce("addressables.first-load.done");
         }
 
         public static IPrefabLoad Start(string address)
