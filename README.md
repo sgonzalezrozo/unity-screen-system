@@ -192,8 +192,10 @@ This package requires [Tools Core](https://github.com/sgonzalezrozo/unity-tools-
 3. Enter:
 
 ```text
-https://github.com/sgonzalezrozo/unity-tools-core.git
+https://github.com/sgonzalezrozo/unity-tools-core.git#v0.4.0
 ```
+
+This tag is the Tools Core version this release is tested with. Without a tag, Unity installs the latest commit.
 
 ### 2. Install this package
 
@@ -1002,6 +1004,7 @@ Bug reports and pull requests are welcome. Please open an issue before starting 
 | Package | Purpose |
 |---|---|
 | [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) | Code-generated dependency injection |
+| [UI Scroller](https://github.com/sgonzalezrozo/unity-ui-scroller) | Recycling scroll view: lists, grids, bento and carousels of any length |
 | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) | Shared injection code, required by this package |
 
 ## License
