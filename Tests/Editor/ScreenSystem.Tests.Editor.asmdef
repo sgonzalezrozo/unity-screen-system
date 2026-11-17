@@ -8,6 +8,7 @@
         "Unity.Addressables.Editor",
         "Unity.Addressables",
         "ScreenSystem.Editor",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

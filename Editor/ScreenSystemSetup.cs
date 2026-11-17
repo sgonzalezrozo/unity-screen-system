@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using ScreenSystem;
 using ScreenSystem.ScriptableObjects;
@@ -29,6 +30,25 @@ namespace ScreenSystem.Editor
             CreateAddressablesLabel();
             AssetDatabase.Refresh();
             ShowCompletionDialog("UIToolkit");
+            OfferSpecialScreens();
+        }
+
+        // Every game needs a splash and a quit confirmation, so they're offered right away rather than found later.
+        private static void OfferSpecialScreens()
+        {
+            List<string> missing = SpecialScreensCreator.Missing();
+            if (missing.Count == 0)
+                return;
+
+            bool create = EditorUtility.DisplayDialog(
+                "Create the special screens?",
+                $"Screen System shows {SpecialScreensCreator.DefaultSplashId} while the game boots and opens {SpecialScreensCreator.DefaultQuitConfirmationId} when back is pressed at the root. " +
+                $"Create {string.Join(" and ", missing)} in {SpecialScreensCreator.DefaultFeatureFolder} now, as plain screens to redesign?\n\n" +
+                "Later: Tools > Screen System > Create Special Screens.",
+                "Create",
+                "Later");
+            if (create)
+                SpecialScreensCreator.Create();
         }
 
         private static void SetupCommonFiles()

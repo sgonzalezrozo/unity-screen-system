@@ -25,9 +25,13 @@ namespace ScreenSystem.Editor
         private GUIStyle hiddenDotStyle;
         private bool stylesInitialized;
 
+        // Looked up once per selection: it searches the project's ScreenDefinitions.
+        private List<string> missingSpecialScreens;
+
         private void OnEnable()
         {
             screenManager = (ScreenManager)target;
+            missingSpecialScreens = Application.isPlaying ? new List<string>() : SpecialScreensCreator.Missing();
             lastRepaintTime = EditorApplication.timeSinceStartup;
         }
 
@@ -42,6 +46,7 @@ namespace ScreenSystem.Editor
             if (!Application.isPlaying)
             {
                 EditorGUILayout.HelpBox("Enter Play Mode to see stack state.", MessageType.Info);
+                DrawMissingSpecialScreens();
                 EditorGUILayout.Space(5);
                 DrawDefaultInspector();
                 return;
@@ -57,6 +62,22 @@ namespace ScreenSystem.Editor
             DrawDefaultInspector();
 
             ScheduleRepaint();
+        }
+
+        private void DrawMissingSpecialScreens()
+        {
+            if (missingSpecialScreens == null || missingSpecialScreens.Count == 0)
+                return;
+
+            EditorGUILayout.HelpBox(
+                $"{string.Join(" and ", missingSpecialScreens)} not found. Without a splash nothing shows while the game boots; without a quit confirmation, back at the root quits straight away.",
+                MessageType.Warning);
+            if (GUILayout.Button("Create Special Screens"))
+            {
+                SpecialScreensCreator.Create();
+                missingSpecialScreens = SpecialScreensCreator.Missing();
+                GUIUtility.ExitGUI();
+            }
         }
 
         private void InitializeStyles()

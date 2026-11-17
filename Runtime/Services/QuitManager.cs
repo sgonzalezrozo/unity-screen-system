@@ -32,9 +32,18 @@ namespace ScreenSystem.Services
             }
         }
 
-        private static void QuitApplication()
+        /// <summary>Replaces the actual quit, for tests. Quit requested is still raised.</summary>
+        internal static Action QuitOverride;
+
+        internal static void QuitApplication()
         {
             NavigationEvents.NotifyQuitApplicationRequested();
+
+            if (QuitOverride != null)
+            {
+                QuitOverride();
+                return;
+            }
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
