@@ -7,7 +7,8 @@ using UnityEngine;
 
 namespace ScreenSystem
 {
-    internal class ScreenAnimatedHider
+    /// <summary>Hides a screen's layers at once, except those shared with the screen being shown.</summary>
+    internal class ScreenHider
     {
         private const string LOG_PREFIX = "[ScreenHide]";
 
@@ -16,7 +17,7 @@ namespace ScreenSystem
         private readonly BlurBackgroundService blurService;
         private readonly ScreenLayerHider layerHider;
 
-        public ScreenAnimatedHider(
+        public ScreenHider(
             ScreenRegistry screenRegistry,
             ScreenCacheManager cacheManager,
             BlurBackgroundService blurService,
@@ -28,7 +29,7 @@ namespace ScreenSystem
             this.layerHider = layerHider;
         }
 
-        public async Task HideScreenAsyncInternal(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default)
+        public async Task HideAsync(string screenId, string preserveLayersForScreenId = null, CancellationToken ct = default)
         {
             try
             {
@@ -47,9 +48,6 @@ namespace ScreenSystem
 
                     cacheManager.UnregisterActiveScreen(screenId);
                 }
-
-                if (ct.IsCancellationRequested)
-                    ct.ThrowIfCancellationRequested();
 
                 if (ct.IsCancellationRequested)
                     ct.ThrowIfCancellationRequested();

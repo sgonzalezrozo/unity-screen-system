@@ -7,7 +7,7 @@ namespace ScreenSystem
 {
     internal class ScreenHideService : IScreenHideService
     {
-        private readonly ScreenAnimatedHider animatedHider;
+        private readonly ScreenHider screenHider;
         private readonly ScreenLayerHider layerHider;
         private readonly ScreenRelationshipHider relationshipHider;
 
@@ -17,7 +17,7 @@ namespace ScreenSystem
             BlurBackgroundService blurService = null)
         {
             layerHider = new ScreenLayerHider(cacheManager);
-            animatedHider = new ScreenAnimatedHider(screenRegistry, cacheManager, blurService, layerHider);
+            screenHider = new ScreenHider(screenRegistry, cacheManager, blurService, layerHider);
             relationshipHider = new ScreenRelationshipHider(screenRegistry, cacheManager, layerHider, this);
         }
 
@@ -26,7 +26,7 @@ namespace ScreenSystem
             if (ct.IsCancellationRequested)
                 ct.ThrowIfCancellationRequested();
 
-            await animatedHider.HideScreenAsyncInternal(screenId, preserveLayersForScreenId, ct);
+            await screenHider.HideAsync(screenId, preserveLayersForScreenId, ct);
         }
 
         public void HideOtherScreensForType(string currentScreenId, ScreenType screenType)
