@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
-[![Version 0.3.0](https://img.shields.io/badge/version-0.3.0-blue.svg)](CHANGELOG.md)
+[![Version 0.4.0](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
 
 Screen System is a free, open-source UI manager for Unity 6, for uGUI and UI Toolkit. Each screen is a stack of layers: a background, the screen itself, a top bar, a navigation bar. Screens share layers instead of copying them, and the system sets every layer's draw order from where the screen sits in the navigation stack.
 
@@ -198,7 +198,7 @@ https://github.com/sgonzalezrozo/unity-screen-system.git
 To pin a release, add its tag:
 
 ```text
-https://github.com/sgonzalezrozo/unity-screen-system.git#v0.3.0
+https://github.com/sgonzalezrozo/unity-screen-system.git#v0.4.0
 ```
 
 ## Setup
@@ -212,46 +212,19 @@ The prefab is created automatically before the first scene loads, so you don't n
 
 ## The two special screens
 
-Screen System handles two screens by name but doesn't ship them, because every game designs its own. Create them right after Setup:
+Screen System handles two screens by name. Every game designs its own, so Setup offers to create plain ones for you to redesign:
 
 | Screen | Default name | What Screen System does with it |
 |---|---|---|
 | Splash | `SplashMain` (**Splash Screen Id** on the `ScreenManager`) | Shows it as soon as it starts, before your first `SetRoot`, and keeps it across scene changes. It stays up until the new scene opens its first screen. |
 | Quit confirmation | `QuitConfirmation` (**Quit Confirmation Modal Id** on the `ScreenManager`) | Opens it when back is pressed at the root, and keeps it across scene changes. Without it, back at the root quits the app straight away, and stops Play Mode in the Editor. |
 
-1. Select **Assets > Screen System > New Screen Feature**, name the feature `Boot`, and add two screens: `SplashMain` as `Fullscreen` and `QuitConfirmation` as `Modal`.
-2. On `SplashMain`'s `ScreenDefinition`, turn on **Ignore Navigation Rules**, so it can show over anything while the game boots.
-3. Give `QuitConfirmation` two buttons:
+At the end of Setup, click **Create**. If you chose **Later**, run **Tools > Screen System > Create Special Screens**; the `ScreenManager` Inspector also warns while one is missing. Both go in `Assets/Boot`, as a feature like any other:
 
-```csharp
-using System;
-using ScreenSystem;
-using UnityEngine;
+- `SplashMain`: a `Fullscreen` screen with **Ignore Navigation Rules** on, so it shows over anything while the game boots. It has a background and the product name.
+- `QuitConfirmation`: a `Modal` with a question and two buttons wired to the `QuitConfirmationLayer` component. **Quit** raises `NavigationEvents.OnQuitApplicationRequested` and quits, or stops Play Mode in the Editor. **Cancel** closes the modal, like back.
 
-public class QuitConfirmation : MonoBehaviour
-{
-    public void Quit()
-    {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
-    }
-
-    public async void Cancel()
-    {
-        try
-        {
-            await ScreenManager.Instance.GoBack(); // closes the modal
-        }
-        catch (Exception exception)
-        {
-            Debug.LogException(exception);
-        }
-    }
-}
-```
+Screens that already exist are left alone, so running it again is safe. The screens are uGUI; replace their contents, or build your own screens with the same names. To use your own buttons, point their **On Click** at `QuitConfirmationLayer.Quit` and `QuitConfirmationLayer.Cancel`.
 
 On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation there and turn off **Quit On Back At Root** in `ScreenSystemSettings`.
 
@@ -755,6 +728,7 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | Command | Purpose |
 |---|---|
 | `Tools/Screen System/Setup` | Create the required project assets |
+| `Tools/Screen System/Create Special Screens` | Create the splash and quit confirmation screens that are missing |
 | `Tools/Screen System/Rebuild Registry Cache` | Repair the registry. It already updates when `ScreenDefinition` assets change. |
 | `Tools/Screen System/Screen Manager Window` | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
 | `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
@@ -986,7 +960,7 @@ Screen System targets mobile and WebGL. For PC and consoles, these would be adde
 
 ## Project status
 
-This is a pre-release package at version `0.3.0`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
+This is a pre-release package at version `0.4.0`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
 
 Until `1.0.0`, minor versions (`0.x.0`) can include breaking changes, and patch versions (`0.x.y`) don't. Breaking changes are marked **Breaking** in the [changelog](CHANGELOG.md).
 
@@ -1001,7 +975,7 @@ Bug reports and pull requests are welcome. Please open an issue before starting 
 | Package | Purpose |
 |---|---|
 | [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) | Code-generated dependency injection |
-| [Slot List](https://github.com/sgonzalezrozo/unity-recyclable-scroller) | Virtualized lists |
+| [UI Scroller](https://github.com/sgonzalezrozo/unity-ui-scroller) | Recycling scroll views: lists, grids and bento layouts |
 | [Enhanced Console](https://github.com/sgonzalezrozo/unity-enhanced-console) | Unity Editor log triage |
 | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) | Shared injection code, required by this package |
 

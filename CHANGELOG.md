@@ -2,10 +2,12 @@
 
 All notable changes to this package are documented in this file.
 
-## [Unreleased]
+## [0.4.0] - Unreleased
 
 ### Added
 
+- Setup offers to create the splash (`SplashMain`) and quit confirmation (`QuitConfirmation`) screens, in `Assets/Boot`. **Tools > Screen System > Create Special Screens** does it later, and the `ScreenManager` Inspector warns while one is missing. Screens that already exist are left alone.
+- `QuitConfirmationLayer`: the Quit and Cancel buttons of a quit confirmation modal. Quit raises `NavigationEvents.OnQuitApplicationRequested` and quits; Cancel closes the modal.
 - `GoToForResult<TResult>(screen)` opens a modal or alert and awaits its answer as a `ModalResult<TResult>` (`Returned`, `Dismissed` or `NotOpened`); the screen answers with `CloseWithResult(value)`. The result completes once the screen has closed, whatever closed it, so the caller's next navigation goes through. An overload passes a value to the screen's `IScreenParameter<T>` components.
 - `ScreenIds`: a generated class with one constant per screen (`GoTo(ScreenIds.ShopMain)`), so typos and renamed or deleted screens are caught at compile time. It's regenerated when `ScreenDefinition`s change; turn it off or move it in `ScreenSystemSettings`, or run **Tools > Screen System > Generate Screen IDs**.
 - `ScreenAuthoring` (Editor) builds screens from code, for editor scripts and AI agents with editor tools: `CreateScreen`, `CreateLayer`, `AddLayer` with a placement, `RemoveLayer`, `GetLayers`, and `-executeMethod` entry points.
