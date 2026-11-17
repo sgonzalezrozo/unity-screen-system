@@ -175,7 +175,7 @@ Git must be installed on your machine.
 
 ### 1. Install Tools Core
 
-This package requires [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), the shared code that defines the injection interfaces used by Fast IoC, Screen System and Recyclable Scroller. Unity doesn't install Git dependencies automatically, so add it first.
+This package requires [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core), the shared code that defines the injection interfaces Screen System uses to work with any container. Unity doesn't install Git dependencies automatically, so add it first.
 
 1. In Unity, open **Window > Package Manager**.
 2. Select **+ > Add package from git URL**.
@@ -858,7 +858,25 @@ So at most one fullscreen screen, one modal and one alert render at once, and ba
 
 ### Why are there no screen transitions? How do I animate a screen?
 
-Transitions depend on each game's art direction, so Screen System doesn't impose any. Animate inside layers: start an intro from `OnScreenShown()` and an outro from `OnScreenHidden()`. A layer shared with the previous screen stays visible and doesn't get those callbacks again, so a top bar doesn't replay its intro on every screen.
+Transitions depend on each game's art direction, so animations belong to the layers, not to Screen System.
+
+- **Intro:** start it from `OnScreenShown()`. A layer shared with the previous screen stays visible and doesn't get the callback again, so a top bar doesn't replay its intro on every screen.
+- **Outro:** play it first, and navigate when it ends. Screen System hides a screen at once, and `OnScreenHidden()` runs once it's hidden, too late to be seen.
+
+```csharp
+public void OpenShop() => StartCoroutine(OutroThenOpenShop());
+
+private IEnumerator OutroThenOpenShop()
+{
+    yield return PlayOutro(); // your sequence, such as a 0.25 s fade of the content
+    _ = ScreenManager.Instance.GoTo(ScreenIds.ShopMain);
+}
+```
+
+With a tween library it's the same: play the sequence and call `GoTo` from its completion callback. Keep in mind:
+
+- Only one fullscreen screen renders at a time, so don't fade out all of its layers: until the next screen shows, the camera's background color, or black, shows through. Animate the content and keep a background opaque.
+- Hidden layers stay loaded until the scene changes, in the state the outro left them (transparent, moved off screen). Restore that state in `OnScreenHidden()`, or before the intro in `OnScreenShown()`.
 
 ### Can a modal return a result, like a confirmation?
 
@@ -874,7 +892,7 @@ On a Pixel 5, a screen whose prefabs are already loaded shows in about 3 ms, and
 
 ### What happens to memory and AssetBundles?
 
-Each Addressables address has one handle, held while a screen uses it and released on a single scene load unless a kept screen needs it. AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes, because closing and reopening a bundle on every scene change leaked native memory on Android. In a game with a lot of UI content, the open bundles grow with the screens visited.
+Each Addressables address has one handle, held while a screen uses it and released on a single scene load unless a kept screen needs it. AssetBundles stay open for the session once a screen needs them, while their assets are unloaded on scene changes, because closing and reopening a bundle on every scene change leaked native memory on Android.
 
 ### Do I have to use Addressables?
 
@@ -940,7 +958,6 @@ A new layer is created under an inactive holder, injected, then moved into place
 
 ## Limitations
 
-- AssetBundles stay open for the session once a screen needs them, so in a game with a lot of UI content the open bundles grow with the screens visited. There's no limit or eviction policy yet.
 - Only Screen Space - Overlay canvases are verified; the blurred snapshot behind modals assumes them.
 - The package declares Unity `2022.3` as its minimum but is only tested on Unity 6.
 - Each tab of a bottom bar doesn't keep its own back stack; `ClearToRoot` returns to the root.
@@ -949,7 +966,7 @@ A new layer is created under an inactive holder, injected, then moved into place
 
 - **Calls during a transition are ignored, never queued.** A navigation call made while another is running returns `Transitioning` and logs which call is running. It either goes now or it doesn't; check `IsTransitioning` if you need to know.
 - **One modal and one alert at a time.** See [One modal and one alert at a time](#one-modal-and-one-alert-at-a-time).
-- **No screen transitions or animations.** Animate inside layers from `OnScreenShown()` and `OnScreenHidden()`.
+- **No screen transitions or animations.** Animations belong to the layers: an intro from `OnScreenShown()`, and an outro played before calling `GoTo`. See [How do I animate a screen?](#why-are-there-no-screen-transitions-how-do-i-animate-a-screen)
 
 ## Future development
 
@@ -975,8 +992,6 @@ Bug reports and pull requests are welcome. Please open an issue before starting 
 | Package | Purpose |
 |---|---|
 | [Fast IoC](https://github.com/sgonzalezrozo/unity-fast-ioc) | Code-generated dependency injection |
-| [UI Scroller](https://github.com/sgonzalezrozo/unity-ui-scroller) | Recycling scroll views: lists, grids and bento layouts |
-| [Enhanced Console](https://github.com/sgonzalezrozo/unity-enhanced-console) | Unity Editor log triage |
 | [Tools Core](https://github.com/sgonzalezrozo/unity-tools-core) | Shared injection code, required by this package |
 
 ## License
