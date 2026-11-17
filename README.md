@@ -47,6 +47,16 @@ Each screen, and each layer, picks its framework. Both work in the same project 
 
 Setup in one command, a wizard that creates screens ready to open, a registry that updates itself, a Screen Manager window with the live stack and metrics, a layer editor, EditMode tests and a benchmark that runs on your own screens.
 
+## Why I built it
+
+Most projects I worked on had no formal layer controller. Their screens repeated other prefabs instead of reusing them, even with nested and variant prefabs.
+
+My first time using one was on a recent project, with a custom layer system. That experience, and remembering how apps like Photoshop handle layers, made me want my own tool: a more robust system that covers all my use cases without time-based loops or other detection routines that hurt the game's performance.
+
+I built it for uGUI. With the canvas set to overlay, it also works with uGUI and UI Toolkit at the same time.
+
+I built and refined it on my own time in personal projects. It isn't used in production yet. In November 2026 I extracted it into this standalone package and documented it. Earlier history lives in a private repository.
+
 ## Performance
 
 Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screens of a test project: 8 screens mixing uGUI and UI Toolkit, two scenes, Addressables. IL2CPP Development builds at 30 fps.
