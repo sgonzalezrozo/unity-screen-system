@@ -4,6 +4,12 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-18
+
+### Documentation
+
+- Screenshots of the Assets menu, the New Screen Feature wizard and the New Layer popup in the README's Quickstart and in Getting Started.
+
 ## [0.5.0] - 2026-11-18
 
 ### Added

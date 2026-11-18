@@ -8,7 +8,7 @@
 A layer-based UI manager for uGUI and UI Toolkit: shared layers with automatic draw order, only what's visible renders, and everything unloads on scene change. 1–5 ms cached shows.
 
 [![Unity](https://img.shields.io/badge/Unity-6000.3%20tested-black?style=for-the-badge&logo=unity)](Documentation~/getting-started.md#requirements)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 [**Installation**](#installation) • [**Key Features**](#key-features) • [**Quickstart**](#quickstart) • [**Code Examples**](Documentation~/code-examples.md) • [**Core Concepts**](Documentation~/core-concepts.md) • [**API Reference**](Documentation~/api-reference.md)
@@ -58,6 +58,10 @@ Requirements and tested platforms: [Getting Started](Documentation~/getting-star
 
 1. Run **Tools > Screen System > Setup**, and click **Create** to add the splash and quit confirmation screens.
 2. Right-click a folder in the Project window and select **Screen System > New Screen Feature**. Name it `Shop`, with two `Fullscreen` screens: `ShopMain` and `ShopDetail`.
+
+   <img src="Documentation~/images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen Feature and New Layer" width="420"><br>
+   <img src="Documentation~/images/feature-wizard.png" alt="The New Screens wizard: feature name, UI framework, parent folder and a list of screens, each with a type and a Persist toggle" width="520">
+
 3. Open the screen from any script:
 
 ```csharp

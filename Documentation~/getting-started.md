@@ -87,6 +87,10 @@ On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation 
 Two steps, about a minute:
 
 1. In the Project window, right-click the folder that holds your features and select **Screen System > New Screen Feature**. Name the feature and its screens, and pick each screen's type: `Fullscreen`, `Modal` or `Alert`.
+
+   <img src="images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen Feature and New Layer" width="420"><br>
+   <img src="images/feature-wizard.png" alt="The New Screens wizard: feature name, UI framework, parent folder and a list of screens, each with a type and a Persist toggle" width="520">
+
 2. Click **Create**, then call `ScreenManager.Instance.GoTo("ShopMain")` with your screen's name.
 
 For a feature `Shop` with a screen `ShopMain`, the wizard creates:
@@ -104,6 +108,8 @@ It also marks the prefab Addressable, with its name as the address, and adds the
 To add a screen to an existing feature, select any of its `ScreenDefinition` assets and click **Add Screen to Feature…** in the Inspector, under **Edit**. **Edit Prefab** next to it opens the screen's prefab.
 
 To create a layer prefab, right-click a folder and select **Screen System > New Layer**, then type its name. It gets a Canvas with a full-screen Image and is marked Addressable with its name as the address.
+
+<img src="images/new-layer.png" alt="The New Layer popup: a Prefab Name field, a note on what it creates, and Cancel and Create buttons" width="420">
 
 The registry keeps itself up to date: creating, deleting, moving or renaming a `ScreenDefinition` updates it, and the console warns when two screens share a name or ID. **Rebuild Registry from Assets**, in the `ScreenRegistry` Inspector, is only needed to repair a registry.
 
