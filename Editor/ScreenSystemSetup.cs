@@ -3,6 +3,7 @@ using System.IO;
 using ScreenSystem;
 using ScreenSystem.ScriptableObjects;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
@@ -27,7 +28,7 @@ namespace ScreenSystem.Editor
             // An existing prefab is kept, but gets the modal backdrop if it's missing or outdated.
             if (!CreateScreenSystemPrefab_UIToolkit())
                 ScreenSystemBackdropBuilder.EnsureInPrefab();
-            CreateAddressablesLabel();
+            EnsureAddressablesSettings();
             AssetDatabase.Refresh();
             ShowCompletionDialog("UIToolkit");
             OfferSpecialScreens();
@@ -369,70 +370,15 @@ namespace ScreenSystem.Editor
             }
         }
 
-        private static void CreateAddressablesLabel()
+        // Screens and layers load through Addressables. A new project has no Addressables settings until something
+        // creates them, so Setup does, before anything marks a prefab Addressable.
+        private static void EnsureAddressablesSettings()
         {
-            try
-            {
-                // Use reflection to avoid compile dependency on Addressables
-                System.Type settingsType = System.Type.GetType("UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject, Unity.Addressables.Editor");
+            if (AddressableAssetSettingsDefaultObject.SettingsExists)
+                return;
 
-                if (settingsType == null)
-                {
-                    Debug.LogWarning("[ScreenSystem Setup] Addressables not found. Label 'ScreenContent' will not be created. Install Addressables package for better content management.");
-                    return;
-                }
-
-                System.Reflection.PropertyInfo settingsProperty = settingsType.GetProperty("Settings");
-                object addressableSettings = settingsProperty?.GetValue(null);
-
-                if (addressableSettings == null)
-                {
-                    Debug.LogWarning("[ScreenSystem Setup] Addressables Settings not initialized. Please configure Addressables in your project.");
-                    return;
-                }
-
-                // Get labels collection
-                System.Reflection.MethodInfo getLabelTableMethod = addressableSettings.GetType().GetMethod("GetLabels");
-                if (getLabelTableMethod == null)
-                {
-                    Debug.LogWarning("[ScreenSystem Setup] Could not access Addressables labels.");
-                    return;
-                }
-
-                object labels = getLabelTableMethod.Invoke(addressableSettings, null);
-                if (labels == null)
-                {
-                    Debug.LogWarning("[ScreenSystem Setup] Addressables labels collection is null.");
-                    return;
-                }
-
-                // Check if label already exists
-                System.Reflection.MethodInfo containsMethod = labels.GetType().GetMethod("Contains", new[] { typeof(string) });
-                if (containsMethod != null)
-                {
-                    bool hasLabel = (bool)(containsMethod.Invoke(labels, new object[] { "ScreenContent" }) ?? false);
-
-                    if (hasLabel)
-                    {
-                        Debug.Log("[ScreenSystem Setup] Addressables label 'ScreenContent' already exists");
-                        return;
-                    }
-                }
-
-                // Add label
-                System.Reflection.MethodInfo addLabelMethod = addressableSettings.GetType().GetMethod("AddLabel", new[] { typeof(string), typeof(bool) });
-                if (addLabelMethod != null)
-                {
-                    addLabelMethod.Invoke(addressableSettings, new object[] { "ScreenContent", true });
-                    Debug.Log("[ScreenSystem Setup] Created Addressables label 'ScreenContent'");
-                }
-                else
-                    Debug.LogWarning("[ScreenSystem Setup] Could not add Addressables label. You may need to add 'ScreenContent' label manually.");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[ScreenSystem Setup] Could not create Addressables label: {ex.Message}\nYou can add 'ScreenContent' label manually in Addressables settings.");
-            }
+            if (AddressableAssetSettingsDefaultObject.GetSettings(true) != null)
+                Debug.Log("[ScreenSystem Setup] Created the Addressables settings in Assets/AddressableAssetsData.");
         }
 
         private static void RemoveComponent<T>(GameObject gameObject) where T : Component

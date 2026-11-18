@@ -4,6 +4,16 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-18
+
+### Fixed
+
+- **Setup** warned `Addressables Settings not initialized` in a project that had never used Addressables. Setup now creates the Addressables settings first, so the screens it marks Addressable have somewhere to go.
+
+### Removed
+
+- The `ScreenContent` Addressables label that Setup added. Nothing used it.
+
 ## [0.4.3] - 2026-11-18
 
 ### Removed
