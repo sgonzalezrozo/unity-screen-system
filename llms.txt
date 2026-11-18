@@ -4,7 +4,19 @@
 
 ## Docs
 
-- [README](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/README.md): layers, memory model, performance, installation, API, troubleshooting, FAQ
+- [README](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/README.md): overview, installation, quickstart, links to every guide
+- [Getting Started](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/getting-started.md): requirements, installation, setup, first screen, layers
+- [Code Examples](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/code-examples.md): modals, alerts, modal results, passing values, tabs, scene changes, animation
+- [Core Concepts](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/core-concepts.md): layers and draw order, rendering, memory model, screen lifetime, design decisions
+- [API Reference](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/api-reference.md): ScreenManager, NavigationResult, ScreenIds, navigation rules, lifecycle interfaces, events
+- [Editor Tools & Settings](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/editor-tools.md)
+- [Performance](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/performance.md): device benchmarks
+- [Migrating an Existing Project](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/migration.md)
+- [Dependency Injection](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/dependency-injection.md)
+- [AI Coding Agents](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/ai-agents.md): ScreenAuthoring editor API
+- [Troubleshooting & Limitations](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/troubleshooting.md)
+- [FAQ](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/faq.md)
+- [Project Status](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/project-status.md): status, versioning, contributing, related packages
 - [Rules for AI coding agents](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/Documentation~/agent-rules.md): copy into AGENTS.md, CLAUDE.md or Cursor rules
 - [Changelog](https://github.com/sgonzalezrozo/unity-screen-system/blob/main/CHANGELOG.md)
 
