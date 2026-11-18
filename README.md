@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
-[![Version 0.4.0](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
+[![Version 0.4.1](https://img.shields.io/badge/version-0.4.1-blue.svg)](CHANGELOG.md)
 
 Screen System is a free, open-source UI manager for Unity 6, for uGUI and UI Toolkit. Each screen is a stack of layers: a background, the screen itself, a top bar, a navigation bar. Screens share layers instead of copying them, and the system sets every layer's draw order from where the screen sits in the navigation stack.
 
@@ -80,7 +80,7 @@ Measured with the [Benchmark sample](Samples~/Benchmark/README.md) on the screen
 
 Measured one run per device, iOS on commit `035b7bd` and Android on `b0a9a6c` (the only runtime change between them re-sorts canvases on show). Take the numbers as a guide: run the benchmark on your own screens.
 
-Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mode**, or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
+Run it on your project with **Run Benchmark In Play Mode** in the `ScreenManager` Inspector (after importing the sample), or on a device from the sample. [What each metric means](Documentation~/benchmarks/README.md).
 
 ## Is it right for your project?
 
@@ -101,7 +101,7 @@ Run it on your project with **Tools > Screen System > Benchmark > Run In Play Mo
 
 You don't have to migrate everything at once. Screen System stays out of the way until you open a screen, so your hand-made menus and its screens can live side by side while you move them over one at a time.
 
-**What installing it changes:** one `ScreenSystem` object is created in DontDestroyOnLoad. It opens nothing until you call `GoTo` or `SetRoot`, ignores the back key while none of its screens is open, uses your scene's `EventSystem`, and only unloads its own screens on scene changes. Your scene UI is untouched.
+**What installing it changes:** one `ScreenSystem` object is created in DontDestroyOnLoad. It opens nothing until you call `GoTo` or `SetRoot`, ignores the back key while none of its screens is open, uses your scene's `EventSystem` (or adds its own when no scene has one), and only unloads its own screens on scene changes. Your scene UI is untouched.
 
 ### Migrate one menu
 
@@ -210,7 +210,7 @@ https://github.com/sgonzalezrozo/unity-screen-system.git
 To pin a release, add its tag:
 
 ```text
-https://github.com/sgonzalezrozo/unity-screen-system.git#v0.4.0
+https://github.com/sgonzalezrozo/unity-screen-system.git#v0.4.1
 ```
 
 ## Setup
@@ -231,12 +231,12 @@ Screen System handles two screens by name. Every game designs its own, so Setup 
 | Splash | `SplashMain` (**Splash Screen Id** on the `ScreenManager`) | Shows it as soon as it starts, before your first `SetRoot`, and keeps it across scene changes. It stays up until the new scene opens its first screen. |
 | Quit confirmation | `QuitConfirmation` (**Quit Confirmation Modal Id** on the `ScreenManager`) | Opens it when back is pressed at the root, and keeps it across scene changes. Without it, back at the root quits the app straight away, and stops Play Mode in the Editor. |
 
-At the end of Setup, click **Create**. If you chose **Later**, run **Tools > Screen System > Create Special Screens**; the `ScreenManager` Inspector also warns while one is missing. Both go in `Assets/Boot`, as a feature like any other:
+At the end of Setup, click **Create**. If you chose **Later**, the `ScreenManager` Inspector warns while one is missing and has a button to create them; running **Setup** again also offers it. Both go in `Assets/Boot`, as a feature like any other:
 
-- `SplashMain`: a `Fullscreen` screen with **Ignore Navigation Rules** on, so it shows over anything while the game boots. It has a background and the product name.
+- `SplashMain`: a `Fullscreen` screen with **Ignore Navigation Rules** on, so it shows over anything while the game boots. It has a background and the title "Splash" to replace.
 - `QuitConfirmation`: a `Modal` with a question and two buttons wired to the `QuitConfirmationLayer` component. **Quit** raises `NavigationEvents.OnQuitApplicationRequested` and quits, or stops Play Mode in the Editor. **Cancel** closes the modal, like back.
 
-Screens that already exist are left alone, so running it again is safe. The screens are uGUI; replace their contents, or build your own screens with the same names. To use your own buttons, point their **On Click** at `QuitConfirmationLayer.Quit` and `QuitConfirmationLayer.Cancel`.
+Screens that already exist are left alone, so running it again is safe. A screen whose prefab was deleted, for example with its `Resources` folder, is created again, and its old `ScreenDefinition` goes to the trash. The screens are uGUI; replace their contents, or build your own screens with the same names. To use your own buttons, point their **On Click** at `QuitConfirmationLayer.Quit` and `QuitConfirmationLayer.Cancel`.
 
 On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation there and turn off **Quit On Back At Root** in `ScreenSystemSettings`.
 
@@ -261,7 +261,7 @@ It also marks the prefab Addressable, with its name as the address, and adds the
 
 To add a screen to an existing feature, right-click the feature folder, one of its screen folders or its `Services` folder and select **Screen System > Add Screen to Feature**.
 
-The registry keeps itself up to date: creating, deleting, moving or renaming a `ScreenDefinition` updates it, and the console warns when two screens share a name or ID. **Tools > Screen System > Rebuild Registry Cache** is only needed to repair a registry.
+The registry keeps itself up to date: creating, deleting, moving or renaming a `ScreenDefinition` updates it, and the console warns when two screens share a name or ID. **Rebuild Registry from Assets**, in the `ScreenRegistry` Inspector, is only needed to repair a registry.
 
 ### What's on a screen prefab
 
@@ -739,14 +739,14 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 
 | Command | Purpose |
 |---|---|
-| `Tools/Screen System/Setup` | Create the required project assets |
-| `Tools/Screen System/Create Special Screens` | Create the splash and quit confirmation screens that are missing |
-| `Tools/Screen System/Rebuild Registry Cache` | Repair the registry. It already updates when `ScreenDefinition` assets change. |
-| `Tools/Screen System/Screen Manager Window` | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
-| `Tools/Screen System/Benchmark/Run In Play Mode` | Measure your screens (after importing the Benchmark sample) |
+| `Tools/Screen System/Setup` | Create the required project assets, the modal backdrop and the special screens. Running it again repairs them. |
+| `Tools/Screen System/Documentation` | Open this documentation in the browser |
+| `ScreenManager` Inspector > **Create Special Screens** | Create the splash and quit confirmation screens that are missing |
+| `ScreenRegistry` Inspector > **Rebuild Registry from Assets** | Repair the registry. It already updates when `ScreenDefinition` assets change. |
+| `ScreenManager` Inspector > **Open Screen Manager Window** | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
+| `ScreenManager` Inspector > **Run Benchmark In Play Mode** | Measure your screens (after importing the Benchmark sample) |
 | `Assets/Screen System/New Screen Feature` | Create a feature with its screens, ready for `GoTo` |
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
-| `Tools/Screen System/Rebuild Modal Backdrop` | Add or rebuild the blurred backdrop behind modals. Setup also does it. |
 
 In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, such as `ScreenSystem.LoadPrefab` and `ScreenSystem.ActivateLayers`.
 
@@ -924,7 +924,7 @@ It's built and tested for Screen Space - Overlay, the default **Canvas Render Mo
 
 ### How do I see what's on screen and what back will do?
 
-In Play Mode, open **Tools > Screen System > Screen Manager Window**. It shows what the next back does, what's rendering from front to back, and the back stack down to the root with each screen's layers. Each step also has a `ScreenSystem.*` profiler marker.
+In Play Mode, click **Open Screen Manager Window** in the `ScreenManager` Inspector. It shows what the next back does, what's rendering from front to back, and the back stack down to the root with each screen's layers. Each step also has a `ScreenSystem.*` profiler marker.
 
 ### What's verified, and what isn't?
 
@@ -959,7 +959,7 @@ A new layer is created under an inactive holder, injected, then moved into place
 
 | Problem | Try this |
 |---|---|
-| `TryResolveScreenId FAILED` or `screen not found` | Check the screen name or ID, and the console for duplicate-name warnings. Run **Rebuild Registry Cache** to repair the registry. |
+| `TryResolveScreenId FAILED` or `screen not found` | Check the screen name or ID, and the console for duplicate-name warnings. Click **Rebuild Registry from Assets** in the `ScreenRegistry` Inspector to repair it. |
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
 | `GoTo` does nothing | Check the console for `ignored: ... is still running`, an open modal or an open alert |
@@ -989,7 +989,7 @@ Screen System targets mobile and WebGL. For PC and consoles, these would be adde
 
 ## Project status
 
-This is a pre-release package at version `0.4.0`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
+This is a pre-release package at version `0.4.1`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
 
 Until `1.0.0`, minor versions (`0.x.0`) can include breaking changes, and patch versions (`0.x.y`) don't. Breaking changes are marked **Breaking** in the [changelog](CHANGELOG.md).
 

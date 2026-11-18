@@ -206,6 +206,18 @@ namespace ScreenSystem.Editor
                 return null;
             }
 
+            string path = FindScreenPrefabPathQuietly(screen);
+            if (path == null)
+                Debug.LogError($"[ScreenAuthoring] No prefab is loadable as '{screen.AssetPath}' for screen '{screen.ScreenName}'.");
+            return path;
+        }
+
+        /// <summary>Like <see cref="FindScreenPrefabPath"/>, without logging. Null when the prefab can't be loaded.</summary>
+        internal static string FindScreenPrefabPathQuietly(ScreenDefinition screen)
+        {
+            if (screen == null || string.IsNullOrEmpty(screen.AssetPath))
+                return null;
+
             AddressableAssetSettings settings = AddressableAssetSettingsDefaultObject.Settings;
             if (settings != null)
             {
@@ -229,7 +241,6 @@ namespace ScreenSystem.Editor
                     return path;
             }
 
-            Debug.LogError($"[ScreenAuthoring] No prefab is loadable as '{screen.AssetPath}' for screen '{screen.ScreenName}'.");
             return null;
         }
 

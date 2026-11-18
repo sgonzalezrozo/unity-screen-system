@@ -1,8 +1,9 @@
 {
   "name": "com.sgonzalezrozo.screen-system",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "displayName": "Screen System",
   "description": "UI manager for Unity: build screens from reusable, shared layers with automatic draw order, navigate with a back stack, modals and alerts, and unload everything on scene change without leaks. For uGUI and UI Toolkit, with Resources or Addressables.",
+  "documentationUrl": "https://github.com/sgonzalezrozo/unity-screen-system#readme",
   "unity": "2022.3",
   "license": "MIT",
   "author": {

@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 
 namespace ScreenSystem.Benchmark.Editor
 {
-    /// <summary>Starts the benchmark from the first enabled build scene, from the menu or the command line.</summary>
+    /// <summary>Starts the benchmark from the first enabled build scene, from the ScreenManager Inspector or the command line.</summary>
     [InitializeOnLoad]
     public static class ScreenSystemBenchmarkLauncher
     {
@@ -18,7 +18,7 @@ namespace ScreenSystem.Benchmark.Editor
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
-        [MenuItem("Tools/Screen System/Benchmark/Run In Play Mode")]
+        /// <summary>Called by the Run Benchmark In Play Mode button in the ScreenManager Inspector.</summary>
         public static void RunFromMenu()
         {
             if (EditorApplication.isPlaying || !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())

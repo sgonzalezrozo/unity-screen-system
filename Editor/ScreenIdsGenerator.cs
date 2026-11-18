@@ -30,15 +30,6 @@ namespace ScreenSystem.Editor
             "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
         };
 
-        [MenuItem("Tools/Screen System/Generate Screen IDs")]
-        public static void GenerateFromMenu()
-        {
-            ScreenSystemSettings settings = ScreenSystemAssets.LoadSettings();
-            string path = settings != null ? settings.ScreenIdsPath : ScreenSystemSettings.DefaultScreenIdsPath;
-            bool written = WriteIfChanged(force: true);
-            Debug.Log(written ? $"[ScreenSystem] Wrote {path}." : $"[ScreenSystem] {path} is up to date.");
-        }
-
         /// <summary>
         /// Regenerates the file from the registry when generation is on. Returns true if the file changed.
         /// <paramref name="force"/> writes even when generation is turned off in the settings.

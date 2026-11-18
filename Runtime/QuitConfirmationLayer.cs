@@ -6,7 +6,7 @@ namespace ScreenSystem
 {
     /// <summary>
     /// The two buttons of a quit confirmation modal. Point the confirm button's On Click at <see cref="Quit"/> and the
-    /// other at <see cref="Cancel"/>. Tools > Screen System > Create Special Screens builds a modal wired this way.
+    /// other at <see cref="Cancel"/>. Setup builds a modal wired this way.
     /// </summary>
     [AddComponentMenu("Screen System/Quit Confirmation Layer")]
     public sealed class QuitConfirmationLayer : MonoBehaviour

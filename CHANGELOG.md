@@ -2,14 +2,36 @@
 
 All notable changes to this package are documented in this file.
 
+## [Unreleased]
+
+## [0.4.1] - 2026-11-17
+
+### Added
+
+- After the package is imported, a dialog links to the documentation, once per project. **Tools > Screen System > Documentation** opens it at any time.
+- `documentationUrl` in `package.json`, so the Package Manager links to the documentation.
+
+### Changed
+
+- **Tools > Screen System** only has **Setup** and **Documentation**. The other commands are in the Inspectors: **Create Special Screens** and **Open Screen Manager Window** on the `ScreenManager`, **Rebuild Registry from Assets** on the `ScreenRegistry`. Setup already rebuilds the modal backdrop, and `ScreenIds` regenerates on its own. The Benchmark sample runs from **Run Benchmark In Play Mode** in the `ScreenManager` Inspector instead of a menu.
+- The splash screen that Setup creates says "Splash" instead of the product name.
+
+### Fixed
+
+- **New Screen Feature** puts the feature inside the folder you right-clicked (it showed that folder's parent as the parent folder). On a feature folder, the new feature goes next to it. With nothing selected, it uses the folder open in the Project window.
+- `LayerDefinition`: layer prefabs can be dropped anywhere on the layers list, not only on its header.
+- `ScreenManager` Inspector: the Select button no longer cuts off the **TOP** badge of the top screen.
+- A splash or quit confirmation whose prefab was deleted (for example with its `Resources` folder) counted as existing, so Setup didn't offer to create it and Play Mode failed to load it. Setup and the `ScreenManager` Inspector now offer to create it again, and move its old `ScreenDefinition` to the trash.
+- Buttons did nothing in a scene without an `EventSystem`, such as a new project's, so the quit confirmation's Quit and Cancel didn't respond. When no loaded scene has one, `ScreenManager` adds its own (with `InputSystemUIInputModule`) and turns it off while a scene brings its own.
+
 ## [0.4.0] - 2026-11-17
 
 ### Added
 
-- Setup offers to create the splash (`SplashMain`) and quit confirmation (`QuitConfirmation`) screens, in `Assets/Boot`. **Tools > Screen System > Create Special Screens** does it later, and the `ScreenManager` Inspector warns while one is missing. Screens that already exist are left alone.
+- Setup offers to create the splash (`SplashMain`) and quit confirmation (`QuitConfirmation`) screens, in `Assets/Boot`. Later, the `ScreenManager` Inspector warns while one is missing and creates them with a button. Screens that already exist are left alone.
 - `QuitConfirmationLayer`: the Quit and Cancel buttons of a quit confirmation modal. Quit raises `NavigationEvents.OnQuitApplicationRequested` and quits; Cancel closes the modal.
 - `GoToForResult<TResult>(screen)` opens a modal or alert and awaits its answer as a `ModalResult<TResult>` (`Returned`, `Dismissed` or `NotOpened`); the screen answers with `CloseWithResult(value)`. The result completes once the screen has closed, whatever closed it, so the caller's next navigation goes through. An overload passes a value to the screen's `IScreenParameter<T>` components.
-- `ScreenIds`: a generated class with one constant per screen (`GoTo(ScreenIds.ShopMain)`), so typos and renamed or deleted screens are caught at compile time. It's regenerated when `ScreenDefinition`s change; turn it off or move it in `ScreenSystemSettings`, or run **Tools > Screen System > Generate Screen IDs**.
+- `ScreenIds`: a generated class with one constant per screen (`GoTo(ScreenIds.ShopMain)`), so typos and renamed or deleted screens are caught at compile time. It's regenerated when `ScreenDefinition`s change; turn it off or move it in `ScreenSystemSettings`.
 - `ScreenAuthoring` (Editor) builds screens from code, for editor scripts and AI agents with editor tools: `CreateScreen`, `CreateLayer`, `AddLayer` with a placement, `RemoveLayer`, `GetLayers`, and `-executeMethod` entry points.
 - `ScreenManager.WhenReadyAsync()` waits until Screen System is ready and returns the manager, or `null` if it failed or isn't set up. It replaces polling `ScreenManager.Instance` and then awaiting `WaitForInitializationAsync()`.
 - `GoTo(screen, value)` passes a typed value to the screen. Every component on its layers that implements `IScreenParameter<T>` gets it once, before the layers are shown, including shared layers that are already visible. Back doesn't deliver it again, and Screen System doesn't keep it.

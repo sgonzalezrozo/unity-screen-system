@@ -90,6 +90,8 @@ namespace ScreenSystem
         public Task<bool> WaitForInitializationAsync()
             => initializationCompletionSource.Task;
 
+        private EventSystemGuard eventSystemGuard;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -99,6 +101,7 @@ namespace ScreenSystem
             }
 
             instance = this;
+            eventSystemGuard = new EventSystemGuard(transform);
             StartupTimeline.MarkOnce("manager.awake");
         }
 
@@ -554,6 +557,7 @@ namespace ScreenSystem
         {
             resultBroker.CompleteAll();
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            eventSystemGuard?.Dispose();
             initializationCts?.Cancel();
             initializationCts?.Dispose();
             serviceInitializer?.SceneLifecycleManager?.Dispose();

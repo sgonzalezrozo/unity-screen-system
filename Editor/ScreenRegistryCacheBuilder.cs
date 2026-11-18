@@ -9,7 +9,6 @@ namespace ScreenSystem.Editor
 {
     public static class ScreenRegistryCacheBuilder
     {
-        [MenuItem("Tools/Screen System/Rebuild Registry Cache")]
         public static void RebuildCache()
         {
             ScreenRegistry registry = FindScreenRegistry();

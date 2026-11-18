@@ -62,13 +62,6 @@ namespace ScreenSystem.Editor
             return true;
         }
 
-        [MenuItem("Tools/Screen System/Rebuild Modal Backdrop", priority = 3)]
-        private static void RebuildFromMenu()
-        {
-            if (!EnsureInPrefab())
-                EditorUtility.DisplayDialog("Modal Backdrop", "Run Tools > Screen System > Setup first. There's no ScreenSystem prefab yet.", "OK");
-        }
-
         private static (Canvas canvas, GameObject gameObject) CreateCanvas(Transform parent, string name)
         {
             GameObject child = new(name, typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster));

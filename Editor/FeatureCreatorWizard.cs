@@ -50,13 +50,7 @@ namespace ScreenSystem.Editor
 
         private static void Open(WizardMode wizardMode)
         {
-            string path = "Assets";
-            if (Selection.activeObject != null)
-            {
-                path = AssetDatabase.GetAssetPath(Selection.activeObject);
-                if (!AssetDatabase.IsValidFolder(path))
-                    path = Path.GetDirectoryName(path);
-            }
+            string path = SelectedFolder();
 
             FeatureCreatorWizard window = GetWindow<FeatureCreatorWizard>("New Screens");
             window.minSize = new Vector2(460, 300);
@@ -77,14 +71,38 @@ namespace ScreenSystem.Editor
                 return;
             }
 
-            string folderName = Path.GetFileName(targetFolderPath);
-            if (!string.IsNullOrEmpty(folderName) && folderName != "Assets")
+            // The selected folder is where the new feature goes. When it is a feature (or inside one),
+            // the new feature goes next to it instead of inside it.
+            string feature = FindFeatureFolder(targetFolderPath);
+            if (IsFeatureFolder(feature))
+                targetFolderPath = Path.GetDirectoryName(feature)?.Replace('\\', '/') ?? "Assets";
+        }
+
+        private static bool IsFeatureFolder(string path)
+            => !string.IsNullOrEmpty(path) && AssetDatabase.IsValidFolder($"{path}/{ServicesFolder}");
+
+        /// <summary>
+        /// The folder the Assets menu was opened on: the selected folder, the folder of the selected asset, or
+        /// the folder open in the Project window when nothing is selected.
+        /// </summary>
+        private static string SelectedFolder()
+        {
+            string path = Selection.activeObject != null ? AssetDatabase.GetAssetPath(Selection.activeObject) : null;
+            if (!string.IsNullOrEmpty(path))
+                return AssetDatabase.IsValidFolder(path) ? path : Path.GetDirectoryName(path)?.Replace('\\', '/');
+
+            // ProjectWindowUtil.TryGetActiveFolderPath is internal.
+            System.Reflection.MethodInfo method = typeof(ProjectWindowUtil).GetMethod(
+                "TryGetActiveFolderPath",
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            if (method != null)
             {
-                featureName = folderName;
-                targetFolderPath = Path.GetDirectoryName(targetFolderPath)?.Replace('\\', '/');
-                if (screens.Count > 0)
-                    screens[0].Name = $"{folderName}Main";
+                object[] args = { null };
+                if ((bool)method.Invoke(null, args) && args[0] is string active && AssetDatabase.IsValidFolder(active))
+                    return active;
             }
+
+            return "Assets";
         }
 
         private void OnGUI()
@@ -103,7 +121,7 @@ namespace ScreenSystem.Editor
             selectedFramework = (UIFramework)EditorGUILayout.EnumPopup("UI Framework", selectedFramework);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(mode == WizardMode.CreateNewFeature ? "Parent Folder" : "Feature Folder", targetFolderPath);
+            EditorGUILayout.LabelField(new GUIContent(mode == WizardMode.CreateNewFeature ? "Parent Folder" : "Feature Folder"), new GUIContent(targetFolderPath, targetFolderPath));
             if (GUILayout.Button("Select", GUILayout.Width(70)))
                 SelectFolder();
             EditorGUILayout.EndHorizontal();

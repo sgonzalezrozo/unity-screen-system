@@ -8,7 +8,7 @@ namespace ScreenSystem.Editor
 {
     /// <summary>
     /// Keeps the ScreenRegistry in step with the ScreenDefinition assets in the project. A definition created,
-    /// deleted, moved or renamed updates the registry on its own, so Rebuild Registry Cache is only a repair tool.
+    /// deleted, moved or renamed updates the registry on its own, so Rebuild Registry from Assets (ScreenRegistry Inspector) is only a repair tool.
     /// </summary>
     public class ScreenRegistrySync : AssetPostprocessor
     {

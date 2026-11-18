@@ -16,7 +16,6 @@ namespace ScreenSystem.Editor.ScreenManagerEditor
         private ScreenMetricsPanel metricsPanel;
         private GUIStyle headerStyle;
 
-        [MenuItem("Tools/Screen System/Screen Manager Window")]
         public static void ShowWindow()
         {
             ScreenManagerEditorWindow window = GetWindow<ScreenManagerEditorWindow>("Screen Manager");

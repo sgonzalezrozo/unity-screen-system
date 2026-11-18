@@ -27,11 +27,13 @@ namespace ScreenSystem.Editor
 
         // Looked up once per selection: it searches the project's ScreenDefinitions.
         private List<string> missingSpecialScreens;
+        private List<string> brokenSpecialScreens = new();
 
         private void OnEnable()
         {
             screenManager = (ScreenManager)target;
             missingSpecialScreens = Application.isPlaying ? new List<string>() : SpecialScreensCreator.Missing();
+            brokenSpecialScreens = Application.isPlaying ? new List<string>() : SpecialScreensCreator.BrokenDefinitionPaths();
             lastRepaintTime = EditorApplication.timeSinceStartup;
         }
 
@@ -47,6 +49,7 @@ namespace ScreenSystem.Editor
             {
                 EditorGUILayout.HelpBox("Enter Play Mode to see stack state.", MessageType.Info);
                 DrawMissingSpecialScreens();
+                DrawBenchmarkButton();
                 EditorGUILayout.Space(5);
                 DrawDefaultInspector();
                 return;
@@ -70,12 +73,14 @@ namespace ScreenSystem.Editor
                 return;
 
             EditorGUILayout.HelpBox(
-                $"{string.Join(" and ", missingSpecialScreens)} not found. Without a splash nothing shows while the game boots; without a quit confirmation, back at the root quits straight away.",
+                $"{string.Join(" and ", missingSpecialScreens)} not found, or its prefab is gone. Without a splash nothing shows while the game boots; without a quit confirmation, back at the root quits straight away." +
+                (brokenSpecialScreens.Count == 0 ? "" : $"\n\nCreating them moves {string.Join(" and ", brokenSpecialScreens)} to the trash: the prefab it loaded is gone."),
                 MessageType.Warning);
             if (GUILayout.Button("Create Special Screens"))
             {
                 SpecialScreensCreator.Create();
                 missingSpecialScreens = SpecialScreensCreator.Missing();
+                brokenSpecialScreens = SpecialScreensCreator.BrokenDefinitionPaths();
                 GUIUtility.ExitGUI();
             }
         }
@@ -181,7 +186,12 @@ namespace ScreenSystem.Editor
             EditorGUILayout.LabelField($"Z: {screenBaseZOrder}", EditorStyles.miniLabel, GUILayout.Width(55));
 
             if (isTop)
-                EditorGUILayout.LabelField("\u25C0 TOP", topBadgeStyle, GUILayout.Width(45));
+            {
+                // Sized to its text, with a gap, so the Select button doesn't cut it off.
+                GUIContent topBadge = new GUIContent("\u25C0 TOP");
+                EditorGUILayout.LabelField(topBadge, topBadgeStyle, GUILayout.Width(topBadgeStyle.CalcSize(topBadge).x));
+                GUILayout.Space(6);
+            }
 
             if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(50)))
                 SelectFirstLayer(layers);
@@ -229,6 +239,21 @@ namespace ScreenSystem.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        // The Benchmark sample's launcher, when the sample is imported. Found by name so the package doesn't depend on it.
+        private static readonly System.Reflection.MethodInfo RunBenchmark =
+            System.Type.GetType("ScreenSystem.Benchmark.Editor.ScreenSystemBenchmarkLauncher, ScreenSystem.Benchmark.Editor")
+                ?.GetMethod("RunFromMenu", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+        private static void DrawBenchmarkButton()
+        {
+            if (RunBenchmark == null)
+                return;
+
+            EditorGUILayout.Space(5);
+            if (GUILayout.Button(new GUIContent("Run Benchmark In Play Mode", "From the Benchmark sample: opens the first enabled build scene and measures your screens."), GUILayout.Height(25)))
+                EditorApplication.delayCall += () => RunBenchmark.Invoke(null, null);
         }
 
         private void DrawOpenWindowButton()

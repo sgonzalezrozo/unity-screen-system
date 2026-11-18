@@ -25,16 +25,6 @@ namespace ScreenSystem.Editor
         private static readonly Color ButtonColor = new(0.26f, 0.28f, 0.33f, 1f);
         private static readonly Color ConfirmColor = new(0.78f, 0.27f, 0.25f, 1f);
 
-        [MenuItem("Tools/Screen System/Create Special Screens", priority = 2)]
-        public static void CreateFromMenu()
-        {
-            List<string> created = Create();
-            string message = created.Count == 0
-                ? "The splash and quit confirmation screens already exist."
-                : $"Created {string.Join(" and ", created)} in {DefaultFeatureFolder}. Redesign them as you like; keep their names, or change the IDs on the ScreenManager.";
-            EditorUtility.DisplayDialog("Screen System", message, "OK");
-        }
-
         /// <summary>The names of the special screens that don't exist yet. Empty when both exist or are turned off.</summary>
         public static List<string> Missing()
         {
@@ -58,6 +48,8 @@ namespace ScreenSystem.Editor
         public static List<string> Create(string featureFolder, string splashId, string quitId)
         {
             List<string> created = new();
+            TrashBrokenDefinition(splashId);
+            TrashBrokenDefinition(quitId);
 
             if (!string.IsNullOrEmpty(splashId) && !Exists(splashId) && CreateSplash(featureFolder, splashId))
                 created.Add(splashId);
@@ -91,16 +83,64 @@ namespace ScreenSystem.Editor
             quitId = serialized.FindProperty("quitConfirmationModalId")?.stringValue ?? quitId;
         }
 
+        // A screen exists when its ScreenDefinition is there and the prefab it loads is too.
         internal static bool Exists(string nameOrId)
+        {
+            ScreenDefinition definition = FindDefinition(nameOrId);
+            return definition != null && ScreenAuthoring.FindScreenPrefabPathQuietly(definition) != null;
+        }
+
+        /// <summary>
+        /// The ScreenDefinitions of special screens whose prefab is gone, for example deleted with a Resources folder.
+        /// <see cref="Create(string)"/> moves them to the trash and creates the screens again.
+        /// </summary>
+        public static List<string> BrokenDefinitionPaths()
+        {
+            List<string> broken = new();
+            ReadIds(out string splashId, out string quitId);
+            foreach (string id in new[] { splashId, quitId })
+            {
+                string path = BrokenDefinitionPath(id);
+                if (path != null)
+                    broken.Add(path);
+            }
+
+            return broken;
+        }
+
+        private static string BrokenDefinitionPath(string nameOrId)
+        {
+            if (string.IsNullOrEmpty(nameOrId))
+                return null;
+
+            ScreenDefinition definition = FindDefinition(nameOrId);
+            if (definition == null || ScreenAuthoring.FindScreenPrefabPathQuietly(definition) != null)
+                return null;
+
+            return AssetDatabase.GetAssetPath(definition);
+        }
+
+        // Replaces a definition whose prefab is gone, so the new screen doesn't share its name.
+        private static void TrashBrokenDefinition(string nameOrId)
+        {
+            string path = BrokenDefinitionPath(nameOrId);
+            if (path == null)
+                return;
+
+            AssetDatabase.MoveAssetToTrash(path);
+            Debug.LogWarning($"[ScreenSystem] Moved '{path}' to the trash: the prefab it loaded is gone. Creating {nameOrId} again.");
+        }
+
+        private static ScreenDefinition FindDefinition(string nameOrId)
         {
             foreach (string guid in AssetDatabase.FindAssets("t:ScreenDefinition"))
             {
                 ScreenDefinition definition = AssetDatabase.LoadAssetAtPath<ScreenDefinition>(AssetDatabase.GUIDToAssetPath(guid));
                 if (definition != null && (definition.ScreenName == nameOrId || definition.ScreenId == nameOrId))
-                    return true;
+                    return definition;
             }
 
-            return false;
+            return null;
         }
 
         private static bool CreateSplash(string featureFolder, string screenName)
@@ -117,7 +157,7 @@ namespace ScreenSystem.Editor
             {
                 AddScaler(root);
                 Stretch(AddImage(root.transform, "Background", Background).rectTransform);
-                Text title = AddText(root.transform, "Title", PlayerSettings.productName, 72);
+                Text title = AddText(root.transform, "Title", "Splash", 72);
                 Stretch(title.rectTransform);
             });
         }

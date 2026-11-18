@@ -15,7 +15,7 @@ It never calls `GoBack()` at the root, so a project without a `QuitConfirmation`
 
 ## Run it in the Editor
 
-Select **Tools > Screen System > Benchmark > Run In Play Mode**. It opens the first enabled build scene, enters Play Mode and leaves Play Mode when it ends.
+Select the `ScreenManager` (on the `ScreenSystem` prefab) and click **Run Benchmark In Play Mode** in its Inspector. It opens the first enabled build scene, enters Play Mode and leaves Play Mode when it ends.
 
 From the command line, with the project closed in the Editor:
 

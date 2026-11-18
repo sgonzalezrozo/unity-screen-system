@@ -40,11 +40,17 @@ namespace ScreenSystem.Editor
             if (missing.Count == 0)
                 return;
 
+            List<string> broken = SpecialScreensCreator.BrokenDefinitionPaths();
+            string brokenNote = broken.Count == 0
+                ? ""
+                : $"The prefab of {string.Join(" and ", broken)} is gone, so it will be moved to the trash and replaced.\n\n";
+
             bool create = EditorUtility.DisplayDialog(
                 "Create the special screens?",
                 $"Screen System shows {SpecialScreensCreator.DefaultSplashId} while the game boots and opens {SpecialScreensCreator.DefaultQuitConfirmationId} when back is pressed at the root. " +
                 $"Create {string.Join(" and ", missing)} in {SpecialScreensCreator.DefaultFeatureFolder} now, as plain screens to redesign?\n\n" +
-                "Later: Tools > Screen System > Create Special Screens.",
+                brokenNote +
+                "Later: the Create Special Screens button in the ScreenManager Inspector.",
                 "Create",
                 "Later");
             if (create)

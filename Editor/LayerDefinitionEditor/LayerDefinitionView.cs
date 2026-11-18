@@ -34,7 +34,11 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
         {
             serializedObject.Update();
             EditorGUILayout.Space(5);
-            reorderableList.DoLayoutList();
+
+            // The whole list accepts dropped layer prefabs, not only its header.
+            Rect listRect = GUILayoutUtility.GetRect(0f, reorderableList.GetHeight(), GUILayout.ExpandWidth(true));
+            controller.HandleDragAndDrop(listRect, reorderableList.serializedProperty, serializedObject);
+            reorderableList.DoList(listRect);
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -61,8 +65,6 @@ namespace ScreenSystem.Editor.LayerDefinitionEditor
 
             EditorGUI.LabelField(labelRect, "Layers (Drag prefabs or reorder)");
             EditorGUI.LabelField(zOrderRect, "Z-Order", EditorStyles.boldLabel);
-
-            controller.HandleDragAndDrop(rect, reorderableList.serializedProperty, serializedObject);
         }
 
         private void DrawElement(Rect rect, int index, SerializedProperty layersProperty)
