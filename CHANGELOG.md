@@ -4,6 +4,21 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-18
+
+### Added
+
+- **Assets > Screen System > New Layer**: asks for a name and creates a layer prefab in the selected folder: a Canvas with a GraphicRaycaster, a CanvasGroup and a `LayerComponent`, and a full-screen Image inside. The prefab is marked Addressable with its name as the address.
+- An **Edit** section in the `ScreenDefinition` Inspector, under Configuration: **Edit Prefab** opens the screen's prefab, and **Add Screen to Feature…** opens the screen wizard on the definition's feature.
+
+### Removed
+
+- The **Assets > Screen System > Add Screen to Feature** menu item. It showed on any folder; use **Add Screen to Feature…** in a `ScreenDefinition`'s Inspector instead. `FeatureCreatorWizard.AddScreenToFeature(path)` opens the wizard from code.
+
+### Documentation
+
+- The README's description is plain text instead of a quote, and short enough for two lines.
+
 ## [0.4.4] - 2026-11-18
 
 ### Fixed

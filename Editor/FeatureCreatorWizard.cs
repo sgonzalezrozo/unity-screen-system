@@ -44,14 +44,18 @@ namespace ScreenSystem.Editor
         public static void NewScreenFeature()
             => Open(WizardMode.CreateNewFeature);
 
-        [MenuItem("Assets/Screen System/Add Screen to Feature", false, 21)]
-        public static void AddScreenToFeature()
-            => Open(WizardMode.AddScreenToFeature);
+        /// <summary>
+        /// Opens the wizard to add screens to the feature that holds <paramref name="path"/> (the feature folder, its
+        /// Services folder or a screen folder). The ScreenDefinition Inspector's Add Screen to Feature button uses it.
+        /// </summary>
+        public static void AddScreenToFeature(string path)
+            => Open(WizardMode.AddScreenToFeature, path);
 
         private static void Open(WizardMode wizardMode)
-        {
-            string path = SelectedFolder();
+            => Open(wizardMode, SelectedFolder());
 
+        private static void Open(WizardMode wizardMode, string path)
+        {
             FeatureCreatorWizard window = GetWindow<FeatureCreatorWizard>("New Screens");
             window.minSize = new Vector2(460, 300);
             window.mode = wizardMode;
@@ -85,7 +89,7 @@ namespace ScreenSystem.Editor
         /// The folder the Assets menu was opened on: the selected folder, the folder of the selected asset, or
         /// the folder open in the Project window when nothing is selected.
         /// </summary>
-        private static string SelectedFolder()
+        internal static string SelectedFolder()
         {
             string path = Selection.activeObject != null ? AssetDatabase.GetAssetPath(Selection.activeObject) : null;
             if (!string.IsNullOrEmpty(path))

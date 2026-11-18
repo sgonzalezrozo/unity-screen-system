@@ -18,7 +18,9 @@
 | `ScreenManager` Inspector > **Open Screen Manager Window** | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
 | `ScreenManager` Inspector > **Run Benchmark In Play Mode** | Measure your screens (after importing the Benchmark sample). See [Performance](performance.md). |
 | `Assets/Screen System/New Screen Feature` | Create a feature with its screens, ready for `GoTo` |
-| `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
+| `Assets/Screen System/New Layer` | Ask for a name and create a layer prefab in the selected folder: a Canvas with a full-screen Image, marked Addressable with its name as the address |
+| `ScreenDefinition` Inspector > **Edit Prefab** | Open the screen's prefab |
+| `ScreenDefinition` Inspector > **Add Screen to Feature…** | Add screens to the feature the definition belongs to |
 
 In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, such as `ScreenSystem.LoadPrefab` and `ScreenSystem.ActivateLayers`.
 

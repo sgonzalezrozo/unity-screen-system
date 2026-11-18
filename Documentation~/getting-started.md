@@ -101,7 +101,9 @@ Shop/
 
 It also marks the prefab Addressable, with its name as the address, and adds the screen to the registry. For UI Toolkit it creates an empty `ShopMain.uxml` and assigns it and the `GlobalPanelSettings` to the `UIDocument`.
 
-To add a screen to an existing feature, right-click the feature folder, one of its screen folders or its `Services` folder and select **Screen System > Add Screen to Feature**.
+To add a screen to an existing feature, select any of its `ScreenDefinition` assets and click **Add Screen to Feature…** in the Inspector, under **Edit**. **Edit Prefab** next to it opens the screen's prefab.
+
+To create a layer prefab, right-click a folder and select **Screen System > New Layer**, then type its name. It gets a Canvas with a full-screen Image and is marked Addressable with its name as the address.
 
 The registry keeps itself up to date: creating, deleting, moving or renaming a `ScreenDefinition` updates it, and the console warns when two screens share a name or ID. **Rebuild Registry from Assets**, in the `ScreenRegistry` Inspector, is only needed to repair a registry.
 

@@ -121,6 +121,66 @@ namespace ScreenSystem.Editor
             EditorGUILayout.EndVertical();
 
             serializedObject.ApplyModifiedProperties();
+
+            DrawEditSection(screenDef);
+        }
+
+        /// <summary>Buttons to open the screen's prefab and to add more screens to its feature.</summary>
+        private static void DrawEditSection(ScreenDefinition screenDef)
+        {
+            string definitionPath = AssetDatabase.GetAssetPath(screenDef);
+            if (string.IsNullOrEmpty(definitionPath))
+                return;
+
+            string featureFolder = FeatureCreatorWizard.FindFeatureFolder(System.IO.Path.GetDirectoryName(definitionPath)?.Replace('\\', '/'));
+            GameObject prefab = FindPrefab(screenDef);
+
+            EditorGUILayout.Space(10);
+            EditorGUILayout.LabelField("Edit", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+
+            EditorGUILayout.LabelField("Feature", System.IO.Path.GetFileName(featureFolder));
+
+            EditorGUILayout.BeginHorizontal();
+            GUI.enabled = prefab != null;
+            if (GUILayout.Button(new GUIContent("Edit Prefab", prefab != null ? AssetDatabase.GetAssetPath(prefab) : "No prefab found for this Asset Path")))
+                AssetDatabase.OpenAsset(prefab);
+            GUI.enabled = true;
+
+            if (GUILayout.Button(new GUIContent("Add Screen to Feature…", $"Adds screens to {featureFolder}")))
+                FeatureCreatorWizard.AddScreenToFeature(featureFolder);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndVertical();
+        }
+
+        /// <summary>The prefab the definition loads: from Resources, or the Addressable entry with that address.</summary>
+        private static GameObject FindPrefab(ScreenDefinition screenDef)
+        {
+            if (string.IsNullOrEmpty(screenDef.AssetPath))
+                return null;
+
+            GameObject fromResources = Resources.Load<GameObject>(screenDef.AssetPath);
+            if (fromResources != null)
+                return fromResources;
+
+            UnityEditor.AddressableAssets.Settings.AddressableAssetSettings settings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
+            if (settings == null)
+                return null;
+
+            foreach (UnityEditor.AddressableAssets.Settings.AddressableAssetGroup group in settings.groups)
+            {
+                if (group == null)
+                    continue;
+
+                foreach (UnityEditor.AddressableAssets.Settings.AddressableAssetEntry entry in group.entries)
+                {
+                    if (entry.address == screenDef.AssetPath)
+                        return AssetDatabase.LoadAssetAtPath<GameObject>(entry.AssetPath);
+                }
+            }
+
+            return null;
         }
     }
 }
