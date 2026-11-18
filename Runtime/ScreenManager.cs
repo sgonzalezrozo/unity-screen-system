@@ -217,6 +217,8 @@ namespace ScreenSystem
 
         private void Update()
         {
+            eventSystemGuard?.Tick();
+
             if (!isInitialized)
                 return;
 

@@ -4,6 +4,21 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-17
+
+### Changed
+
+- `ScreenSystemSettings`: **Blur Fade Duration** and **Default Log Level** are hidden in the Inspector and marked obsolete. Neither did anything: the blurred snapshot appears with the modal, and informational logs depend on the `SCREEN_SYSTEM_VERBOSE` scripting define symbol. They'll be removed in a later version.
+- `ScreenSystemSettings` tooltips say what each setting does, including that **Mobile Blur Strength** replaces **Blur Strength** on Android and iOS.
+
+### Documentation
+
+- README: a **Settings** section with a screenshot and every `ScreenSystemSettings` setting, and how to turn on informational logs.
+
+### Fixed
+
+- Two EventSystems at once, and a "There are 2 event systems in the scene" warning every frame, when an EventSystem appeared after Screen System had added its own, for example from a UI prefab or a scene object turned on later. Screen System now turns its own off as soon as another one is active, and its own is never counted in that warning. It still adds one whenever none is active.
+
 ## [0.4.1] - 2026-11-17
 
 ### Added

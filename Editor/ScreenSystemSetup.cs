@@ -144,7 +144,6 @@ namespace ScreenSystem.Editor
         private static void CreateNewSettings(string path)
         {
             ScreenSystemSettings settings = ScriptableObject.CreateInstance<ScreenSystemSettings>();
-            settings.DefaultLogLevel = LogLevel.Info;
 
             AssetDatabase.CreateAsset(settings, path);
         }
@@ -365,7 +364,6 @@ namespace ScreenSystem.Editor
 
                 settings.BlurStrength = 8.0f;
                 settings.BlurTintColor = new Color(0f, 0f, 0f, 0.4f);
-                settings.BlurFadeDuration = 0.2f;
 
                 PrefabUtility.UnloadPrefabContents(prefabContents);
             }

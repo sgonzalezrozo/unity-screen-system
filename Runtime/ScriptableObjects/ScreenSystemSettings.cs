@@ -5,26 +5,26 @@ namespace ScreenSystem.ScriptableObjects
     public class ScreenSystemSettings : ScriptableObject
     {
         [Header("UI Settings")]
-        [Tooltip("Select the UI framework(s) used in the project (uGUI, UIToolkit, or Both)")]
+        [Tooltip("The UI frameworks your screens use. Each layer's framework is detected from its own components; with UIToolkit only, Canvas Render Mode isn't applied.")]
         public UIFramework UIFramework = UIFramework.Both;
 
-        [Tooltip("Render mode for the main canvas")]
+        [Tooltip("Render mode of every uGUI layer's Canvas. Screen Space - Overlay is the tested one; the blur behind modals assumes it.")]
         public RenderMode CanvasRenderMode = RenderMode.ScreenSpaceOverlay;
 
         [Header("References")]
-        [Tooltip("Main screen registry containing all screens and features")]
+        [Tooltip("The registry of every ScreenDefinition. Setup assigns it, and it updates itself when screens change.")]
         public ScreenRegistry ScreenRegistry;
 
         [Header("Blur Settings")]
-        [Tooltip("Strength of Gaussian blur effect (0-10, higher = more blur)")]
+        [Tooltip("How blurred the snapshot behind modals and alerts is (0-10, higher is blurrier). On Android and iOS, Mobile Blur Strength replaces it while Reduce Blur Quality On Mobile is on.")]
         [Range(0f, 10f)]
         public float BlurStrength = 3.0f;
 
         [Tooltip("Darkens and tints the blurred snapshot behind modals. Alpha is the strength: 0 keeps only the blur, 1 is solid color.")]
         public Color BlurTintColor = new Color(0f, 0f, 0f, 0.5f);
 
-        [Tooltip("Fade duration for blur show/hide animation in seconds")]
-        [Range(0f, 1f)]
+        [HideInInspector]
+        [System.Obsolete("Has no effect: the blurred snapshot appears with the modal, without a fade. It will be removed.")]
         public float BlurFadeDuration = 0.2f;
 
         [Tooltip("Resolution of the blurred snapshot shown behind modals, as a fraction of the screen. Lower is cheaper and blurrier.")]
@@ -39,10 +39,10 @@ namespace ScreenSystem.ScriptableObjects
         public bool QuitOnBackAtRoot = true;
 
         [Header("Mobile Settings")]
-        [Tooltip("Use reduced blur quality on mobile devices for better performance")]
+        [Tooltip("On Android and iOS, use Mobile Blur Strength instead of Blur Strength.")]
         public bool ReduceBlurQualityOnMobile = true;
 
-        [Tooltip("Blur strength for mobile devices (0-10, lower = better performance)")]
+        [Tooltip("Blur strength on Android and iOS while Reduce Blur Quality On Mobile is on (0-10). Lower is cheaper.")]
         [Range(0f, 10f)]
         public float MobileBlurStrength = 1.5f;
 
@@ -55,8 +55,8 @@ namespace ScreenSystem.ScriptableObjects
         [Tooltip("Where ScreenIds is written. If your code is in an assembly definition, put it inside that assembly's folder so the code can see it.")]
         public string ScreenIdsPath = DefaultScreenIdsPath;
 
-        [Header("Debug")]
-        [Tooltip("Log level for screen system operations")]
+        [HideInInspector]
+        [System.Obsolete("Has no effect: informational logs are compiled in with the SCREEN_SYSTEM_VERBOSE scripting define symbol. It will be removed.")]
         public LogLevel DefaultLogLevel = LogLevel.None;
 
         private static ScreenSystemSettings _instance;
@@ -78,7 +78,7 @@ namespace ScreenSystem.ScriptableObjects
                                        "║                                                            ║\n" +
                                        "║  REQUIRED ACTION:                                          ║\n" +
                                        "║     In Unity, click:                                       ║\n" +
-                                       "║     Tools → Screen System → Setup Project                  ║\n" +
+                                       "║     Tools → Screen System → Setup                          ║\n" +
                                        "║                                                            ║\n" +
                                        "║  This is a ONE-TIME setup (30 seconds)                     ║\n" +
                                        "╚════════════════════════════════════════════════════════════╝");
@@ -87,7 +87,9 @@ namespace ScreenSystem.ScriptableObjects
 
                 return _instance;
             }
-        }        public static bool IsValid()
+        }
+
+        public static bool IsValid()
         {
             ScreenSystemSettings settings = Instance;
             return settings != null &&

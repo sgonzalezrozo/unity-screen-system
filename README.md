@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tested on Unity 6000.3](https://img.shields.io/badge/Unity-6000.3%20tested-black?logo=unity)](#compatibility)
-[![Version 0.4.1](https://img.shields.io/badge/version-0.4.1-blue.svg)](CHANGELOG.md)
+[![Version 0.4.2](https://img.shields.io/badge/version-0.4.2-blue.svg)](CHANGELOG.md)
 
 Screen System is a free, open-source UI manager for Unity 6, for uGUI and UI Toolkit. Each screen is a stack of layers: a background, the screen itself, a top bar, a navigation bar. Screens share layers instead of copying them, and the system sets every layer's draw order from where the screen sits in the navigation stack.
 
@@ -210,7 +210,7 @@ https://github.com/sgonzalezrozo/unity-screen-system.git
 To pin a release, add its tag:
 
 ```text
-https://github.com/sgonzalezrozo/unity-screen-system.git#v0.4.1
+https://github.com/sgonzalezrozo/unity-screen-system.git#v0.4.2
 ```
 
 ## Setup
@@ -700,7 +700,7 @@ Screen System runs from one persistent `ScreenSystem` object, marked `DontDestro
 - **Loading:** a screen's layers load the first time it opens. The ones not in the scene yet load together, and prefabs in local Addressables bundles finish loading in the same frame.
 - **Showing and hiding:** hidden screens stay loaded. A uGUI layer's `Canvas` is disabled, and a UI Toolkit layer's root is set to `display: none`. Reopening a screen reuses the same objects.
 - **Draw order:** each layer's sorting order comes from its screen's depth in the stack and its position in the `LayerDefinition`.
-- **Modals and alerts:** before a modal or alert becomes visible, the screen is captured at the end of the frame, blurred at a quarter of its resolution and darkened. That image is placed just below the modal, and the screen's layers stop rendering without being hidden, so their callbacks don't run. Layers the modal shares, such as a navigation bar, keep rendering. Blur strength, resolution, darkening and the alert dim are set in `ScreenSystemSettings`.
+- **Modals and alerts:** before a modal or alert becomes visible, the screen is captured at the end of the frame, blurred at a quarter of its resolution and darkened. That image is placed just below the modal, and the screen's layers stop rendering without being hidden, so their callbacks don't run. Layers the modal shares, such as a navigation bar, keep rendering. Blur strength, resolution, darkening and the alert dim are set in [`ScreenSystemSettings`](#settings).
 - **Scene changes:** screens without **Persist Over Scenes**, other than the splash and the quit confirmation, are destroyed and their Addressables handles released. Unused assets are unloaded once the new scene's first screen is drawn.
 - **Addressables:** each address has one handle, held while a screen uses it. AssetBundles stay open for the session once a screen needs them, while their assets load and unload with the screens. Closing and reopening a bundle on every scene change cost about 29 MB of native memory per change on a Pixel 5.
 
@@ -749,6 +749,29 @@ Going back to a screen with `GoBack`, `PopTo`, or `GoTo` for a screen already in
 | `Assets/Screen System/Add Screen to Feature` | Add a screen to an existing feature |
 
 In the Unity Profiler, the package's steps appear as `ScreenSystem.*` markers, such as `ScreenSystem.LoadPrefab` and `ScreenSystem.ActivateLayers`.
+
+## Settings
+
+Setup creates `ScreenSystemSettings` in `Assets/Resources/Tools/Screen System/Scriptables/`. Select it to change these:
+
+<img src="Documentation~/images/settings-inspector.png" alt="The ScreenSystemSettings Inspector: UI Framework, Canvas Render Mode, Screen Registry, the blur settings, Quit On Back At Root, the mobile blur settings, and the generated screen IDs settings" width="420">
+
+| Setting | What it does |
+|---|---|
+| **UI Framework** | The frameworks your screens use: `uGUI`, `UIToolkit` or `Both`. Each layer's framework is detected from its own components, so this rarely needs changing. With `UIToolkit` only, **Canvas Render Mode** isn't applied. |
+| **Canvas Render Mode** | The render mode of every uGUI layer's `Canvas`. `Screen Space - Overlay`, the default, is the tested one, and the blur behind modals assumes it. See [Does it work with Screen Space - Camera or World Space canvases?](#does-it-work-with-screen-space---camera-or-world-space-canvases) |
+| **Screen Registry** | The registry of every `ScreenDefinition`. Setup assigns it, and it updates itself when screens change. |
+| **Blur Strength** | How blurred the snapshot behind a modal or alert is, from 0 to 10. Higher is blurrier, and costs the same. |
+| **Blur Tint Color** | Darkens and tints that snapshot. Its alpha is the strength: 0 keeps only the blur, 1 is a solid color. |
+| **Blur Resolution Scale** | The snapshot's resolution, as a fraction of the screen. Lower is cheaper and blurrier; the default is a quarter. |
+| **Alert Dim Color** | The color between a modal and an alert opened over it. The modal stays visible and is only darkened, not blurred. |
+| **Quit On Back At Root** | On, back at the root opens the `QuitConfirmation` modal, or quits if there isn't one. Off, it only raises `NavigationEvents.OnBackAtRoot`. See [Handle back at the root](#handle-back-at-the-root). |
+| **Reduce Blur Quality On Mobile** | On Android and iOS, use **Mobile Blur Strength** instead of **Blur Strength**. |
+| **Mobile Blur Strength** | The blur strength on Android and iOS while the setting above is on. |
+| **Generate Screen IDs** | Writes the `ScreenIds` class, with one constant per screen. See [Navigation reference](#navigation-reference). |
+| **Screen IDs Path** | Where `ScreenIds` is written. If your code is in an assembly definition, put it inside that assembly's folder. |
+
+The blur settings and **Quit On Back At Root** are read each time they're used, so changes apply to the next modal or back press, even in Play Mode. **Canvas Render Mode** applies to layers loaded after the change. Informational logs aren't a setting: define `SCREEN_SYSTEM_VERBOSE` in **Player Settings > Scripting Define Symbols** to compile them in. Warnings and errors always show.
 
 ## Recommended usage
 
@@ -989,7 +1012,7 @@ Screen System targets mobile and WebGL. For PC and consoles, these would be adde
 
 ## Project status
 
-This is a pre-release package at version `0.4.1`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
+This is a pre-release package at version `0.4.2`. Its API and behavior may change before `1.0.0`. Not yet used in a shipped game.
 
 Until `1.0.0`, minor versions (`0.x.0`) can include breaking changes, and patch versions (`0.x.y`) don't. Breaking changes are marked **Breaking** in the [changelog](CHANGELOG.md).
 
