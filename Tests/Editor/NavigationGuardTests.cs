@@ -6,6 +6,8 @@ namespace ScreenSystem.Tests
 {
     public class NavigationGuardTests
     {
+        private LogCapture log;
+
         private TestRegistry screens;
         private FakeScreenDisplay display;
         private ScreenNavigationService service;
@@ -13,7 +15,7 @@ namespace ScreenSystem.Tests
         [SetUp]
         public void SetUp()
         {
-            LogAssert.ignoreFailingMessages = true;
+            log = new LogCapture();
             screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Lobby");
             display = new FakeScreenDisplay();
             service = new ScreenNavigationService(screens.Registry, display);
@@ -26,7 +28,7 @@ namespace ScreenSystem.Tests
         public void TearDown()
         {
             screens.Dispose();
-            LogAssert.ignoreFailingMessages = false;
+            log.Dispose();
         }
 
         [Test]

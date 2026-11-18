@@ -44,9 +44,10 @@ namespace ScreenSystem.Tests
         public async Task AValueOfAnotherTypeIsDismissedAndLogged()
         {
             ScreenResultBroker.Pending<bool> pending = broker.Begin<bool>("Confirm", false, out _);
-            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("waits for another type"));
+            using LogCapture log = new();
 
             Assert.IsNull(broker.Stage("yes", alertOnTop: false));
+            log.AssertLogged(LogType.Error, "waits for another type");
             broker.Settle(null, null);
 
             Assert.AreEqual(ModalResultStatus.Dismissed, (await pending.Task).Status);

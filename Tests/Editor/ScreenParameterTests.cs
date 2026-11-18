@@ -16,7 +16,6 @@ namespace ScreenSystem.Tests
             foreach (GameObject go in objects)
                 Object.DestroyImmediate(go);
             objects.Clear();
-            LogAssert.ignoreFailingMessages = false;
         }
 
         private LayerComponent Layer(string name, out ParameterReceiverStub receiver, bool receiverOnChild = false)
@@ -66,14 +65,17 @@ namespace ScreenSystem.Tests
         public void NoReceiverForTheTypeLogsAWarning()
         {
             LayerComponent layer = Layer("Layer", out _);
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("no component on its layers implements IScreenParameter<Single>"));
+            using LogCapture log = new();
 
             ScreenParameter.Create(1.5f).DeliverAndReport("Shop", new[] { layer });
+            log.AssertLogged(LogType.Warning, "no component on its layers implements IScreenParameter<Single>");
         }
     }
 
     public class ScreenParameterNavigationTests
     {
+        private LogCapture log;
+
         private TestRegistry screens;
         private FakeScreenDisplay display;
         private ScreenNavigationStack stack;
@@ -82,7 +84,7 @@ namespace ScreenSystem.Tests
         [SetUp]
         public void SetUp()
         {
-            LogAssert.ignoreFailingMessages = true;
+            log = new LogCapture();
             screens = new TestRegistry().Add("Root").Add("Shop").Add("Detail").Add("Modal", ScreenType.Modal);
             display = new FakeScreenDisplay();
             stack = new ScreenNavigationStack();
@@ -93,7 +95,7 @@ namespace ScreenSystem.Tests
         public void TearDown()
         {
             screens.Dispose();
-            LogAssert.ignoreFailingMessages = false;
+            log.Dispose();
         }
 
         private static ScreenParameter Value() => ScreenParameter.Create("value");

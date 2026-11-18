@@ -17,6 +17,7 @@ namespace ScreenSystem.Tests
         private const string Splash = "TestSplashScreen";
         private const string Quit = "TestQuitConfirmation";
         private AddressableAssetSettings settings;
+        private LogCapture log;
 
         [SetUp]
         public void SetUp()
@@ -24,6 +25,8 @@ namespace ScreenSystem.Tests
             settings = AddressableAssetSettingsDefaultObject.Settings;
             if (settings == null || ScreenSystemAssets.LoadRegistry() == null)
                 Assert.Ignore("Needs a project with Addressables and Screen System set up.");
+
+            log = new LogCapture();
         }
 
         [TearDown]
@@ -37,6 +40,8 @@ namespace ScreenSystem.Tests
 
             AssetDatabase.DeleteAsset(Root);
             ScreenRegistrySync.Sync(logChanges: false);
+            log?.Dispose();
+            log = null;
         }
 
         [Test]

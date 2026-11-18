@@ -90,9 +90,10 @@ namespace ScreenSystem.Tests
         {
             ScreenDefinition screen = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScreenAuthoring.FindScreenPrefabPath(screen));
-            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("can't be a layer of itself"));
+            using LogCapture log = new();
 
             Assert.IsFalse(ScreenAuthoring.AddLayer(screen, prefab));
+            log.AssertLogged(LogType.Error, "can't be a layer of itself");
         }
 
         [Test]

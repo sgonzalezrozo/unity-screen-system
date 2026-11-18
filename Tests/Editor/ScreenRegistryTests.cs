@@ -24,8 +24,9 @@ namespace ScreenSystem.Tests
         {
             using TestRegistry screens = new TestRegistry().Add("NoId");
             screens.Registry.Screens[0].ScreenId = "";
-            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("empty ScreenId"));
+            using LogCapture log = new();
             screens.Registry.ForceReinitialize();
+            log.AssertLogged(LogType.Warning, "empty ScreenId");
 
             Assert.IsNull(screens.Registry.GetScreen("NoId"));
         }

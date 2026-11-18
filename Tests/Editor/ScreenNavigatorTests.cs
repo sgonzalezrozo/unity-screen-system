@@ -6,6 +6,8 @@ namespace ScreenSystem.Tests
 {
     public class ScreenNavigatorTests
     {
+        private LogCapture log;
+
         private TestRegistry screens;
         private FakeScreenDisplay display;
         private ScreenNavigationStack stack;
@@ -15,7 +17,7 @@ namespace ScreenSystem.Tests
         [SetUp]
         public void SetUp()
         {
-            LogAssert.ignoreFailingMessages = true;
+            log = new LogCapture();
             screens = new TestRegistry()
                 .Add("Root")
                 .Add("Shop")
@@ -36,7 +38,7 @@ namespace ScreenSystem.Tests
         public void TearDown()
         {
             screens.Dispose();
-            LogAssert.ignoreFailingMessages = false;
+            log.Dispose();
         }
 
         private async Task StartAtRoot()
@@ -332,8 +334,8 @@ namespace ScreenSystem.Tests
             await StartAtRoot();
             await navigator.GoToAsync("Shop");
 
-            LogAssert.Expect(UnityEngine.LogType.Error, new System.Text.RegularExpressions.Regex("only fullscreen screens can clear the stack"));
             Assert.IsFalse(await navigator.GoToAsync("Modal", NavigationHistory.ClearToRoot));
+            log.AssertLogged(UnityEngine.LogType.Error, "only fullscreen screens can clear the stack");
             Assert.AreEqual(2, stack.MainHistoryCount);
             Assert.IsFalse(stack.HasModal);
         }
