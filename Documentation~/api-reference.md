@@ -113,6 +113,11 @@ Implement these on any component of a screen or layer prefab. They run per layer
 
 Hidden layers stay active, so Unity's `OnEnable` and `OnDisable` don't run on show and hide.
 
+Callbacks only run on components whose GameObject is active in the hierarchy, so you can call `StartCoroutine` from them. Components on inactive objects, or under an inactive parent, are skipped:
+
+- An object that's inactive when its layer is shown doesn't get `OnScreenShown`, and activating it later doesn't run the callback.
+- An object that's inactive when its layer is hidden doesn't get `OnScreenHidden`. If you use `OnScreenHidden` to clean up something other than a coroutine, don't put it on an object that might be inactive by then.
+
 ## Events
 
 ```csharp

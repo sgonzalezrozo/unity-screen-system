@@ -416,6 +416,17 @@ namespace ScreenSystem
             return contentLifecycle?.DestroyContent() ?? false;
         }
 
+        // Skips receivers whose GameObject is inactive (e.g. SetActive(false)) so callbacks like
+        // StartCoroutine don't throw. Casting to Component also catches destroyed objects, which
+        // a plain interface == null check misses.
+        private static bool IsActiveReceiver(object receiver)
+        {
+            if (receiver is Component component)
+                return component && component.gameObject.activeInHierarchy;
+
+            return receiver != null;
+        }
+
         private void NotifyScreenLifecycleComponents(bool isShown)
         {
             using Unity.Profiling.ProfilerMarker.AutoScope _ = ScreenSystemMarkers.LifecycleCallbacks.Auto();
@@ -426,7 +437,7 @@ namespace ScreenSystem
                     // Use only cached components, never recache after Awake
                     for (int i = 0; i < cachedShowComponents.Length; i++)
                     {
-                        if (cachedShowComponents[i] == null)
+                        if (!IsActiveReceiver(cachedShowComponents[i]))
                             continue;
 
                         try
@@ -444,7 +455,7 @@ namespace ScreenSystem
                     // Use only cached components, never recache after Awake
                     for (int i = 0; i < cachedHideComponents.Length; i++)
                     {
-                        if (cachedHideComponents[i] == null)
+                        if (!IsActiveReceiver(cachedHideComponents[i]))
                             continue;
 
                         try

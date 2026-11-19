@@ -4,8 +4,11 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-19
+
 ### Fixed
 
+- `OnScreenShown` and `OnScreenHidden` no longer run on components whose GameObject is inactive, where starting a coroutine threw an error. Destroyed components are skipped too. See [Lifecycle interfaces](Documentation~/api-reference.md#lifecycle-interfaces).
 - The ScreenManager Inspector no longer clips the TOP badge, a layer's icon or its Z order.
 
 ## [0.5.1] - 2026-11-18
