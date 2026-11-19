@@ -4,6 +4,12 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-11-19
+
+### Documentation
+
+- The installation steps note that Tools Core is needed only by Screen System, Fast IoC and UI Scroller, and is added once.
+
 ## [0.5.2] - 2026-11-19
 
 ### Fixed
