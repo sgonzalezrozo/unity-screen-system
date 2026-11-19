@@ -4,6 +4,10 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- The ScreenManager Inspector no longer clips the TOP badge, a layer's icon or its Z order.
+
 ## [0.5.1] - 2026-11-18
 
 ### Documentation

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using ScreenSystem.Editor.ScreenManagerEditor;
-using ScreenSystem;
 using ScreenSystem.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
@@ -189,7 +188,7 @@ namespace ScreenSystem.Editor
             {
                 // Sized to its text, with a gap, so the Select button doesn't cut it off.
                 GUIContent topBadge = new GUIContent("\u25C0 TOP");
-                EditorGUILayout.LabelField(topBadge, topBadgeStyle, GUILayout.Width(topBadgeStyle.CalcSize(topBadge).x));
+                EditorGUILayout.LabelField(topBadge, topBadgeStyle, GUILayout.Width(topBadgeStyle.CalcSize(topBadge).x + 20));
                 GUILayout.Space(6);
             }
 
@@ -222,12 +221,12 @@ namespace ScreenSystem.Editor
 
             EditorGUILayout.BeginHorizontal();
 
-            EditorGUILayout.LabelField($"  {icon}", dotStyle, GUILayout.Width(20));
+            EditorGUILayout.LabelField($"  {icon}", dotStyle, GUILayout.Width(22));
             EditorGUILayout.LabelField(layer.LayerName, EditorStyles.miniLabel);
 
             GUILayout.FlexibleSpace();
 
-            EditorGUILayout.LabelField($"Z: {layer.CurrentZOrder}", EditorStyles.miniLabel, GUILayout.Width(55));
+            EditorGUILayout.LabelField($"Z: {layer.CurrentZOrder}", EditorStyles.miniLabel, GUILayout.Width(58));
 
             if (layer.IsShared)
                 EditorGUILayout.LabelField("shared", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(40));
