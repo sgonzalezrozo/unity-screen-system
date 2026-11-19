@@ -4,6 +4,17 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-19
+
+### Changed
+
+- **New Screen Feature** no longer has a Feature field. The folder you right-click is the feature: the screens go in it (`<Folder>/<Screen>/<Screen>.prefab`, `<Folder>/Services/<Screen>.asset`) and its name prefixes the screen IDs. Before, the wizard made a new feature folder inside the one you picked. Opened on a feature that already has screens, or from **Add Screen to Feature…**, it lists them and adds the new ones next to them; `Assets` itself isn't accepted as a feature.
+- The wizard is a compact window that grows with its screen rows (a long list scrolls), with **Cancel** and **Create** buttons. New screens are named after the feature (`ShopMain`, then `ShopScreen2`...), so `GoTo` names stay unique. A screen created without a skipped one closes the window without a dialog and selects its prefab.
+
+### Documentation
+
+- The README Quickstart and Getting Started create the feature's folder first and right-click it. The old wizard screenshot is removed until a new one is captured.
+
 ## [0.5.3] - 2026-11-19
 
 ### Documentation

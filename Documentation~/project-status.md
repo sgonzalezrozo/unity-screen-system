@@ -12,7 +12,7 @@
 
 ## Status
 
-Pre-release (`0.5.3`), by a single author, not yet used in a shipped game. Expect rough edges and API changes before `1.0.0`. What's tested and what isn't is listed in [What's verified](troubleshooting.md#whats-verified), and known gaps in [Limitations](troubleshooting.md#limitations).
+Pre-release (`0.6.0`), by a single author, not yet used in a shipped game. Expect rough edges and API changes before `1.0.0`. What's tested and what isn't is listed in [What's verified](troubleshooting.md#whats-verified), and known gaps in [Limitations](troubleshooting.md#limitations).
 
 ## Versioning
 

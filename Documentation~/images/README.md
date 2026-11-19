@@ -12,6 +12,7 @@ Keep GIFs to 10–15 seconds, about 800 px wide and under 5 MB. Use lowercase na
 | `screen-definition.png` | A `ScreenDefinition` in the Inspector | `getting-started.md` › Create your first screen |
 | `screen-manager-window.png` | The Screen Manager window | `editor-tools.md` |
 | `layer-definition.png` | A `LayerDefinition` with layers above and below `SCREEN` | `core-concepts.md` › Layers |
+| `feature-wizard.png` | The New Screen Feature wizard (redesigned in 0.6.0: no Feature field) | `getting-started.md` › Create your first screen |
 
 ## In use
 
@@ -19,5 +20,4 @@ Keep GIFs to 10–15 seconds, about 800 px wide and under 5 MB. Use lowercase na
 |---|---|
 | `settings-inspector.png` | `editor-tools.md` › Settings |
 | `assets-menu.png` | `README.md` › Quickstart, `getting-started.md` › Create your first screen |
-| `feature-wizard.png` | `README.md` › Quickstart, `getting-started.md` › Create your first screen |
 | `new-layer.png` | `getting-started.md` › Create your first screen |
