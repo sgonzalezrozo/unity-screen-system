@@ -8,7 +8,7 @@
 A layer-based UI manager for uGUI and UI Toolkit: shared layers with automatic draw order, only what's visible renders, and everything unloads on scene change. 1–5 ms cached shows.
 
 [![Unity](https://img.shields.io/badge/Unity-6000.3%20tested-black?style=for-the-badge&logo=unity)](Documentation~/getting-started.md#requirements)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 [**Installation**](#installation) • [**Key Features**](#key-features) • [**Quickstart**](#quickstart) • [**Code Examples**](Documentation~/code-examples.md) • [**Core Concepts**](Documentation~/core-concepts.md) • [**API Reference**](Documentation~/api-reference.md)

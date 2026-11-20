@@ -4,6 +4,8 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-19
+
 ### Changed
 
 - **Assets > Screen System > New Screen Feature** is now **New Screen**.
