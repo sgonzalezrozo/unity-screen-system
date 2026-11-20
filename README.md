@@ -41,6 +41,8 @@ https://github.com/sgonzalezrozo/unity-screen-system.git
 
 Requirements and tested platforms: [Getting Started](Documentation~/getting-started.md#requirements).
 
+**Assembly references.** If your code is in an assembly definition (`.asmdef`), add `ScreenSystem` and `ToolsCore` to its **Assembly Definition References**. Unity doesn't add them for you, and without them the build fails with `CS0246`. **New Screen** and **New Layer** add them to the folder's `.asmdef`, and move `ScreenIds` next to it when it's in a folder with no `.asmdef`, since an `.asmdef` can't see `Assembly-CSharp`.
+
 ---
 
 ## Key Features
@@ -61,9 +63,9 @@ Requirements and tested platforms: [Getting Started](Documentation~/getting-star
 ## Quickstart
 
 1. Run **Tools > Screen System > Setup**, and click **Create** to add the splash and quit confirmation screens.
-2. Create a folder named `Shop`, right-click it in the Project window and select **Screen System > New Screen Feature**. Add two `Fullscreen` screens, `ShopMain` and `ShopDetail`, and click **Create**. The folder is the feature: its name prefixes the screen IDs.
+2. Create a folder named `Shop`, right-click it in the Project window and select **Screen System > New Screen**. Add two `Fullscreen` screens, `ShopMain` and `ShopDetail`, and click **Create**. The folder is the feature: its name prefixes the screen IDs.
 
-   <img src="Documentation~/images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen Feature and New Layer" width="420">
+   <img src="Documentation~/images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen and New Layer" width="420">
 
 3. Open the screen from any script:
 

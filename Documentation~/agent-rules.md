@@ -6,9 +6,20 @@ Copy this file into your project's agent rules (for example `AGENTS.md`, `CLAUDE
 
 - This project navigates UI with **Screen System** (`com.sgonzalezrozo.screen-system`). Don't load scenes, toggle panels with `SetActive`, or instantiate screen prefabs yourself to show a screen.
 - The entry point is `ScreenManager.Instance` (namespace `ScreenSystem`). `ScreenSystem` is the namespace, not a class.
-- Each screen is a prefab with a `ScreenDefinition` asset. Screens are created with **Assets > Screen System > New Screen Feature**, which puts the prefab in `Feature/Screen/` and the `ScreenDefinition` in `Feature/Services/`, marks the prefab Addressable and registers it. The registry updates itself when definitions change.
+- Each screen is a prefab with a `ScreenDefinition` asset. Screens are created with **Assets > Screen System > New Screen**, which puts the prefab in `Feature/Screen/` and the `ScreenDefinition` in `Feature/Services/`, marks the prefab Addressable and registers it. The registry updates itself when definitions change.
 - Never write `.prefab` or `.asset` files as text. Describe the prefab and the Inspector steps instead. With Unity editor tools (an MCP server or `-executeMethod`), build screens with `ScreenSystem.Editor.ScreenAuthoring`: `CreateScreen(featureDir, name, type, framework)`, `CreateLayer(folder, name)`, `AddLayer(screen, layerPrefab, LayerPlacement.Back | BehindScreen | InFrontOfScreen | Front)`, `RemoveLayer` and `GetLayers` to check the order. They make prefabs loadable and keep the registry up to date.
 - In a project that still has hand-made UI, migrate one menu at a time: `GoTo`/`GoBack` replace `SetActive` for migrated menus, and `NavigationEvents.OnBackAtRoot` + `ScreenManager.Instance.CloseAll()` return to the hand-made menu. Don't touch the menus not being migrated.
+
+## Assembly references
+
+Unity doesn't add a package's assemblies to your assembly definitions. Every `.asmdef` whose code uses this package MUST list these in its **Assembly Definition References** (`references` in the JSON), in the same change that adds the first `using`. Without them the build fails with `CS0246: The type or namespace name 'ScreenSystem' could not be found`. Code in `Assembly-CSharp` (no `.asmdef`) needs nothing.
+
+| Assembly | Needed for |
+|---|---|
+| `ScreenSystem` | `ScreenManager`, `ScreenIds`, `IScreenShow`, `IScreenHide`, `IScreenParameter<T>` and the rest of the namespace `ScreenSystem` |
+| `ToolsCore` | Required too when code uses `IPrefabInstantiator` or connects a container; add it with `ScreenSystem` to be safe |
+
+**New Screen** and **New Layer** (and `ScreenAuthoring.CreateScreen` / `CreateLayer`) add `ScreenSystem` and `ToolsCore` to the `.asmdef` that compiles the folder, and make `ScreenIds` visible to it: an `.asmdef` can't see `Assembly-CSharp`, so `ScreenIds` in a folder with no `.asmdef` (the default, `Assets/ScreenSystem`) moves next to that `.asmdef`, and Screen IDs Path follows. Code you write by hand still needs the assemblies above.
 
 ## Layers
 

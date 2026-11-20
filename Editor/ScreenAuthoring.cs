@@ -70,6 +70,7 @@ namespace ScreenSystem.Editor
             }
 
             FeatureCreatorWizard.EnsureFolder(folder);
+            ProjectAssemblySetup.PrepareFolder(folder);
             GameObject root = new(layerName) { layer = LayerMask.NameToLayer("UI") };
             if (framework == UIFramework.UIToolkit)
                 FeatureCreatorWizard.SetUpUIDocument(root, folder, layerName);

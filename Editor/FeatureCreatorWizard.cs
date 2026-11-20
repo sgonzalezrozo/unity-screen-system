@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace ScreenSystem.Editor
 {
     /// <summary>
-    /// Assets > Screen System > New Screen Feature: creates screens that work on the first GoTo, in the folder you
+    /// Assets > Screen System > New Screen: creates screens that work on the first GoTo, in the folder you
     /// right-clicked. That folder is the feature: its name prefixes the screen IDs. For each screen:
     /// <code>
     /// PlayerHealth/                                the folder you picked
@@ -49,8 +49,8 @@ namespace ScreenSystem.Editor
         /// <summary>The project root isn't a feature: its name would prefix every screen ID with "Assets".</summary>
         private bool HasFeatureFolder => AssetDatabase.IsValidFolder(featureFolder) && featureFolder != "Assets";
 
-        [MenuItem("Assets/Screen System/New Screen Feature", false, 20)]
-        public static void NewScreenFeature()
+        [MenuItem("Assets/Screen System/New Screen", false, 20)]
+        public static void NewScreen()
             => Open(SelectedFolder());
 
         /// <summary>
@@ -296,6 +296,7 @@ namespace ScreenSystem.Editor
             EnsureFolder(featureDir);
             EnsureFolder(screenDir);
             EnsureFolder(servicesDir);
+            ProjectAssemblySetup.PrepareFolder(featureDir);
 
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (prefab == null)

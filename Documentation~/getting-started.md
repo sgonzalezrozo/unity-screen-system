@@ -86,9 +86,9 @@ On WebGL and iOS an app doesn't quit itself, so leave out the quit confirmation 
 
 Two steps, about a minute:
 
-1. Create the feature's folder (for example `Shop`), right-click it in the Project window and select **Screen System > New Screen Feature**. Name its screens and pick each one's type: `Fullscreen`, `Modal` or `Alert`. The folder is the feature: its name prefixes the screen IDs, so there's nothing else to name. Opened on a feature that already has screens, the wizard lists them and adds the new ones next to them.
+1. Create the feature's folder (for example `Shop`), right-click it in the Project window and select **Screen System > New Screen**. Name its screens and pick each one's type: `Fullscreen`, `Modal` or `Alert`. The folder is the feature: its name prefixes the screen IDs, so there's nothing else to name. Opened on a feature that already has screens, the wizard lists them and adds the new ones next to them.
 
-   <img src="images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen Feature and New Layer" width="420">
+   <img src="images/assets-menu.png" alt="The Project window's context menu: Screen System > New Screen and New Layer" width="420">
 
 2. Click **Create**, then call `ScreenManager.Instance.GoTo("ShopMain")` with your screen's name.
 

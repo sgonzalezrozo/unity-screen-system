@@ -17,8 +17,8 @@
 | `ScreenRegistry` Inspector > **Rebuild Registry from Assets** | Repair the registry. It already updates when `ScreenDefinition` assets change. |
 | `ScreenManager` Inspector > **Open Screen Manager Window** | In Play Mode: what the next back does, what's rendering now from front to back (with the blur or dim), the back stack down to the root with each screen's layers, and Back, Dismiss Alert, Close All and Pop To buttons |
 | `ScreenManager` Inspector > **Run Benchmark In Play Mode** | Measure your screens (after importing the Benchmark sample). See [Performance](performance.md). |
-| `Assets/Screen System/New Screen Feature` | Create screens, ready for `GoTo`, in the folder you right-clicked. The folder is the feature: its name prefixes the screen IDs |
-| `Assets/Screen System/New Layer` | Ask for a name and create a layer prefab in the selected folder: a Canvas with a full-screen Image, marked Addressable with its name as the address |
+| `Assets/Screen System/New Screen` | Create screens, ready for `GoTo`, in the folder you right-clicked. The folder is the feature: its name prefixes the screen IDs. Under an assembly definition, it adds `ScreenSystem` and `ToolsCore` to it and makes `ScreenIds` visible to it |
+| `Assets/Screen System/New Layer` | Ask for a name and create a layer prefab in the selected folder: a Canvas with a full-screen Image, marked Addressable with its name as the address. Under an assembly definition, it adds `ScreenSystem` and `ToolsCore` to it |
 | `ScreenDefinition` Inspector > **Edit Prefab** | Open the screen's prefab |
 | `ScreenDefinition` Inspector > **Add Screen to Feature…** | Add screens to the feature the definition belongs to |
 

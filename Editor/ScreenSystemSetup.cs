@@ -85,7 +85,7 @@ namespace ScreenSystem.Editor
                  "1. The ScreenSystem prefab loads automatically\n" +
                  "2. Create layer prefabs with required components:\n" +
                  (framework == "uGUI" ? "   - Canvas + GraphicRaycaster + RectTransform + LayerComponent\n" : "   - UIDocument + PanelSettings + LayerComponent\n") +
-                 "3. Create your first feature: Assets > Screen System > New Screen Feature\n" +
+                 "3. Create your first feature: Assets > Screen System > New Screen\n" +
                  "4. Set Framework in ScreenDefinition assets",
                  "OK");
 

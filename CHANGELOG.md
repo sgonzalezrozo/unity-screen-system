@@ -4,6 +4,20 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Assets > Screen System > New Screen Feature** is now **New Screen**.
+
+### Fixed
+
+- **New Screen** and **New Layer** (and `ScreenAuthoring.CreateScreen` / `CreateLayer`) add `ScreenSystem` and `ToolsCore` to the assembly definition that compiles the folder, keeping its name or GUID style, so code next to the new screen compiles.
+- `ScreenIds` is visible to that assembly: when it's in a folder with no `.asmdef` (the default, `Assets/ScreenSystem/ScreenIds.cs`, compiled in `Assembly-CSharp`, which an `.asmdef` can't reference), it moves next to the screen's `.asmdef` and Screen IDs Path follows; when it's under another `.asmdef`, that assembly gets a reference instead.
+
+### Documentation
+
+- The README and `agent-rules.md` list the assemblies an assembly definition needs to use Screen System: `ScreenSystem` and `ToolsCore`.
+- The README and troubleshooting say to add Tools Core first and wait for each package to compile: adding one mid-import can log `ScriptableSingleton already exists` and "assets located in immutable packages were unexpectedly altered", which block nothing.
+
 ## [0.6.2] - 2026-11-19
 
 ### Changed

@@ -18,7 +18,7 @@ One `ScreenSystem` object is created in DontDestroyOnLoad. It opens nothing unti
 ## Migrate one menu
 
 1. Run **Tools > Screen System > Setup**, then turn off **Quit On Back At Root** in `ScreenSystemSettings`. While your main menu is still hand-made, back at the first Screen System screen should return to it, not quit.
-2. Create the screen with **Assets > Screen System > New Screen Feature** and move the panel's content into its prefab. Move its `OnEnable`/`OnDisable` code to `IScreenShow`/`IScreenHide`.
+2. Create the screen with **Assets > Screen System > New Screen** and move the panel's content into its prefab. Move its `OnEnable`/`OnDisable` code to `IScreenShow`/`IScreenHide`.
 3. Replace the code that showed and hid the panel:
 
 ```csharp

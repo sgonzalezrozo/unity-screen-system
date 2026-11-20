@@ -42,6 +42,7 @@ namespace ScreenSystem.Editor
                 return null;
             }
 
+            ProjectAssemblySetup.PrepareFolder(folder);
             int uiLayer = LayerMask.NameToLayer("UI");
             GameObject root = new(name, typeof(RectTransform));
             FeatureCreatorWizard.SetUpCanvas(root);
