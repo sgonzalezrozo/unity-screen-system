@@ -13,6 +13,7 @@
 
 | Problem | Try this |
 |---|---|
+| `ScriptableSingleton already exists` or `assets located in immutable packages were unexpectedly altered` after adding packages | A package was added while Unity was still importing another. Nothing is broken: clear the Console. Next time, add Tools Core first and wait for the compile before adding the next package. If they come back when you open the project without adding a package, report it |
 | `TryResolveScreenId FAILED` or `screen not found` | Check the screen name or ID, and the console for duplicate-name warnings. Click **Rebuild Registry from Assets** in the `ScreenRegistry` Inspector to repair it. |
 | `ScreenSystem prefab not found` | Run **Tools > Screen System > Setup** |
 | `AssetPath is empty` | Set the screen's asset path on its `ScreenDefinition` |
