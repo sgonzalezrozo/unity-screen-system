@@ -2,7 +2,8 @@
     "name": "ScreenSystem.Tests.Runtime",
     "rootNamespace": "ScreenSystem.Tests",
     "references": [
-        "ScreenSystem"
+        "ScreenSystem",
+        "ToolsCore"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

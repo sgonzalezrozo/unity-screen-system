@@ -4,6 +4,12 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-25
+
+### Changed
+
+- Assembly references: the `.asmdef` files list `ToolsCore`, which the packages' code uses for `Forget`.
+
 ## [0.7.1] - 2026-11-25
 
 ### Changed

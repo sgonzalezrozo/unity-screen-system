@@ -5,7 +5,8 @@
         "Unity.Addressables",
         "Unity.Addressables.Editor",
         "UnityEngine.UI",
-        "ScreenSystem"
+        "ScreenSystem",
+        "ToolsCore"
     ],
     "includePlatforms": [
         "Editor"
