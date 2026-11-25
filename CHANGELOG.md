@@ -4,6 +4,12 @@ All notable changes to this package are documented in this file.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-25
+
+### Changed
+
+- Docs: the `GoTo<T>(screenId, parameter, ct)` signature is in the API reference, next to `GoTo(screen, value)`.
+
 ## [0.7.0] - 2026-11-19
 
 ### Changed

@@ -31,6 +31,7 @@ await screens.SetRoot("Lobby");
 | `ScreenManager.WhenReadyAsync()` | Await the initialized manager. Returns `null`, and logs why, if initialization failed. |
 | `GoTo(screen)` | Open a screen. For a screen already in the stack, return to it like `PopTo`. |
 | `GoTo(screen, value)` | Open a screen and pass a value to every `IScreenParameter<T>` on its layers |
+| `GoTo<T>(string screenId, T parameter, CancellationToken ct = default)` | The signature of `GoTo(screen, value)`: `Task<NavigationResult>`, awaited. `T` is the value's type, read by `IScreenParameter<T>` |
 | `GoTo(screen, NavigationHistory.ClearToRoot)` | Remove every screen above the root, then open a fullscreen screen over it. For tab bars. |
 | `GoBack()` | Return to the previous screen |
 | `PopTo(screen)` | Return to a screen already in the stack |
