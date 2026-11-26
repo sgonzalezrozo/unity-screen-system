@@ -310,7 +310,8 @@ namespace ScreenSystem.Editor
             definition.PersistOverScenes = persistOverScenes;
             definition.AssetPath = ScreenSystemAssets.EnsureLoadable(prefab);
             AssetDatabase.CreateAsset(definition, definitionPath);
-            AssetDatabase.SaveAssets();
+            // Only the new definition: a global SaveAssets would also write every other dirty asset in the project.
+            AssetDatabase.SaveAssetIfDirty(definition);
 
             ScreenRegistrySync.Sync(logChanges: false);
             return definition;

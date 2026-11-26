@@ -59,6 +59,11 @@ namespace ScreenSystem.Editor
 
             entry.address = address;
             settings.SetDirty(AddressableAssetSettings.ModificationEvent.EntryModified, entry, true);
+
+            // Save only what changed here. A global SaveAssets would also write every other asset that happens to be
+            // dirty in the Editor, such as prefabs of other features.
+            AssetDatabase.SaveAssetIfDirty(entry.parentGroup);
+            AssetDatabase.SaveAssetIfDirty(settings);
             return address;
         }
 

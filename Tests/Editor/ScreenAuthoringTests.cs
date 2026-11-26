@@ -85,6 +85,23 @@ namespace ScreenSystem.Tests
         }
 
         [Test]
+        public void CreatingAScreenDoesNotSaveOtherDirtyAssets()
+        {
+            AssetDatabase.CreateFolder("Assets", "__ScreenAuthoringTest");
+            GameObject source = new("Unrelated");
+            string otherPath = $"{Root}/Unrelated.prefab";
+            GameObject other = PrefabUtility.SaveAsPrefabAsset(source, otherPath);
+            Object.DestroyImmediate(source);
+            string before = System.IO.File.ReadAllText(otherPath);
+
+            other.layer = 5;
+            EditorUtility.SetDirty(other);
+            ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");
+
+            Assert.AreEqual(before, System.IO.File.ReadAllText(otherPath), "a dirty asset of another feature isn't written");
+        }
+
+        [Test]
         public void AddingTheSameLayerTwiceKeepsOneEntry()
         {
             ScreenDefinition screen = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");

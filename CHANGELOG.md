@@ -8,6 +8,7 @@ All notable changes to this package are documented in this file.
 
 - A screen made from code (`ScreenAuthoring.CreateScreen`) is saved with its LayerDefinition's SCREEN separator. Without it, the LayerDefinition inspector added it the first time it showed the prefab and marked it dirty, so the next asset save rewrote the prefab and Unity asked to keep or discard changes in Prefab Mode. The New Screen menu hid it by selecting the prefab right away.
 - Creating a screen in a folder that's already on disk but not imported yet imports that folder instead of adding a `Name 1` folder next to it.
+- Creating a screen, or making a prefab loadable, saves only the assets it changed (the screen's definition, the Addressables group and settings). It called `AssetDatabase.SaveAssets()`, which also wrote every other asset dirty in the Editor, such as prefabs of other features.
 
 ## [0.7.2] - 2026-11-25
 
