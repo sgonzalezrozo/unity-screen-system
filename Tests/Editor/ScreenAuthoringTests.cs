@@ -62,6 +62,29 @@ namespace ScreenSystem.Tests
         }
 
         [Test]
+        public void NewScreenIsSavedWithItsScreenSeparator()
+        {
+            ScreenDefinition screen = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ScreenAuthoring.FindScreenPrefabPath(screen));
+
+            // The LayerDefinition inspector adds a missing separator and marks the prefab dirty when it's first shown.
+            Assert.IsFalse(prefab.GetComponent<LayerDefinition>().EnsureScreenSeparatorExists(), "the separator is already saved");
+        }
+
+        [Test]
+        public void ScreenInAFolderAlreadyOnDiskIsNotDuplicated()
+        {
+            string screenDir = $"{Root}/Quest/QuestMain";
+            System.IO.Directory.CreateDirectory(screenDir);
+            System.IO.File.WriteAllText($"{screenDir}/notes.txt", "written before Unity imported the folder");
+
+            ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");
+
+            Assert.IsTrue(AssetDatabase.IsValidFolder(screenDir));
+            Assert.IsFalse(System.IO.Directory.Exists($"{screenDir} 1"), "no duplicate folder");
+        }
+
+        [Test]
         public void AddingTheSameLayerTwiceKeepsOneEntry()
         {
             ScreenDefinition screen = ScreenAuthoring.CreateScreen($"{Root}/Quest", "QuestMain");

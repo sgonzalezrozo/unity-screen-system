@@ -325,7 +325,9 @@ namespace ScreenSystem.Editor
             else
                 SetUpCanvas(root);
 
-            root.AddComponent<LayerDefinition>();
+            // The LayerDefinition inspector adds the SCREEN separator the first time it shows the prefab and marks it
+            // dirty, which makes Unity ask to save or reload it. The new screen is saved with it, so opening it changes nothing.
+            root.AddComponent<LayerDefinition>().EnsureScreenSeparatorExists();
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, $"{screenDir}/{screenName}.prefab");
             DestroyImmediate(root);
@@ -393,6 +395,15 @@ namespace ScreenSystem.Editor
             string parent = Path.GetDirectoryName(path)?.Replace('\\', '/');
             if (!string.IsNullOrEmpty(parent))
                 EnsureFolder(parent);
+
+            // A folder already on disk that Unity hasn't imported yet (another tool wrote files into it a moment ago) is
+            // imported, not created again: CreateFolder would add a "Name 1" folder next to it.
+            if (Directory.Exists(path))
+            {
+                AssetDatabase.ImportAsset(path);
+                if (AssetDatabase.IsValidFolder(path))
+                    return;
+            }
 
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
